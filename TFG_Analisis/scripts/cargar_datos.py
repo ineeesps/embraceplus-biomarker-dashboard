@@ -4,8 +4,11 @@ from psycopg2 import extras
 import os
 
 def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante):
-    dir_actual = os.path.dirname(os.path.abspath(__file__))
-    ruta_entrada = os.path.join(dir_actual, '..', 'data', archivo_nombre)
+    if os.path.exists(archivo_nombre):
+        ruta_entrada = archivo_nombre
+    else:
+        dir_actual = os.path.dirname(os.path.abspath(__file__))
+        ruta_entrada = os.path.join(dir_actual, '..', 'data', archivo_nombre)
 
     # Diccionario Completo
     mapa_columnas = {
@@ -97,11 +100,12 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante):
                 except ValueError:
                     pass
 
-            # Solo forzamos a nulo si el dispositivo NO grabó (gap real)
-            # Si hay datos ruidosos (motion/low_signal), los preservamos para que el investigador vea la señal
-            if str(calidad).startswith('device_not_recording'):
+            # Módulo de Fiabilidad: forzamos a nulo si hay error de señal (gap, motion, low_signal, mal puesto)
+            # para no ensuciar el análisis estadístico. 
+            # Preservamos la fila y la etiqueta (calidad) para auditoría en el Dashboard.
+            if str(calidad).startswith('device_not_recording') or 'device_not_worn_correctly' in str(calidad) or 'worn_during_motion' in str(calidad) or 'low_signal_quality' in str(calidad):
                 valor_num = None
-            # Si no es un gap, valor_num ya tiene el valor (mapeado o crudo) calculado arriba
+            # Si la señal es buena, valor_num mantiene el valor mapeado o crudo
             
             datos_finales.append((tiempo, participante, tipo_sensor, valor_num, calidad))
 

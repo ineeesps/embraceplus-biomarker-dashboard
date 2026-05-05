@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/api_service.dart';
 import 'participant_selection_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -15,24 +16,29 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   String? _errorMessage;
 
-  static const Color primaryBlue = Color(0xFF1E293B);
-  static const Color accentTeal = Color(0xFF0F766E);
-  static const Color bgColor = Color(0xFFF1F5F9);
+  static const Color primaryBlue = Color(0xFF1E293B); // Navy Blue
+  static const Color accentTeal = Color(0xFF0F766E); // Dark Teal
+  static const Color bgLight = Color(0xFFF1F5F9);
 
-  void _login() {
+  Future<void> _login() async {
     setState(() {
       _errorMessage = null;
     });
     
-    // Hardcoded logic for realistic demo
-    if (_userController.text == 'admin' && _passwordController.text == '1234') {
+    final api = ApiService();
+    try {
+      final assignedParticipants = await api.login(_userController.text, _passwordController.text);
+      if (!mounted) return;
+      
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const ParticipantSelectionScreen()),
+        MaterialPageRoute(
+          builder: (context) => ParticipantSelectionScreen(assignedParticipants: assignedParticipants),
+        ),
       );
-    } else {
+    } catch (e) {
       setState(() {
-        _errorMessage = 'Credenciales incorrectas. Intente de nuevo.';
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     }
   }
@@ -47,226 +53,218 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
-      body: Row(
-        children: [
-          // Left side - Abstract Graphic/Branding
-          Expanded(
-            flex: 1,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [primaryBlue, Color(0xFF0F172A)],
-                ),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.analytics_outlined, size: 100, color: accentTeal),
-                    const SizedBox(height: 24),
-                    Text(
-                      'EmbracePlus',
-                      style: GoogleFonts.inter(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    Text(
-                      'CLINICAL RESEARCH PLATFORM',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: accentTeal,
-                        letterSpacing: 4,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+      resizeToAvoidBottomInset: true,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFE2E8F0),
+              Color(0xFFF8FAFC),
+              Color(0xFFCBD5E1),
+            ],
           ),
-          
-          // Right side - Login Form
-          Expanded(
-            flex: 1,
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: Container(
-                  padding: const EdgeInsets.all(40),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460), // Un poco más ancha para portátil
+                    child: Container(
+                      // Tarjeta con más presencia
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 35,
+                            offset: const Offset(0, 18),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Iniciar Sesión',
-                        style: GoogleFonts.inter(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: primaryBlue,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Acceso exclusivo para investigadores',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      
-                      // User Field
-                      TextField(
-                        controller: _userController,
-                        style: GoogleFonts.inter(color: primaryBlue),
-                        decoration: InputDecoration(
-                          labelText: 'Identificador de Usuario',
-                          labelStyle: GoogleFonts.inter(color: Colors.grey.shade600),
-                          prefixIcon: const Icon(Icons.badge_outlined, color: primaryBlue),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: accentTeal, width: 2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      
-                      // Password Field
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: GoogleFonts.inter(color: primaryBlue),
-                        onSubmitted: (_) => _login(),
-                        decoration: InputDecoration(
-                          labelText: 'Contraseña',
-                          labelStyle: GoogleFonts.inter(color: Colors.grey.shade600),
-                          prefixIcon: const Icon(Icons.lock_outline, color: primaryBlue),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                              color: Colors.grey.shade600,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: accentTeal, width: 2),
-                          ),
-                        ),
-                      ),
-                      
-                      // Error message
-                      if (_errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(
-                            _errorMessage!,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Icon(Icons.analytics_outlined, size: 54, color: primaryBlue),
+                          const SizedBox(height: 12),
+                          Text(
+                            'EmbracePlus',
                             style: GoogleFonts.inter(
-                              color: const Color(0xFFEF4444), // Red for error
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: primaryBlue,
+                              letterSpacing: 0.5,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                        ),
-                        
-                      const SizedBox(height: 32),
-                      
-                      // Login Button
-                      ElevatedButton(
-                        onPressed: _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accentTeal,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                          Text(
+                            'CLINICAL RESEARCH PLATFORM',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: accentTeal,
+                              letterSpacing: 2.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'ACCEDER',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
+                          const SizedBox(height: 32),
+                          
+                          Text(
+                            'Iniciar Sesión',
+                            style: GoogleFonts.inter(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: primaryBlue,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Security/GDPR Footer
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(Icons.shield_outlined, size: 16, color: Colors.grey.shade600),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Entorno seguro. Acceso restringido a personal investigador autorizado. El sistema cumple estrictamente con normativas de anonimización de datos (RGPD).',
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  color: Colors.grey.shade600,
-                                  height: 1.4,
-                                ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Acceso exclusivo para investigadores',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: Colors.grey.shade500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+                          
+                          TextField(
+                            controller: _userController,
+                            style: GoogleFonts.inter(color: primaryBlue, fontSize: 14, fontWeight: FontWeight.w500),
+                            decoration: InputDecoration(
+                              labelText: 'Usuario',
+                              labelStyle: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 13),
+                              prefixIcon: const Icon(Icons.badge_outlined, color: primaryBlue, size: 20),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: Colors.grey.shade200),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: Colors.grey.shade200),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: primaryBlue, width: 2), // Cambio a Navy Blue
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          TextField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            style: GoogleFonts.inter(color: primaryBlue, fontSize: 14, fontWeight: FontWeight.w500),
+                            onSubmitted: (_) => _login(),
+                            decoration: InputDecoration(
+                              labelText: 'Contraseña',
+                              labelStyle: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 13),
+                              prefixIcon: const Icon(Icons.lock_outline, color: primaryBlue, size: 20),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                  color: Colors.grey.shade400,
+                                  size: 18,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: Colors.grey.shade200),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: Colors.grey.shade200),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: primaryBlue, width: 2), // Cambio a Navy Blue
+                              ),
+                            ),
+                          ),
+                          
+                          if (_errorMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 14),
+                              child: Text(
+                                _errorMessage!,
+                                style: GoogleFonts.inter(color: Colors.red.shade700, fontSize: 12, fontWeight: FontWeight.w600),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            
+                          const SizedBox(height: 32),
+                          
+                          ElevatedButton(
+                            onPressed: _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryBlue, // Botón también a Navy Blue para cohesión
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              'ACCEDER AL SISTEMA',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: bgLight,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.shield_outlined, size: 16, color: primaryBlue.withOpacity(0.6)),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Entorno seguro y anonimizado (RGPD).',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10.5,
+                                      color: Colors.grey.shade600,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
     );
   }

@@ -7,6 +7,28 @@ class ApiService {
 
   ApiService({this.baseUrl = 'http://localhost:8000'});
 
+  Future<List<String>> login(String username, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'username': username,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return List<String>.from(data['participantes_asignados']);
+      } else {
+        throw Exception('Credenciales incorrectas');
+      }
+    } catch (e) {
+      throw Exception('Error al conectar con el servidor');
+    }
+  }
+
   Future<List<Biomarker>> getMetrics(String participantId, {String? startTime, String? endTime}) async {
     try {
       String url = '$baseUrl/participante/$participantId/metricas';

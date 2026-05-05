@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from pydantic import BaseModel
 import pandas as pd
 import io
 import os
@@ -40,6 +41,33 @@ PATRONES_SENSORES = {
     'actigraphy-counts': 'actigraphy_vector', 'body-position': 'body_position',
     'acticounts': 'acticounts_total', 'sleep-detection': 'sleep_detection'
 }
+
+# Modelos y mapeo de acceso para el TFG
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+INVESTIGADORES = {
+    "alberto": {
+        "password": "123",
+        "participantes": ["PRUEBA 1", "PRUEBA 2"]
+    },
+    "ines": {
+        "password": "123",
+        "participantes": [f"user{i}" for i in range(1, 21)]
+    }
+}
+
+@app.post("/login")
+async def login(req: LoginRequest):
+    user = req.username.lower()
+    if user in INVESTIGADORES and INVESTIGADORES[user]["password"] == req.password:
+        return {
+            "status": "success",
+            "username": user,
+            "participantes_asignados": INVESTIGADORES[user]["participantes"]
+        }
+    raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
 @app.get("/")
 async def root():
@@ -130,7 +158,7 @@ async def cargar_archivo_automatico(id: str, file: UploadFile = File(...)):
 # EL "CONTRATO" DE DATOS (JSON)
 # ==========================================
 @app.get("/participante/{id}/metricas")
-async def consultar_datos(id: str, start: str = None, end: str = None):
+async def consultar_datos(id: str, start: str = None, end: str = None, bucket_size: str = '30 seconds'):
     """
     Retorna datos resampleados para visualización con filtrado temporal opcional.
     """
@@ -140,7 +168,7 @@ async def consultar_datos(id: str, start: str = None, end: str = None):
         
         query = """
             SELECT 
-                time_bucket('30 seconds', time) AS bucket,
+                time_bucket(CAST(%s AS INTERVAL), time) AS bucket,
                 sensor_type,
                 AVG(value) as value,
                 CASE 
@@ -152,7 +180,7 @@ async def consultar_datos(id: str, start: str = None, end: str = None):
             FROM biomarcadores
             WHERE participant_id = %s
         """
-        params = [id]
+        params = [bucket_size, id]
         if start:
             query += " AND time >= %s"
             params.append(start)
