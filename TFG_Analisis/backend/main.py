@@ -60,7 +60,7 @@ INVESTIGADORES = {
 
 @app.post("/login")
 async def login(req: LoginRequest):
-    user = req.username.lower()
+    user = req.username
     if user in INVESTIGADORES and INVESTIGADORES[user]["password"] == req.password:
         return {
             "status": "success",
