@@ -55,6 +55,20 @@ class SleepAdapter(SensorAdapter):
                 pass
         return None
 
+class BodyPositionAdapter(SensorAdapter):
+    def __init__(self):
+        self.category_map = {'sitting_reclining_lying': 0, 'standing': 1, 'left': 2, 'right': 3, 'prone': 4, 'supine': 5, 'miscellaneous': 6}
+
+    def map_row(self, row, dataframe):
+        # El hardware es ambidiestro, leemos ambas columnas posibles
+        valor_raw = getattr(row, 'body_position_left', None) if 'body_position_left' in dataframe.columns else None
+        if pd.isnull(valor_raw):
+            valor_raw = getattr(row, 'body_position_right', None) if 'body_position_right' in dataframe.columns else None
+            
+        if isinstance(valor_raw, str) and valor_raw.lower() in self.category_map:
+            return self.category_map[valor_raw.lower()]
+        return None
+
 class AdapterFactory:
     @staticmethod
     def get_adapter(tipo_sensor):
@@ -65,7 +79,7 @@ class AdapterFactory:
         elif tipo_sensor == 'activity_class':
             return CategoricalAdapter('activity_class', {'still': 0, 'walking': 1, 'running': 2, 'generic': 3})
         elif tipo_sensor == 'body_position':
-            return CategoricalAdapter('body_position_left', {'sitting_reclining_lying': 0, 'standing': 1, 'left': 2, 'right': 3, 'prone': 4, 'supine': 5, 'miscellaneous': 6})
+            return BodyPositionAdapter()
         elif tipo_sensor == 'activity_intensity':
             return CategoricalAdapter('activity_intensity', {'sedentary': 0, 'lpa': 1, 'mpa': 2, 'vpa': 3, 'mda': 2})
         else:
@@ -141,12 +155,16 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante):
             # Uso del Patrón Adapter
             valor_num = adapter.map_row(r, df)
             
-            # Auditoría de Calidad
+            # Auditoría de Calidad (Captura garantizada del missing_value_reason)
             calidad_base = getattr(r, 'quality_flag', 'good') if hasattr(r, 'quality_flag') else 'good'
             missing_reason = getattr(r, 'missing_value_reason', None)
             
-            # Identificamos el valor crudo en caso de ser cualitativo para guardarlo en el flag
-            valor_crudo_posible = getattr(r, 'activity_class', getattr(r, 'body_position_left', getattr(r, 'activity_intensity', None)))
+            # Identificamos el valor crudo cualitativo de forma dinámica y ambidiestra
+            valor_crudo_posible = getattr(r, 'activity_class', None)
+            if pd.isnull(valor_crudo_posible): valor_crudo_posible = getattr(r, 'activity_intensity', None)
+            if pd.isnull(valor_crudo_posible): valor_crudo_posible = getattr(r, 'body_position_left', None)
+            if pd.isnull(valor_crudo_posible): valor_crudo_posible = getattr(r, 'body_position_right', None)
+            if pd.isnull(valor_crudo_posible): valor_crudo_posible = getattr(r, 'sleep_detection_stage', None)
             
             calidad_final = _parse_hardware_state(calidad_base, missing_reason, valor_original=valor_crudo_posible if isinstance(valor_crudo_posible, str) else None)
 
