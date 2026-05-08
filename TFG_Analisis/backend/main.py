@@ -7,8 +7,7 @@ import io
 import os
 import sys
 
-# PARA QUE ENCUENTRE CARPETA SCRIPTS
-# Le decimos a Python que suba una carpeta (..) y entre en 'scripts'
+# Configurar path para módulos locales
 dir_actual = os.path.dirname(os.path.abspath(__file__))
 ruta_scripts = os.path.join(dir_actual, '..', 'scripts')
 sys.path.append(ruta_scripts)
@@ -21,8 +20,7 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Configuración de la base de datos: 
-# Usa 'DB_HOST' si estamos en Docker, si no, usa 'localhost' (para pruebas locales)
+# Configuración de base de datos (Docker o Local)
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
     "database": "tfg_embrace",
@@ -88,8 +86,7 @@ async def health():
 @app.post("/participante/{id}/cargar")
 async def cargar_archivo_automatico(id: str, file: UploadFile = File(...)):
     """
-    Paso A: Llama a cargar_datos.py para insertar en DB.
-    Paso B: Valida la fila 752.
+    Recibe el CSV, valida su longitud mínima y delega la inyección a TimescaleDB al motor ETL.
     """
     nombre_archivo = file.filename.lower()
     sensor_detectado = None
@@ -108,12 +105,11 @@ async def cargar_archivo_automatico(id: str, file: UploadFile = File(...)):
         contenido = await file.read()
         df = pd.read_csv(io.BytesIO(contenido), low_memory=False)
         
-        # PASO B: VALIDACIÓN EN TIEMPO REAL 
+        # Validación de integridad mínima del CSV (evitar archivos vacíos o incompletos)
         if len(df) <= 751:
             raise HTTPException(status_code=400, detail="Fichero vacío o corrupto: sin datos tras fila 752")
 
-        # PASO A: EJECUCIÓN DEL ORQUESTADOR
-        # 1. Guardamos el archivo temporalmente en la carpeta "data" para que tu script lo encuentre
+        # Almacenamiento temporal para el procesado del motor ETL
         dir_actual = os.path.dirname(os.path.abspath(__file__))
         ruta_data = os.path.join(dir_actual, '..', 'data')
         os.makedirs(ruta_data, exist_ok=True) 
@@ -122,10 +118,10 @@ async def cargar_archivo_automatico(id: str, file: UploadFile = File(...)):
         with open(ruta_temp, "wb") as f:
             f.write(contenido)
         
-        # 2. LLAMAMOS A MI CÓDIGO ORIGINAL. Esto es lo que inserta de verdad en TimescaleDB
+        # Ejecución del adaptador ETL e inserción en base de datos
         cargar_csv_a_timescale(file.filename, sensor_detectado, id)
         
-        # 3. Borramos el archivo temporal para no ensuciar el ordenador
+        # Limpieza del archivo temporal
         if os.path.exists(ruta_temp):
             os.remove(ruta_temp)
 
@@ -155,7 +151,7 @@ async def cargar_archivo_automatico(id: str, file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 # ==========================================
-# EL "CONTRATO" DE DATOS (JSON)
+# ENDPOINTS DE LECTURA Y EXPORTACIÓN
 # ==========================================
 @app.get("/participante/{id}/metricas")
 async def consultar_datos(id: str, start: str = None, end: str = None, bucket_size: str = '30 seconds'):
