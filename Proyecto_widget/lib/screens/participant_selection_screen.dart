@@ -29,7 +29,7 @@ class ParticipantData {
     );
   }
 }
-}
+
 class ParticipantSelectionScreen extends StatefulWidget {
   final String username;
   final List<String> assignedParticipants;
