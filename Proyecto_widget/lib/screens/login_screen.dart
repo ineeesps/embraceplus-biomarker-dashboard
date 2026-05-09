@@ -74,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 460), // Un poco más ancha para portátil
+                    constraints: const BoxConstraints(maxWidth: 460),
                     child: Container(
                       // Tarjeta con más presencia
                       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: primaryBlue, width: 2), // Cambio a Navy Blue
+                                borderSide: const BorderSide(color: primaryBlue, width: 2),
                               ),
                             ),
                           ),
@@ -193,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: primaryBlue, width: 2), // Cambio a Navy Blue
+                                borderSide: const BorderSide(color: primaryBlue, width: 2),
                               ),
                             ),
                           ),
@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ElevatedButton(
                             onPressed: _login,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryBlue, // Botón también a Navy Blue para cohesión
+                              backgroundColor: primaryBlue,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 18),
                               shape: RoundedRectangleBorder(
