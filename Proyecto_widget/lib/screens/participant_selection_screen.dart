@@ -3,42 +3,37 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
 
-// --- MOCK DATA CLASS ---
-class ParticipantMockData {
+class ParticipantData {
   final String id;
   final double compliance;
   final String status; 
   final String dateRange;
   final int totalHours;
 
-  ParticipantMockData(this.id)
-      : compliance = _generateCompliance(id),
-        status = _generateStatus(_generateCompliance(id)),
-        dateRange = '12 Ene 2026 - 19 Ene 2026',
-        totalHours = _generateHours(id);
+  ParticipantData({
+    required this.id,
+    required this.compliance,
+    required this.status,
+    required this.dateRange,
+    required this.totalHours,
+  });
 
-  static double _generateCompliance(String id) {
-    int hash = id.hashCode.abs();
-    if (hash % 10 < 2) return 65.0 + (hash % 15); 
-    if (hash % 10 < 5) return 80.0 + (hash % 10); 
-    return 92.0 + (hash % 8); 
-  }
-
-  static String _generateStatus(double comp) {
-    if (comp >= 90) return 'ÓPTIMO';
-    if (comp >= 80) return 'REVISIÓN';
-    return 'CRÍTICO';
-  }
-
-  static int _generateHours(String id) {
-    return 120 + (id.hashCode.abs() % 48);
+  factory ParticipantData.fromJson(Map<String, dynamic> json) {
+    return ParticipantData(
+      id: json['id'],
+      compliance: (json['compliance'] as num).toDouble(),
+      status: json['status'],
+      dateRange: json['dateRange'],
+      totalHours: json['totalHours'],
+    );
   }
 }
 // ----------------------
 
 class ParticipantSelectionScreen extends StatefulWidget {
+  final String username;
   final List<String> assignedParticipants;
-  const ParticipantSelectionScreen({super.key, required this.assignedParticipants});
+  const ParticipantSelectionScreen({super.key, required this.username, required this.assignedParticipants});
 
   @override
   State<ParticipantSelectionScreen> createState() => _ParticipantSelectionScreenState();
@@ -48,8 +43,10 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isGridView = true;
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  late List<ParticipantMockData> _mockData;
+  List<ParticipantData> _realData = [];
 
   // Colors
   static const Color primaryBlue = Color(0xFF0F172A);
@@ -58,7 +55,27 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
   @override
   void initState() {
     super.initState();
-    _mockData = widget.assignedParticipants.map((id) => ParticipantMockData(id)).toList();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final api = ApiService();
+      final data = await api.getParticipantsSummary(widget.username);
+      if (mounted) {
+        setState(() {
+          _realData = data.map((json) => ParticipantData.fromJson(json)).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -85,18 +102,18 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
   }
 
   // --- FILTRADO ---
-  List<ParticipantMockData> get _filteredParticipants {
-    if (_searchQuery.isEmpty) return _mockData;
-    return _mockData
+  List<ParticipantData> get _filteredParticipants {
+    if (_searchQuery.isEmpty) return _realData;
+    return _realData
         .where((p) => p.id.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    int totalAlerts = _mockData.where((p) => p.compliance < 80).length;
-    double avgCompliance = _mockData.isEmpty ? 0 : 
-        _mockData.fold(0.0, (sum, p) => sum + p.compliance) / _mockData.length;
+    int totalAlerts = _realData.where((p) => p.compliance < 80).length;
+    double avgCompliance = _realData.isEmpty ? 0 : 
+        _realData.fold(0.0, (sum, p) => sum + p.compliance) / _realData.length;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -137,7 +154,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
         actions: [
           Center(
             child: Text(
-              'Investigador Activo',
+              'Investigador Activo: ${widget.username}',
               style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 13),
             ),
           ),
@@ -156,13 +173,17 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
       ),
       body: Padding(
         padding: const EdgeInsets.all(32.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: primaryBlue))
+            : _errorMessage != null
+                ? Center(child: Text('Error: $_errorMessage', style: GoogleFonts.inter(color: Colors.red)))
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
             // 1. KPIs
             Row(
               children: [
-                Expanded(child: _buildKPICard('Total Participantes', '${_mockData.length}', Icons.people_outline, Colors.blue)),
+                Expanded(child: _buildKPICard('Total Participantes', '${_realData.length}', Icons.people_outline, Colors.blue)),
                 const SizedBox(width: 24),
                 Expanded(child: _buildKPICard('Cumplimiento Medio', '${avgCompliance.toStringAsFixed(1)}%', Icons.check_circle_outline, Colors.green)),
                 const SizedBox(width: 24),
@@ -233,8 +254,8 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                       ? _buildGridView()
                       : _buildTableView(),
             ),
-          ],
-        ),
+                  ],
+                ),
       ),
     );
   }

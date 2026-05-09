@@ -33,7 +33,10 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => ParticipantSelectionScreen(assignedParticipants: assignedParticipants),
+          builder: (context) => ParticipantSelectionScreen(
+            username: _userController.text,
+            assignedParticipants: assignedParticipants,
+          ),
         ),
       );
     } catch (e) {

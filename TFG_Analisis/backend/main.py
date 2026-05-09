@@ -81,6 +81,94 @@ async def health():
         return {"status": "error", "db": "disconnected"}
 
 # ==========================================
+# ENDPOINT DE RESUMEN CLÍNICO (FRONTEND)
+# ==========================================
+@app.get("/investigador/{username}/resumen_pacientes")
+async def resumen_pacientes(username: str):
+    """
+    Calcula en tiempo real las estadísticas vitales de todos los pacientes 
+    de un investigador para poblar la Pantalla de Selección (Dashboard Inicial).
+    """
+    if username not in INVESTIGADORES:
+        raise HTTPException(status_code=404, detail="Investigador no autorizado")
+        
+    participantes = INVESTIGADORES[username]["participantes"]
+    if not participantes:
+        return {"investigador": username, "pacientes": []}
+        
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        format_strings = ','.join(['%s'] * len(participantes))
+        query = f"""
+            SELECT 
+                participant_id as id,
+                MIN(time) as start_date,
+                MAX(time) as end_date,
+                SUM(CASE WHEN quality_flag NOT LIKE 'device_not%%' THEN 1 ELSE 0 END)::float / GREATEST(COUNT(*), 1) * 100 as compliance
+            FROM biomarcadores
+            WHERE participant_id IN ({format_strings})
+            GROUP BY participant_id
+        """
+        
+        cur.execute(query, tuple(participantes))
+        res = cur.fetchall()
+        
+        pacientes_data = []
+        meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+        
+        for row in res:
+            start = row['start_date']
+            end = row['end_date']
+            
+            total_hours = 0
+            if start and end:
+                diff = end - start
+                total_hours = int(diff.total_seconds() / 3600)
+            
+            comp = row['compliance'] or 0.0
+            if comp >= 90:
+                status = 'ÓPTIMO'
+            elif comp >= 80:
+                status = 'REVISIÓN'
+            else:
+                status = 'CRÍTICO'
+                
+            fecha_str = "Sin datos"
+            if start and end:
+                fecha_str = f"{start.day} {meses[start.month - 1]} {start.year} - {end.day} {meses[end.month - 1]} {end.year}"
+                
+            pacientes_data.append({
+                "id": row['id'],
+                "compliance": round(comp, 2),
+                "status": status,
+                "dateRange": fecha_str,
+                "totalHours": max(total_hours, 1) # Si grabaron algo, al menos 1 hora para no poner 0
+            })
+            
+        cur.close()
+        conn.close()
+        
+        # Añadir pacientes asignados que aún no han volcado datos a la base de datos
+        ids_con_datos = {p["id"] for p in pacientes_data}
+        for p_id in participantes:
+            if p_id not in ids_con_datos:
+                pacientes_data.append({
+                    "id": p_id,
+                    "compliance": 0.0,
+                    "status": "CRÍTICO",
+                    "dateRange": "Sin registros",
+                    "totalHours": 0
+                })
+                
+        pacientes_data.sort(key=lambda x: x["id"])
+        return {"investigador": username, "pacientes": pacientes_data}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==========================================
 # ENDPOINT DE INGESTA REAL
 # ==========================================
 @app.post("/participante/{id}/cargar")

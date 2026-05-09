@@ -29,6 +29,20 @@ class ApiService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getParticipantsSummary(String username) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/investigador/$username/resumen_pacientes'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return List<Map<String, dynamic>>.from(data['pacientes']);
+      } else {
+        throw Exception('Error al cargar el resumen de pacientes');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
   Future<List<Biomarker>> getMetrics(String participantId, {String? startTime, String? endTime}) async {
     try {
       String url = '$baseUrl/participante/$participantId/metricas';
