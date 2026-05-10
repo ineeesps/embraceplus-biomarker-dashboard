@@ -178,6 +178,23 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, file: Upl
     """
     if investigador and investigador in INVESTIGADORES:
         if id not in INVESTIGADORES[investigador]["participantes"]:
+            # Seguridad de Datos: Evitar colisión de IDs entre diferentes investigadores
+            # Comprobamos en base de datos si el participante ya existe (registrado previamente o por otro usuario)
+            try:
+                conn = psycopg2.connect(**DB_CONFIG)
+                cur = conn.cursor()
+                cur.execute("SELECT 1 FROM biomarcadores WHERE participant_id = %s LIMIT 1", (id,))
+                if cur.fetchone() is not None:
+                    raise HTTPException(
+                        status_code=409, 
+                        detail=f"Error de Seguridad: El identificador '{id}' ya está siendo usado por otro paciente en el sistema."
+                    )
+            except psycopg2.Error:
+                pass  # Si hay error temporal de BD, delegamos la responsabilidad a TimescaleDB más adelante
+            finally:
+                if 'conn' in locals() and conn:
+                    conn.close()
+
             INVESTIGADORES[investigador]["participantes"].append(id)
 
     nombre_archivo = file.filename.lower()
