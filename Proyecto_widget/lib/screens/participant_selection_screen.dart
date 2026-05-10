@@ -607,31 +607,31 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
               const SizedBox(height: 4),
               _buildDataRow(Icons.data_usage, 'Calidad: ${data.compliance.toStringAsFixed(1)}%'),
               const Spacer(),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
+              Container(
+                padding: const EdgeInsets.only(top: 8),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: Colors.grey.shade100)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.analytics_outlined, color: Color(0xFF0F766E), size: 22),
                       onPressed: () => _navigateToDashboard(data.id),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF0F766E),
-                        side: const BorderSide(color: Color(0xFF0F766E)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: Text('DASHBOARD', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold)),
+                      tooltip: 'Ver Dashboard',
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.blueGrey),
-                    onPressed: () => _showEditOptions(data.id),
-                    tooltip: 'Editar',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
-                    onPressed: () => _deleteParticipant(data.id),
-                    tooltip: 'Eliminar',
-                  ),
-                ],
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey, size: 22),
+                      onPressed: () => _showEditOptions(data.id),
+                      tooltip: 'Editar/Subir',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
+                      onPressed: () => _deleteParticipant(data.id),
+                      tooltip: 'Eliminar',
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

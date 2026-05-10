@@ -31,12 +31,12 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getParticipantsSummary(String username) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/investigador/$username/resumen_pacientes'));
+      final response = await http.get(Uri.parse('$baseUrl/investigador/$username/resumen_participantes'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return List<Map<String, dynamic>>.from(data['pacientes']);
+        return List<Map<String, dynamic>>.from(data['participantes']);
       } else {
-        throw Exception('Error al cargar el resumen de pacientes');
+        throw Exception('Error al cargar el resumen de participantes');
       }
     } catch (e) {
       throw Exception('Error de conexión: $e');

@@ -24,7 +24,11 @@ services:
     depends_on:
       - db
     environment:
-      - DB_HOST=db  
+      - DB_HOST=db
+      - DB_NAME=tfg_embrace
+      - DB_USER=ines
+      - DB_PASSWORD=tfg_password
+      - DB_PORT=5432
     volumes:
       # Conectamos carpetas reales con el contenedor en tiempo real
       - ./backend:/app/backend

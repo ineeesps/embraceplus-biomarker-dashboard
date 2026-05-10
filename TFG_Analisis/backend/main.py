@@ -20,10 +20,10 @@ app = FastAPI(
 
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
-    "database": "tfg_embrace",
-    "user": "ines",
-    "password": "tfg_password",
-    "port": "5432"
+    "database": os.getenv("DB_NAME", "tfg_embrace"),
+    "user": os.getenv("DB_USER", "ines"),
+    "password": os.getenv("DB_PASSWORD", "tfg_password"),
+    "port": os.getenv("DB_PORT", "5432")
 }
 
 PATRONES_SENSORES = {
@@ -75,10 +75,10 @@ async def health():
     except:
         return {"status": "error", "db": "disconnected"}
 
-@app.get("/investigador/{username}/resumen_pacientes")
-async def resumen_pacientes(username: str):
+@app.get("/investigador/{username}/resumen_participantes")
+async def resumen_participantes(username: str):
     """
-    Calcula las estadísticas vitales de los pacientes de un investigador.
+    Calcula las estadísticas vitales de los participantes de un investigador.
     """
     if username not in INVESTIGADORES:
         raise HTTPException(status_code=404, detail="Investigador no autorizado")
@@ -101,7 +101,7 @@ async def resumen_pacientes(username: str):
         cur.execute(query, (username,))
         res = cur.fetchall()
         
-        pacientes_data = []
+        participantes_data = []
         meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
         
         for row in res:
@@ -109,42 +109,40 @@ async def resumen_pacientes(username: str):
             end = row['end_date']
             
             total_hours = 0
+            fecha_str = "Sin datos"
             if start and end:
                 diff = end - start
                 total_hours = int(diff.total_seconds() / 3600)
+                fecha_str = f"{start.day} {meses[start.month - 1]} - {end.day} {meses[end.month - 1]}"
             
             comp = row['compliance'] or 0.0
-            status = 'ÓPTIMO' if comp >= 90 else ('REVISIÓN' if comp >= 80 else 'CRÍTICO')
+            status = 'ÓPTIMO' if comp >= 90 else ('REVISIÓN' if comp >= 70 else 'CRÍTICO')
                 
-            fecha_str = "Sin datos"
-            if start and end:
-                fecha_str = f"{start.day} {meses[start.month - 1]} {start.year} - {end.day} {meses[end.month - 1]} {end.year}"
-                
-            pacientes_data.append({
+            participantes_data.append({
                 "id": row['id'],
                 "compliance": round(comp, 2),
                 "status": status,
                 "dateRange": fecha_str,
                 "totalHours": max(total_hours, 1)
             })
-            
-        cur.close()
-        conn.close()
-        
-        # Pacientes sin datos
-        ids_con_datos = {p["id"] for p in pacientes_data}
+
+        # Participantes sin datos en BD pero asignados
+        ids_con_datos = {p["id"] for p in participantes_data}
         for p_id in INVESTIGADORES[username]["participantes"]:
             if p_id not in ids_con_datos:
-                pacientes_data.append({
+                participantes_data.append({
                     "id": p_id,
-                    "compliance": 0.0,
-                    "status": "CRÍTICO",
-                    "dateRange": "Sin registros",
+                    "compliance": 0,
+                    "status": "SIN DATOS",
+                    "dateRange": "N/A",
                     "totalHours": 0
                 })
-                
-        pacientes_data.sort(key=lambda x: x["id"])
-        return {"investigador": username, "pacientes": pacientes_data}
+        
+        participantes_data.sort(key=lambda x: x["id"])
+        
+        cur.close()
+        conn.close()
+        return {"investigador": username, "participantes": participantes_data}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -163,7 +161,7 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, file: Upl
                 if cur.fetchone() is not None:
                     raise HTTPException(
                         status_code=409, 
-                        detail=f"El identificador '{id}' ya está en uso por otro paciente."
+                        detail=f"El identificador '{id}' ya está en uso por otro participante."
                     )
             except psycopg2.Error:
                 pass
@@ -302,7 +300,7 @@ async def renombrar_participante(id: str, nuevo_id: str, investigador: str):
         # Comprobar si el nuevo ID ya existe para este investigador
         cur.execute("SELECT 1 FROM biomarcadores WHERE participant_id = %s AND investigador = %s LIMIT 1", (nuevo_id, investigador))
         if cur.fetchone() is not None:
-            raise HTTPException(status_code=409, detail=f"El ID '{nuevo_id}' ya está en uso.")
+            raise HTTPException(status_code=409, detail=f"El ID '{nuevo_id}' ya está en uso por otro participante.")
 
         # Actualizar base de datos
         cur.execute("""

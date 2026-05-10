@@ -32,7 +32,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Paciente: ${widget.participantId}'),
+        title: Text('Participante: ${widget.participantId}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.download_rounded),

@@ -123,7 +123,18 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigad
 
     try:
         db_host = os.getenv("DB_HOST", "localhost")
-        conn = psycopg2.connect(dbname="tfg_embrace", user="ines", password="tfg_password", host=db_host, port="5432")
+        db_name = os.getenv("DB_NAME", "tfg_embrace")
+        db_user = os.getenv("DB_USER", "ines")
+        db_pass = os.getenv("DB_PASSWORD", "tfg_password")
+        db_port = os.getenv("DB_PORT", "5432")
+
+        conn = psycopg2.connect(
+            dbname=db_name, 
+            user=db_user, 
+            password=db_pass, 
+            host=db_host, 
+            port=db_port
+        )
         cur = conn.cursor()
         
         df = pd.read_csv(ruta_entrada, low_memory=False)
