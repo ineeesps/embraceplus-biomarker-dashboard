@@ -43,10 +43,10 @@ class ApiService {
     }
   }
 
-  Future<List<Biomarker>> getMetrics(String participantId, {String? startTime, String? endTime}) async {
+  Future<List<Biomarker>> getMetrics(String participantId, String username, {String? startTime, String? endTime}) async {
     try {
       String url = '$baseUrl/participante/$participantId/metricas';
-      List<String> params = [];
+      List<String> params = ['investigador=$username'];
       if (startTime != null) params.add('start=$startTime');
       if (endTime != null) params.add('end=$endTime');
       

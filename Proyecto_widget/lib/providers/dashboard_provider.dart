@@ -21,10 +21,10 @@ class DashboardProvider with ChangeNotifier {
   TimeOfDay? get endHour => _endHour;
   DateTime? get sessionDate => _sessionDate;
 
-  void setTimeRange(TimeOfDay? start, TimeOfDay? end, String participantId) {
+  void setTimeRange(TimeOfDay? start, TimeOfDay? end, String participantId, String username) {
     _startHour = start;
     _endHour = end;
-    fetchMetrics(participantId);
+    fetchMetrics(participantId, username);
   }
 
   void setSelectedOverlaySensor(String? sensor) {
@@ -32,7 +32,7 @@ class DashboardProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchMetrics(String participantId) async {
+  Future<void> fetchMetrics(String participantId, String username) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -50,7 +50,7 @@ class DashboardProvider with ChangeNotifier {
         endStr = dateEnd.toIso8601String();
       }
 
-      _metrics = await _apiService.getMetrics(participantId, startTime: startStr, endTime: endStr);
+      _metrics = await _apiService.getMetrics(participantId, username, startTime: startStr, endTime: endStr);
       
       // Store the session date from the first payload if not set, or update if we removed the filter
       if (_metrics.isNotEmpty && _startHour == null && _endHour == null) {

@@ -9,7 +9,8 @@ import '../widgets/quality_legend.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String participantId;
-  const DashboardScreen({super.key, required this.participantId});
+  final String username;
+  const DashboardScreen({super.key, required this.participantId, required this.username});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -20,7 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DashboardProvider>().fetchMetrics(widget.participantId);
+      context.read<DashboardProvider>().fetchMetrics(widget.participantId, widget.username);
     });
   }
 
@@ -107,7 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               backgroundColor: colorScheme.primary,
               foregroundColor: colorScheme.surface,
             ),
-            onPressed: () => provider.setTimeRange(null, null, widget.participantId),
+            onPressed: () => provider.setTimeRange(null, null, widget.participantId, widget.username),
             label: const Text('Ver día completo', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
@@ -140,7 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: provider.startHour?.format(context) ?? 'Inicio',
             onTap: () async {
               final time = await showTimePicker(context: context, initialTime: provider.startHour ?? const TimeOfDay(hour: 0, minute: 0));
-              if (time != null) provider.setTimeRange(time, provider.endHour, widget.participantId);
+              if (time != null) provider.setTimeRange(time, provider.endHour, widget.participantId, widget.username);
             },
           ),
           const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('-', style: TextStyle(color: Colors.white24))),
@@ -148,13 +149,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: provider.endHour?.format(context) ?? 'Fin',
             onTap: () async {
               final time = await showTimePicker(context: context, initialTime: provider.endHour ?? const TimeOfDay(hour: 23, minute: 59));
-              if (time != null) provider.setTimeRange(provider.startHour, time, widget.participantId);
+              if (time != null) provider.setTimeRange(provider.startHour, time, widget.participantId, widget.username);
             },
           ),
           if (provider.startHour != null || provider.endHour != null)
             IconButton(
               icon: const Icon(Icons.close_rounded, size: 18, color: Colors.redAccent),
-              onPressed: () => provider.setTimeRange(null, null, widget.participantId),
+              onPressed: () => provider.setTimeRange(null, null, widget.participantId, widget.username),
             ),
         ],
       ),

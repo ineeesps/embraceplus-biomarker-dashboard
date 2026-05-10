@@ -92,27 +92,22 @@ async def resumen_pacientes(username: str):
     if username not in INVESTIGADORES:
         raise HTTPException(status_code=404, detail="Investigador no autorizado")
         
-    participantes = INVESTIGADORES[username]["participantes"]
-    if not participantes:
-        return {"investigador": username, "pacientes": []}
-        
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        format_strings = ','.join(['%s'] * len(participantes))
-        query = f"""
+        query = """
             SELECT 
                 participant_id as id,
                 MIN(time) as start_date,
                 MAX(time) as end_date,
                 SUM(CASE WHEN quality_flag NOT LIKE 'device_not%%' THEN 1 ELSE 0 END)::float / GREATEST(COUNT(*), 1) * 100 as compliance
             FROM biomarcadores
-            WHERE participant_id IN ({format_strings})
+            WHERE investigador = %s
             GROUP BY participant_id
         """
         
-        cur.execute(query, tuple(participantes))
+        cur.execute(query, (username,))
         res = cur.fetchall()
         
         pacientes_data = []
@@ -263,7 +258,7 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, file: Upl
 # ENDPOINTS DE LECTURA Y EXPORTACIÓN
 # ==========================================
 @app.get("/participante/{id}/metricas")
-async def consultar_datos(id: str, start: str = None, end: str = None, bucket_size: str = '30 seconds'):
+async def consultar_datos(id: str, investigador: str, start: str = None, end: str = None, bucket_size: str = '30 seconds'):
     """
     Retorna datos resampleados para visualización con filtrado temporal opcional.
     """
@@ -287,9 +282,9 @@ async def consultar_datos(id: str, start: str = None, end: str = None, bucket_si
                     ELSE 'good'
                 END as quality_flag
             FROM biomarcadores
-            WHERE participant_id = %s
+            WHERE participant_id = %s AND investigador = %s
         """
-        params = [bucket_size, id]
+        params = [bucket_size, id, investigador]
         if start:
             query += " AND time >= %s"
             params.append(start)

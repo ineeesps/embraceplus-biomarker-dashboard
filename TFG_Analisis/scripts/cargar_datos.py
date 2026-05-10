@@ -126,7 +126,7 @@ def _parse_hardware_state(calidad, missing_reason, valor_original=None):
 # ==========================================
 # MOTOR PRINCIPAL
 # ==========================================
-def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante):
+def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigador='ines'):
     if os.path.exists(archivo_nombre):
         ruta_entrada = archivo_nombre
     else:
@@ -178,13 +178,13 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante):
                 valor_num = None
                 invalid_rows += 1
             
-            datos_finales.append((tiempo, participante, tipo_sensor, valor_num, calidad_final))
+            datos_finales.append((tiempo, participante, tipo_sensor, valor_num, calidad_final, investigador))
 
         # Regla Clínica del 5% de Pérdida
         loss_percentage = (invalid_rows / total_rows * 100) if total_rows > 0 else 0
 
         if datos_finales:
-            sql = "INSERT INTO biomarcadores (time, participant_id, sensor_type, value, quality_flag) VALUES %s"
+            sql = "INSERT INTO biomarcadores (time, participant_id, sensor_type, value, quality_flag, investigador) VALUES %s"
             extras.execute_values(cur, sql, datos_finales, page_size=1000)
             conn.commit()
             

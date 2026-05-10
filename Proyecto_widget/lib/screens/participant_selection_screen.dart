@@ -91,7 +91,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DashboardScreen(participantId: id.trim()),
+        builder: (context) => DashboardScreen(participantId: id.trim(), username: widget.username),
       ),
     );
   }
@@ -123,7 +123,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                       controller: idController,
                       enabled: !isUploading,
                       decoration: InputDecoration(
-                        hintText: 'Ej: nuevo_paciente_01',
+                        hintText: 'Ej: nuevo_participante_01',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
@@ -373,9 +373,9 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                 ElevatedButton.icon(
                   onPressed: _showUploadModal,
                   icon: const Icon(Icons.upload_file, size: 18),
-                  label: Text('Subir Paciente', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                  label: Text('Subir Participante', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F766E), // Teal
+                    backgroundColor: const Color(0xFF0F766E), 
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
