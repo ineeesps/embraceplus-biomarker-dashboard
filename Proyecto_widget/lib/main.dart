@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'screens/login_screen.dart';
 import 'providers/dashboard_provider.dart';
 
 /// Punto de entrada principal de la aplicación EmbracePlus Dashboard.
 /// Configura el estado global mediante Provider y el tema visual clínico.
 void main() {
+  // Deshabilitar la búsqueda de fuentes en red para evitar errores sin conexión
+  GoogleFonts.config.allowRuntimeFetching = false;
+  
   runApp(
     MultiProvider(
       providers: [

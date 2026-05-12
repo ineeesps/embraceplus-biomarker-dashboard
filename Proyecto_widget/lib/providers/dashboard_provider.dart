@@ -3,13 +3,12 @@ import '../models/biomarker.dart';
 import '../services/api_service.dart';
 
 /// [DashboardProvider] gestiona el estado de la visualización de biomarcadores.
-/// Maneja la carga de datos, el filtrado por rango horario y la superposición de sensores.
+/// Maneja la carga de datos y el filtrado por rango horario.
 class DashboardProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
   List<Biomarker> _metrics = [];
   bool _isLoading = false;
   String? _error;
-  String? _selectedOverlaySensor;
 
   TimeOfDay? _startHour;
   TimeOfDay? _endHour;
@@ -18,7 +17,6 @@ class DashboardProvider with ChangeNotifier {
   List<Biomarker> get metrics => _metrics;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  String? get selectedOverlaySensor => _selectedOverlaySensor;
   TimeOfDay? get startHour => _startHour;
   TimeOfDay? get endHour => _endHour;
   DateTime? get sessionDate => _sessionDate;
@@ -27,11 +25,6 @@ class DashboardProvider with ChangeNotifier {
     _startHour = start;
     _endHour = end;
     fetchMetrics(participantId, username);
-  }
-
-  void setSelectedOverlaySensor(String? sensor) {
-    _selectedOverlaySensor = sensor;
-    notifyListeners();
   }
 
   Future<void> fetchMetrics(String participantId, String username) async {

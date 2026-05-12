@@ -32,19 +32,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Participante: ${widget.participantId}'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download_rounded),
-            tooltip: 'Exportar CSV',
-            onPressed: () => _exportData(context),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: 'Volver a pacientes',
+            onPressed: () => Navigator.pop(context),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Consumer<DashboardProvider>(
+          title: Text('Participante: ${widget.participantId}'),
+          bottom: TabBar(
+            indicatorColor: colorScheme.primary,
+            labelColor: colorScheme.primary,
+            unselectedLabelColor: Colors.white54,
+            tabs: const [
+              Tab(icon: Icon(Icons.monitor_heart_outlined), text: 'Monitorización Clínica'),
+              Tab(icon: Icon(Icons.science_outlined), text: 'Análisis y Exportación'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            // Pestaña 1: Monitorización Clínica
+            Consumer<DashboardProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
             return Center(child: CircularProgressIndicator(color: colorScheme.primary));
@@ -90,6 +101,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           );
         },
+      ),
+            // Pestaña 2: Análisis y Exportación (Placeholder)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.construction_rounded, size: 64, color: colorScheme.secondary.withValues(alpha: 0.5)),
+                  const SizedBox(height: 16),
+                  Text('Sección de Análisis en construcción', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white70)),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.download_rounded),
+                    label: const Text('Exportar Datos Crudos'),
+                    onPressed: () => _exportData(context),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -185,10 +216,6 @@ class BiomarkerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final overlaySensor = provider.selectedOverlaySensor;
-    final overlayData = (overlaySensor != null && overlaySensor != sensorType) 
-        ? provider.metricsBySensor[overlaySensor] 
-        : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 20),
@@ -208,18 +235,11 @@ class BiomarkerCard extends StatelessWidget {
                         _formatSensorTitle(sensorType),
                         style: theme.textTheme.titleLarge,
                       ),
-                      if (overlayData != null)
-                        Text(
-                          'VS ${_formatSensorTitle(overlaySensor!)}',
-                          style: TextStyle(color: colorScheme.secondary, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
                     ],
                   ),
                 ),
                 Row(
                   children: [
-                    _buildOverlayPicker(sensorType),
-                    const SizedBox(width: 8),
                     _buildStatusTag(data.first.qualityFlag),
                   ],
                 ),
@@ -230,8 +250,8 @@ class BiomarkerCard extends StatelessWidget {
             if (data.any((b) => b.value != null)) const SizedBox(height: 16),
             if (data.any((b) => b.value != null))
               SizedBox(
-                height: overlayData != null ? 300 : 250,
-                child: LineChart(_buildChartData(context, data, overlayData: overlayData)),
+                height: 250,
+                child: LineChart(_buildChartData(context, data)),
               )
             else 
                const SizedBox(
@@ -241,23 +261,6 @@ class BiomarkerCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildOverlayPicker(String currentSensor) {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.layers_rounded, color: Colors.white54, size: 20),
-      tooltip: 'Superponer otro sensor',
-      onSelected: (sensor) {
-        provider.setSelectedOverlaySensor(sensor == 'none' ? null : sensor);
-      },
-      itemBuilder: (context) => [
-        const PopupMenuItem(value: 'none', child: Text('Sin superposición')),
-        ...provider.metricsBySensor.keys.where((s) => s != currentSensor).map((s) => PopupMenuItem(
-          value: s,
-          child: Text('Comparar con ${_formatSensorTitle(s)}'),
-        )),
-      ],
     );
   }
 
@@ -314,7 +317,7 @@ class BiomarkerCard extends StatelessWidget {
     );
   }
 
-  LineChartData _buildChartData(BuildContext context, List<Biomarker> data, {List<Biomarker>? overlayData}) {
+  LineChartData _buildChartData(BuildContext context, List<Biomarker> data) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final displayData = data;
@@ -400,32 +403,6 @@ class BiomarkerCard extends StatelessWidget {
       }
     }
 
-    double scale = 1.0;
-    bool hasOverlay = overlayData != null && overlayData.isNotEmpty;
-
-    if (hasOverlay) {
-      final validMain = displayData.where((e) => e.value != null).map((e) => e.value!);
-      final validOverlay = overlayData.where((e) => e.value != null).map((e) => e.value!);
-      
-      double maxMain = validMain.isEmpty ? 100.0 : validMain.reduce((a, b) => a > b ? a : b);
-      double maxOverlay = validOverlay.isEmpty ? 1.0 : validOverlay.reduce((a, b) => a > b ? a : b);
-      
-      if (maxOverlay > 0) scale = maxMain / maxOverlay;
-
-      bars.add(LineChartBarData(
-        spots: overlayData.asMap().entries.where((e) => e.value.value != null)
-            .map((e) {
-              double xVal = e.value.time.toUtc().millisecondsSinceEpoch.toDouble();
-              return FlSpot(xVal, e.value.value! * scale);
-            }).toList(),
-        isCurved: true,
-        color: colorScheme.secondary.withValues(alpha: 0.5),
-        barWidth: 1.5,
-        dotData: const FlDotData(show: false),
-        dashArray: [4, 4],
-      ));
-    }
-
     final sensorType = displayData.first.sensorType;
     bool isCategorical = ['activity_class', 'body_position', 'activity_intensity', 'sleep_detection'].contains(sensorType);
     final allValues = displayData.where((e) => e.value != null).map((e) => e.value!);
@@ -473,23 +450,7 @@ class BiomarkerCard extends StatelessWidget {
       titlesData: FlTitlesData(
         show: true,
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: hasOverlay,
-            interval: yInterval,
-            reservedSize: 60,
-            getTitlesWidget: (v, meta) {
-              if (!hasOverlay) return const SizedBox();
-              double realVal = v / scale;
-              return SideTitleWidget(
-                axisSide: meta.axisSide,
-                space: 12,
-                child: Text(realVal >= 1000 ? '${(realVal/1000).toStringAsFixed(1)}k' : realVal.toStringAsFixed(1), 
-                style: TextStyle(color: colorScheme.secondary.withValues(alpha: 0.8), fontSize: 9, fontWeight: FontWeight.bold)),
-              );
-            }
-          ),
-        ),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
