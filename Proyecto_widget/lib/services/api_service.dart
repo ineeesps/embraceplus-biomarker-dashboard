@@ -13,11 +13,8 @@ class ApiService {
       response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'username': username,
-          'password': password,
-        }),
-      ).timeout(const Duration(seconds: 10));
+        body: json.encode({'username': username, 'password': password}),
+      ).timeout(const Duration(seconds: 5));
     } catch (e) {
       throw Exception('Error al conectar con el servidor. Verifica tu conexión.');
     }

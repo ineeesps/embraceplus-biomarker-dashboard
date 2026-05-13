@@ -4,8 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'screens/login_screen.dart';
 import 'providers/dashboard_provider.dart';
 
-/// Punto de entrada principal de la aplicación EmbracePlus Dashboard.
-/// Configura el estado global mediante Provider y el tema visual clínico.
 void main() {
   GoogleFonts.config.allowRuntimeFetching = true;
   
@@ -22,9 +20,9 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static const Color primaryBlue = Color(0xFF1E293B);
-  static const Color accentTeal = Color(0xFF0F766E);
-  static const Color bgLight = Color(0xFFF1F5F9);
+  static const Color kTextPrimary  = Color(0xFF0F172A);
+  static const Color kCyberBlue    = Color(0xFF0EA5E9);
+  static const Color kBgScreen     = Color(0xFFF8FAFC);
 
   @override
   Widget build(BuildContext context) {
@@ -35,25 +33,23 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryBlue,
-          primary: primaryBlue,
-          secondary: accentTeal,
+          seedColor: kTextPrimary,
+          primary: kTextPrimary,
+          secondary: kCyberBlue,
           surface: Colors.white,
-          onSurface: primaryBlue,
+          onSurface: kTextPrimary,
         ),
-        scaffoldBackgroundColor: bgLight,
-        
+        scaffoldBackgroundColor: kBgScreen,
         textSelectionTheme: TextSelectionThemeData(
-          cursorColor: primaryBlue,
-          selectionColor: primaryBlue.withOpacity(0.2),
-          selectionHandleColor: primaryBlue,
+          cursorColor: kTextPrimary,
+          selectionColor: kTextPrimary.withValues(alpha: 0.2),
+          selectionHandleColor: kTextPrimary,
         ),
-        
         inputDecorationTheme: InputDecorationTheme(
           labelStyle: const TextStyle(color: Colors.grey),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: primaryBlue, width: 2),
+            borderSide: const BorderSide(color: kTextPrimary, width: 2),
           ),
         ),
       ),

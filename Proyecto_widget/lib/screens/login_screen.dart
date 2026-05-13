@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../services/api_service.dart';
 import 'participant_selection_screen.dart';
 
@@ -17,34 +18,40 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   String? _errorMessage;
 
-  static const Color primaryBlue = Color(0xFF0F172A);
-  static const Color accentTeal = Color(0xFF0F766E);
-  static const Color bgLight = Color(0xFFF1F5F9);
-  static const Color nudeColor = Color(0xFF6B728E);
+  static const Color kTextPrimary    = Color(0xFF0F172A);
+  static const Color kCyberBlue      = Color(0xFF0EA5E9);
+  static const Color kBgScreen       = Color(0xFFF8FAFC);
+  static const Color kTextSecondary  = Color(0xFF64748B);
+  static const Color kBorderColor    = Color(0xFFE2E8F0);
 
   Future<void> _login() async {
-    setState(() {
-      _errorMessage = null;
-    });
-    
+    setState(() => _errorMessage = null);
+
     final api = ApiService();
+    final username = _userController.text.trim();
+    final password = _passwordController.text;
+
     try {
-      final assignedParticipants = await api.login(_userController.text, _passwordController.text);
+      final assignedParticipants = await api.login(username, password);
       if (!mounted) return;
-      
+
+      final summaryRaw = await api.getParticipantsSummary(username);
+      if (!mounted) return;
+
+      final preloaded = summaryRaw.map((j) => ParticipantData.fromJson(j)).toList();
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => ParticipantSelectionScreen(
-            username: _userController.text,
+            username: username,
             assignedParticipants: assignedParticipants,
+            preloadedData: preloaded,
           ),
         ),
       );
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
+      setState(() => _errorMessage = e.toString().replaceAll('Exception: ', ''));
     }
   }
 
@@ -85,11 +92,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: kBorderColor),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
-                            blurRadius: 35,
-                            offset: const Offset(0, 18),
+                            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -97,14 +105,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Icon(Icons.analytics_outlined, size: 54, color: primaryBlue),
+                          const Icon(LucideIcons.barChart2, size: 48, color: kTextPrimary),
                           const SizedBox(height: 12),
                           Text(
                             'EmbracePlus',
                             style: GoogleFonts.inter(
                               fontSize: 26,
                               fontWeight: FontWeight.w800,
-                              color: primaryBlue,
+                              color: kTextPrimary,
                               letterSpacing: 0.5,
                             ),
                             textAlign: TextAlign.center,
@@ -113,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             'CLINICAL RESEARCH PLATFORM',
                             style: GoogleFonts.inter(
                               fontSize: 10,
-                              color: accentTeal,
+                              color: kCyberBlue,
                               letterSpacing: 2.0,
                               fontWeight: FontWeight.bold,
                             ),
@@ -126,40 +134,37 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: primaryBlue,
+                              color: kTextPrimary,
                             ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Acceso exclusivo para investigadores',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.grey.shade500,
-                            ),
+                            style: GoogleFonts.inter(fontSize: 14, color: kTextSecondary),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 32),
                           
                           TextField(
                             controller: _userController,
-                            style: GoogleFonts.inter(color: primaryBlue, fontSize: 14, fontWeight: FontWeight.w500),
+                            style: GoogleFonts.inter(color: kTextPrimary, fontSize: 14, fontWeight: FontWeight.w500),
                             decoration: InputDecoration(
                               labelText: 'Usuario',
-                              labelStyle: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 13),
-                              prefixIcon: const Icon(Icons.badge_outlined, color: primaryBlue, size: 20),
+                              labelStyle: GoogleFonts.inter(color: kTextSecondary, fontSize: 13),
+                              prefixIcon: const Icon(LucideIcons.badge, color: kTextPrimary, size: 18),
                               contentPadding: const EdgeInsets.symmetric(vertical: 18),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
+                                borderSide: const BorderSide(color: kBorderColor),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
+                                borderSide: const BorderSide(color: kBorderColor),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: primaryBlue, width: 2),
+                                borderSide: const BorderSide(color: kTextPrimary, width: 2),
                               ),
                             ),
                           ),
@@ -168,36 +173,32 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
-                            style: GoogleFonts.inter(color: primaryBlue, fontSize: 14, fontWeight: FontWeight.w500),
+                            style: GoogleFonts.inter(color: kTextPrimary, fontSize: 14, fontWeight: FontWeight.w500),
                             onSubmitted: (_) => _login(),
                             decoration: InputDecoration(
                               labelText: 'Contraseña',
-                              labelStyle: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 13),
-                              prefixIcon: const Icon(Icons.lock_outline, color: primaryBlue, size: 20),
+                              labelStyle: GoogleFonts.inter(color: kTextSecondary, fontSize: 13),
+                              prefixIcon: const Icon(LucideIcons.lock, color: kTextPrimary, size: 18),
                               contentPadding: const EdgeInsets.symmetric(vertical: 18),
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                  color: Colors.grey.shade400,
+                                  _obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
+                                  color: kTextSecondary,
                                   size: 18,
                                 ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
+                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
+                                borderSide: const BorderSide(color: kBorderColor),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
+                                borderSide: const BorderSide(color: kBorderColor),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: primaryBlue, width: 2),
+                                borderSide: const BorderSide(color: kTextPrimary, width: 2),
                               ),
                             ),
                           ),
@@ -213,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.error_outline_rounded, color: Colors.red.shade700, size: 18),
+                                  Icon(LucideIcons.alertCircle, color: Colors.red.shade700, size: 16),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
@@ -234,20 +235,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           ElevatedButton(
                             onPressed: _login,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryBlue,
+                              backgroundColor: kTextPrimary,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 18),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               elevation: 0,
                             ),
                             child: Text(
                               'Acceder al sistema',
-                              style: GoogleFonts.inter(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold),
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -255,20 +251,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: bgLight,
+                              color: kBgScreen,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.grey.shade200),
+                              border: Border.all(color: kBorderColor),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.shield_outlined, size: 16, color: nudeColor),
+                                Icon(LucideIcons.shield, size: 15, color: kTextSecondary),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     'Entorno seguro y anonimizado (RGPD).',
                                     style: GoogleFonts.inter(
                                       fontSize: 10.5,
-                                      color: Colors.grey.shade600,
+                                      color: kTextSecondary,
                                       height: 1.3,
                                     ),
                                   ),

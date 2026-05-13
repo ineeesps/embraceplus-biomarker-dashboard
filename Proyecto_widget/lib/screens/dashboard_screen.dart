@@ -4,16 +4,18 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../providers/dashboard_provider.dart';
 import '../models/biomarker.dart';
 import '../widgets/quality_legend.dart';
 import '../widgets/sidebar_layout.dart';
 import 'login_screen.dart';
 
-const Color primaryBlue = Color(0xFF0F172A);
-const Color bgColor = Color(0xFFF1F5F9);
-const Color accentTeal = Color(0xFF0F766E);
-const Color nudeColor = Color(0xFF6B728E);
+const Color primaryBlue  = Color(0xFF0F172A);
+const Color bgColor      = Color(0xFFF8FAFC);
+const Color accentTeal   = Color(0xFF0EA5E9);
+const Color nudeColor    = Color(0xFF64748B);
+const Color kBorderColor = Color(0xFFE2E8F0);
 
 class DashboardScreen extends StatefulWidget {
   final String participantId;
@@ -78,7 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
+                const Icon(LucideIcons.alertCircle, color: Colors.redAccent, size: 48),
                 const SizedBox(height: 16),
                 Text('Error: ${provider.error}', style: const TextStyle(color: Colors.redAccent)),
               ],
@@ -127,8 +129,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   runSpacing: 16,
                   alignment: WrapAlignment.center,
                   children: [
-                    _buildIAStatusLabel(Icons.accessibility_new_rounded, 'Estado actual', provider.lastActivity, isMobile),
-                    _buildIAStatusLabel(Icons.bedtime_outlined, 'Última posición', provider.lastPosition, isMobile),
+                    _buildIAStatusLabel(LucideIcons.personStanding, 'Estado actual', provider.lastActivity, isMobile),
+                    _buildIAStatusLabel(LucideIcons.moon, 'Última posición', provider.lastPosition, isMobile),
                   ],
                 ),
                 SizedBox(height: isMobile ? 30 : 50),
@@ -230,7 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${pct.toInt()}%',
+                      '${pct.toStringAsFixed(2)}%',
                       style: GoogleFonts.inter(
                         fontSize: isMobile ? 40 : 56,
                         fontWeight: FontWeight.bold,
@@ -264,7 +266,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
+                const Icon(LucideIcons.alertTriangle, color: Colors.red, size: 20),
                 const SizedBox(width: 12),
                 Text(
                   'ALERTA: Cumplimiento crítico',
@@ -286,34 +288,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       crossAxisSpacing: isMobile ? 12 : 20,
       childAspectRatio: isMobile ? 0.95 : 1.0,
       children: [
-        _buildKPICard(
-          'Pasos Totales',
-          provider.totalSteps?.toString() ?? '--',
-          Icons.directions_walk_rounded,
-          Colors.orange,
-          isMobile,
-        ),
-        _buildKPICard(
-          'Frecuencia Cardíaca',
-          provider.avgBpm?.toString() ?? '--',
-          Icons.favorite_rounded,
-          Colors.red,
-          isMobile,
-        ),
-        _buildKPICard(
-          'Horas de Sueño',
-          provider.sleepHours?.toStringAsFixed(1) ?? '--',
-          Icons.nightlight_round,
-          Colors.indigo,
-          isMobile,
-        ),
-        _buildKPICard(
-          'Nivel de Estrés',
-          provider.avgStress?.toStringAsFixed(2) ?? '--',
-          Icons.psychology_rounded,
-          Colors.teal,
-          isMobile,
-        ),
+        _buildKPICard('Pasos Totales', provider.totalSteps?.toString() ?? '--', LucideIcons.footprints, Colors.orange, isMobile),
+        _buildKPICard('Frecuencia Cardíaca', provider.avgBpm?.toString() ?? '--', LucideIcons.heartPulse, const Color(0xFFE11D48), isMobile),
+        _buildKPICard('Horas de Sueño', provider.sleepHours?.toStringAsFixed(1) ?? '--', LucideIcons.moon, const Color(0xFF6366F1), isMobile),
+        _buildKPICard('Nivel de Estrés', provider.avgStress?.toStringAsFixed(2) ?? '--', LucideIcons.zap, const Color(0xFF10B981), isMobile),
       ],
     );
   }
@@ -323,9 +301,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: EdgeInsets.symmetric(vertical: isMobile ? 16 : 24, horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorderColor),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 20, offset: const Offset(0, 10)),
+          BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -337,7 +316,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: isMobile ? 22 : 28),
+            child: Icon(icon, color: color, size: isMobile ? 22 : 26),
           ),
           SizedBox(height: isMobile ? 12 : 20),
           Text(
@@ -347,7 +326,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 4),
           Text(
             title,
-            style: GoogleFonts.inter(fontSize: isMobile ? 9 : 11, color: Colors.grey.shade500, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            style: GoogleFonts.inter(fontSize: isMobile ? 9 : 11, color: nudeColor, fontWeight: FontWeight.bold, letterSpacing: 0.5),
             textAlign: TextAlign.center,
           ),
         ],
@@ -375,7 +354,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               indicatorColor: accentTeal,
               indicatorWeight: 3,
               labelColor: accentTeal,
-              unselectedLabelColor: Colors.grey.shade500,
+              unselectedLabelColor: nudeColor,
               labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
               tabs: const [
                 Tab(
@@ -383,7 +362,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.monitor_heart_outlined, size: 20),
+                      Icon(LucideIcons.heartPulse, size: 18),
                       SizedBox(width: 8),
                       Text('Monitorización Clínica'),
                     ],
@@ -394,7 +373,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.science_outlined, size: 20),
+                      Icon(LucideIcons.flaskConical, size: 18),
                       SizedBox(width: 8),
                       Text('Análisis y Exportación'),
                     ],
@@ -434,12 +413,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const SizedBox(height: 40),
-                        Icon(Icons.construction_rounded, size: 64, color: accentTeal.withValues(alpha: 0.5)),
+                        Icon(LucideIcons.wrench, size: 64, color: accentTeal.withValues(alpha: 0.5)),
                         const SizedBox(height: 16),
                         Text('Sección de Análisis en construcción', style: GoogleFonts.inter(color: primaryBlue, fontSize: 16)),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
-                          icon: const Icon(Icons.download_rounded),
+                          icon: const Icon(LucideIcons.download, size: 18),
                           label: const Text('Exportar Datos Crudos'),
                           onPressed: () => _exportData(context),
                         ),
@@ -462,7 +441,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.analytics_outlined, size: 80, color: primaryBlue.withValues(alpha: 0.1)),
+          Icon(LucideIcons.barChart2, size: 80, color: primaryBlue.withValues(alpha: 0.1)),
           const SizedBox(height: 24),
           Text(
             'Sin registros históricos',
@@ -476,7 +455,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(LucideIcons.refreshCw, size: 18),
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryBlue,
               foregroundColor: Colors.white,
@@ -579,7 +558,7 @@ class BiomarkerCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: kBorderColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -603,7 +582,8 @@ class BiomarkerCard extends StatelessWidget {
     Color color = const Color(0xFF10B981);
     String label = 'NORMAL';
     if (flag == 'worn_during_motion') { color = const Color(0xFFF59E0B); label = 'MOVIMIENTO'; }
-    else if (flag == 'worn_with_low_signal_quality') { color = const Color(0xFFEF4444); label = 'SEÑAL BAJA'; }
+    // El backend puede devolver 'low_signal_quality' o 'worn_with_low_signal_quality'
+    else if (flag == 'worn_with_low_signal_quality' || flag == 'low_signal_quality') { color = const Color(0xFFEF4444); label = 'SEÑAL BAJA'; }
     else if (flag == 'device_not_recording') { color = const Color(0xFF94A3B8); label = 'GAP'; }
     else if (flag == 'device_not_worn_correctly') { color = const Color(0xFF94A3B8); label = 'NO PUESTO'; }
 
@@ -616,6 +596,27 @@ class BiomarkerCard extends StatelessWidget {
       ),
       child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
     );
+  }
+
+  Color _sensorColor(String sensorType) {
+    switch (sensorType) {
+      case 'pulse_rate':
+      case 'prv':              return const Color(0xFFE11D48);
+      case 'respiratory_rate': return const Color(0xFF06B6D4);
+      case 'eda':              return const Color(0xFF10B981);
+      case 'temperature':      return const Color(0xFFF59E0B);
+      case 'sleep_detection':  return const Color(0xFF6366F1);
+      case 'accelerometer_std':
+      case 'acticounts_total':
+      case 'step_count':
+      case 'activity_class':
+      case 'activity_intensity':
+      case 'met':
+      case 'activity_counts':
+      case 'actigraphy_vector':
+      case 'body_position':    return const Color(0xFF475569);
+      default:                 return accentTeal;
+    }
   }
 
   LineChartData _buildChartData(BuildContext context, List<Biomarker> data) {
@@ -661,10 +662,10 @@ class BiomarkerCard extends StatelessWidget {
     bars.addAll(segments.asMap().entries.map((entry) {
       final spots = entry.value;
       final quality = segmentQualities[entry.key];
-      Color color = accentTeal; 
+      Color color = _sensorColor(sensorType);
       bool isProblematic = false;
       if (quality == 'worn_during_motion') { color = const Color(0xFFF59E0B); isProblematic = true; }
-      else if (quality == 'worn_with_low_signal_quality') { color = const Color(0xFFEF4444); isProblematic = true; }
+      else if (quality == 'worn_with_low_signal_quality' || quality == 'low_signal_quality') { color = const Color(0xFFEF4444); isProblematic = true; }
       else if (quality == 'device_not_recording') { color = const Color(0xFF94A3B8).withValues(alpha: 0.6); }
       else if (quality == 'device_not_worn_correctly') { color = const Color(0xFF94A3B8).withValues(alpha: 0.4); }
 
