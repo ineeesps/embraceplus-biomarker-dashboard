@@ -283,10 +283,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: isMobile ? 2 : 4,
+      crossAxisCount: isMobile ? 2 : (isTablet ? 2 : 4),
       mainAxisSpacing: isMobile ? 12 : 20,
       crossAxisSpacing: isMobile ? 12 : 20,
-      childAspectRatio: isMobile ? 0.95 : 1.0,
+      childAspectRatio: isMobile ? 0.95 : (isTablet ? 1.1 : 1.0),
       children: [
         _buildKPICard('Pasos Totales', provider.totalSteps?.toString() ?? '--', LucideIcons.footprints, Colors.orange, isMobile),
         _buildKPICard('Frecuencia Cardíaca', provider.avgBpm?.toString() ?? '--', LucideIcons.heartPulse, const Color(0xFFE11D48), isMobile),
@@ -297,8 +297,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildKPICard(String title, String value, IconData icon, Color color, bool isMobile) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: isMobile ? 16 : 24, horizontal: 8),
+    // Definimos padding responsive para evitar overflows en tablets
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmallCard = constraints.maxHeight < 140;
+        return Container(
+          padding: EdgeInsets.symmetric(
+            vertical: isMobile ? 16 : (isSmallCard ? 12 : 24), 
+            horizontal: 8
+          ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -318,27 +325,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             child: Icon(icon, color: color, size: isMobile ? 22 : 26),
           ),
-          SizedBox(height: isMobile ? 12 : 20),
-          Text(
-            value,
-            style: GoogleFonts.inter(fontSize: isMobile ? 20 : 28, fontWeight: FontWeight.bold, color: primaryBlue),
+          SizedBox(height: isMobile ? 12 : (isSmallCard ? 8 : 20)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: GoogleFonts.inter(fontSize: isMobile ? 20 : 28, fontWeight: FontWeight.bold, color: primaryBlue),
+            ),
           ),
           const SizedBox(height: 4),
-          Text(
-            title,
-            style: GoogleFonts.inter(fontSize: isMobile ? 9 : 11, color: nudeColor, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-            textAlign: TextAlign.center,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              title,
+              style: GoogleFonts.inter(fontSize: isMobile ? 9 : 11, color: nudeColor, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),
-    );
-  }
+          );
+        },
+      );
+    }
 
-  Color _getComplianceColor(double pct) {
-    if (pct >= 85) return const Color(0xFF10B981); // Verde esmeralda
-    if (pct >= 60) return const Color(0xFFF59E0B); // Naranja ámbar
-    return const Color(0xFFEF4444); // Rojo vibrante
-  }
+    Color _getComplianceColor(double pct) {
+      if (pct >= 85) return const Color(0xFF10B981); // Verde esmeralda
+      if (pct >= 60) return const Color(0xFFF59E0B); // Naranja ámbar
+      return const Color(0xFFEF4444); // Rojo vibrante
+    }
   Widget _buildSensorSection(DashboardProvider provider, List<String> allowedSensors) {
     final filteredMetrics = Map.fromEntries(
       provider.metricsBySensor.entries.where((e) => allowedSensors.contains(e.key))

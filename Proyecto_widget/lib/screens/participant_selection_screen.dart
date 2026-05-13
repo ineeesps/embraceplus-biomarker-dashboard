@@ -557,34 +557,54 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
   }
 
   Widget _buildKPICard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
-        boxShadow: [
-          BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              Text(value, style: GoogleFonts.inter(color: primaryBlue, fontSize: 24, fontWeight: FontWeight.bold)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmall = constraints.maxWidth < 180;
+        return Container(
+          padding: EdgeInsets.all(isSmall ? 12 : 24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: kBorderColor),
+            boxShadow: [
+              BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(isSmall ? 8 : 12),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                child: Icon(icon, color: color, size: isSmall ? 20 : 28),
+              ),
+              SizedBox(width: isSmall ? 8 : 16),
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title, 
+                      style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: isSmall ? 10 : 12, fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        value, 
+                        style: GoogleFonts.inter(color: primaryBlue, fontSize: isSmall ? 18 : 24, fontWeight: FontWeight.bold)
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
