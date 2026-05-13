@@ -240,7 +240,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     Text(
-                      'CUMPLIMIENTO',
+                      'TASA DE USO',
                       style: GoogleFonts.inter(
                         fontSize: isMobile ? 8 : 12,
                         fontWeight: FontWeight.bold,
@@ -269,7 +269,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const Icon(LucideIcons.alertTriangle, color: Colors.red, size: 20),
                 const SizedBox(width: 12),
                 Text(
-                  'ALERTA: Cumplimiento crítico',
+                  'ALERTA: Tasa de uso crítica',
                   style: GoogleFonts.inter(color: Colors.red.shade900, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ],

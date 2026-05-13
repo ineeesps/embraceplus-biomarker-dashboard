@@ -477,7 +477,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                           children: [
                             _buildKPICard('Total Participantes', '${_realData.length}', LucideIcons.users, primaryBlue),
                             const SizedBox(height: 16),
-                            _buildKPICard('Cumplimiento Medio', '${avgCompliance.toStringAsFixed(2)}%', LucideIcons.shieldCheck, accentTeal),
+                            _buildKPICard('Tasa de Uso Media', '${avgCompliance.toStringAsFixed(2)}%', LucideIcons.shieldCheck, accentTeal),
                             const SizedBox(height: 16),
                             _buildKPICard('Alertas Activas', '$totalAlerts', LucideIcons.alertCircle, totalAlerts > 0 ? const Color(0xFF92400E) : nudeColor),
                           ],
@@ -487,7 +487,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                           children: [
                             Expanded(child: _buildKPICard('Total Participantes', '${_realData.length}', LucideIcons.users, primaryBlue)),
                             const SizedBox(width: 24),
-                            Expanded(child: _buildKPICard('Cumplimiento Medio', '${avgCompliance.toStringAsFixed(2)}%', LucideIcons.shieldCheck, accentTeal)),
+                            Expanded(child: _buildKPICard('Tasa de Uso Media', '${avgCompliance.toStringAsFixed(2)}%', LucideIcons.shieldCheck, accentTeal)),
                             const SizedBox(width: 24),
                             Expanded(child: _buildKPICard('Alertas Activas', '$totalAlerts', LucideIcons.alertCircle, totalAlerts > 0 ? const Color(0xFF92400E) : nudeColor)),
                           ],
@@ -691,7 +691,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
               const SizedBox(height: 4),
               _buildDataRow(LucideIcons.timer, '${data.totalHours} horas registradas'),
               const SizedBox(height: 4),
-              _buildDataRow(LucideIcons.pieChart, 'Calidad: ${data.compliance.toStringAsFixed(2)}%'),
+              _buildDataRow(LucideIcons.pieChart, 'Tasa de Uso: ${data.compliance.toStringAsFixed(2)}%'),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.only(top: 8),
@@ -758,7 +758,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                     dataRowMaxHeight: 72,
                     columns: [
                       DataColumn(label: Text('ID Participante', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.grey.shade600))),
-                      DataColumn(label: Text('Calidad', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.grey.shade600))),
+                      DataColumn(label: Text('Tasa de Uso', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.grey.shade600))),
                       if (!isMobile) ...[
                         DataColumn(label: Text('Horas', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.grey.shade600))),
                         DataColumn(label: Text('Fechas', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.grey.shade600))),
