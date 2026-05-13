@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/biomarker.dart';
 import '../services/api_service.dart';
 
-/// [DashboardProvider] gestiona el estado de la visualización de biomarcadores.
-/// Maneja la carga de datos y el filtrado por rango horario.
 class DashboardProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
   List<Biomarker> _metrics = [];
@@ -83,7 +81,6 @@ class DashboardProvider with ChangeNotifier {
     return map;
   }
 
-  // --- Global KPIs ---
 
   int? get totalSteps {
     final steps = _metrics.where((m) => m.sensorType == 'step_count' && m.value != null);
@@ -116,7 +113,6 @@ class DashboardProvider with ChangeNotifier {
     
     int validPoints = 0;
     for (var m in wearing) {
-      // Consider valid if not 'device_not_worn_correctly' and not 'device_not_recording'
       if (m.qualityFlag != 'device_not_worn_correctly' && m.qualityFlag != 'device_not_recording') {
         validPoints++;
       }

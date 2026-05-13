@@ -3,8 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import 'participant_selection_screen.dart';
 
-/// [LoginScreen] Pantalla de acceso seguro para investigadores.
-/// Gestiona la autenticación y el flujo de entrada al sistema.
+import 'participant_selection_screen.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 

@@ -4,12 +4,6 @@ from psycopg2 import extras
 import os
 import math
 
-"""
-Motor de Ingesta ETL para datos de EmbracePlus.
-Este script implementa el patrón Factory y Adapter para procesar diferentes tipos 
-de biomarcadores con lógicas de mapeo específicas.
-"""
-
 class SensorAdapter:
     def map_row(self, row, dataframe):
         raise NotImplementedError

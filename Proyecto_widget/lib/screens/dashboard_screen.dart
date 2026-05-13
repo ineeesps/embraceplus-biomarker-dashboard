@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/dashboard_provider.dart';
 import '../models/biomarker.dart';
 import '../widgets/quality_legend.dart';
+import '../widgets/sidebar_layout.dart';
+import 'login_screen.dart';
 
 // Constantes de color para la vista clara unificada
 const Color primaryBlue = Color(0xFF0F172A);
@@ -14,8 +16,6 @@ const Color bgColor = Color(0xFFF1F5F9);
 const Color accentTeal = Color(0xFF0F766E);
 const Color nudeColor = Color(0xFF6B728E);
 
-/// [DashboardScreen] Visualización avanzada de biomarcadores para un participante.
-/// Implementa gráficas interactivas, estadísticas descriptivas y análisis de calidad.
 class DashboardScreen extends StatefulWidget {
   final String participantId;
   final String username;
@@ -26,6 +26,8 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  int _selectedIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -34,180 +36,182 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  void _logout() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (Route<dynamic> route) => false,
+    );
+  }
+
+  void _showUploadNotAvailable() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Para subir datos, vuelve a la pantalla de Inicio (Home)')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    return SidebarLayout(
+      username: widget.username,
+      participantId: widget.participantId,
+      selectedIndex: _selectedIndex,
+      onItemSelected: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
+      onUpload: _showUploadNotAvailable,
+      onLogout: _logout,
+      onHome: () => Navigator.pop(context),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    return Consumer<DashboardProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator(color: primaryBlue));
+        }
+        if (provider.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
+                const SizedBox(height: 16),
+                Text('Error: ${provider.error}', style: const TextStyle(color: Colors.redAccent)),
+              ],
+            ),
+          );
+        }
+
+        switch (_selectedIndex) {
+          case 0:
+            return _buildInicio(provider);
+          case 1:
+            return _buildSensorSection(provider, ['accelerometer_std', 'acticounts_total', 'step_count', 'body_position']);
+          case 2:
+            return _buildSensorSection(provider, ['pulse_rate', 'respiratory_rate', 'prv']);
+          case 3:
+            return _buildSensorSection(provider, ['eda', 'temperature']);
+          case 4:
+            return _buildSensorSection(provider, ['sleep_detection', 'activity_class', 'activity_intensity']);
+          default:
+            return _buildInicio(provider);
+        }
+      },
+    );
+  }
+
+  Widget _buildInicio(DashboardProvider provider) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildTopBar(context, provider),
+          if (provider.metricsBySensor.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: _buildEmptyState(context, provider),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSensorSection(DashboardProvider provider, List<String> allowedSensors) {
+    final filteredMetrics = Map.fromEntries(
+      provider.metricsBySensor.entries.where((e) => allowedSensors.contains(e.key))
+    );
 
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
-        backgroundColor: bgColor,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          toolbarHeight: 72,
-          leadingWidth: 56,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: primaryBlue),
-            tooltip: 'Volver a mis participantes',
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Row(
-            children: [
-              const Icon(Icons.analytics_outlined, color: primaryBlue, size: 28),
-              const SizedBox(width: 12),
-              Text(
-                'EmbracePlus',
-                style: GoogleFonts.inter(
-                  color: primaryBlue,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
+      child: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              indicatorColor: accentTeal,
+              indicatorWeight: 3,
+              labelColor: accentTeal,
+              unselectedLabelColor: Colors.grey.shade500,
+              labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
+              tabs: const [
+                Tab(
+                  height: 56,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.monitor_heart_outlined, size: 20),
+                      SizedBox(width: 8),
+                      Text('Monitorización Clínica'),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              _buildAppBarBadge('RESEARCH'),
-              const SizedBox(width: 24),
-              Container(width: 1, height: 28, color: Colors.grey.shade200),
-              const SizedBox(width: 24),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'PARTICIPANTE',
-                    style: GoogleFonts.inter(color: Colors.grey.shade400, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1),
+                Tab(
+                  height: 56,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.science_outlined, size: 20),
+                      SizedBox(width: 8),
+                      Text('Análisis y Exportación'),
+                    ],
                   ),
-                  Text(
-                    widget.participantId,
-                    style: GoogleFonts.inter(color: primaryBlue, fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            Center(
-              child: Text(
-                'Investigador: ${widget.username}',
-                style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 13),
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 24),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(56),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade100),
-                  bottom: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-              child: TabBar(
-                indicatorColor: accentTeal,
-                indicatorWeight: 3,
-                labelColor: accentTeal,
-                unselectedLabelColor: Colors.grey.shade500,
-                labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
-                tabs: const [
-                  Tab(
-                    height: 56,
-                    child: Row(
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                filteredMetrics.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No hay datos para esta sección.',
+                          style: GoogleFonts.inter(color: Colors.grey.shade500),
+                        ),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        children: [
+                          const QualityLegend(),
+                          const SizedBox(height: 16),
+                          ...filteredMetrics.entries.map((entry) {
+                            return BiomarkerCard(
+                              sensorType: entry.key,
+                              data: entry.value,
+                              provider: provider,
+                            );
+                          }),
+                        ],
+                      ),
+                SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.monitor_heart_outlined, size: 20),
-                        SizedBox(width: 8),
-                        Text('Monitorización Clínica'),
+                        const SizedBox(height: 40),
+                        Icon(Icons.construction_rounded, size: 64, color: accentTeal.withValues(alpha: 0.5)),
+                        const SizedBox(height: 16),
+                        Text('Sección de Análisis en construcción', style: GoogleFonts.inter(color: primaryBlue, fontSize: 16)),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.download_rounded),
+                          label: const Text('Exportar Datos Crudos'),
+                          onPressed: () => _exportData(context),
+                        ),
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
-                  Tab(
-                    height: 56,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.science_outlined, size: 20),
-                        SizedBox(width: 8),
-                        Text('Análisis y Exportación'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ),
-        body: TabBarView(
-          children: [
-            // Pestaña 1: Monitorización Clínica
-            Consumer<DashboardProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return Center(child: CircularProgressIndicator(color: colorScheme.primary));
-          }
-
-          if (provider.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
-                  const SizedBox(height: 16),
-                  Text('Error: ${provider.error}', style: const TextStyle(color: Colors.redAccent)),
-                ],
-              ),
-            );
-          }
-
-          final metricsBySensor = provider.metricsBySensor;
-          if (metricsBySensor.isEmpty) {
-            return _buildEmptyState(context, provider);
-          }
-
-          return Column(
-            children: [
-              _buildTopBar(context, provider),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  children: [
-                    const QualityLegend(),
-                    const SizedBox(height: 16),
-                    ...metricsBySensor.entries.map((entry) {
-                      return BiomarkerCard(
-                        sensorType: entry.key,
-                        data: entry.value,
-                        provider: provider,
-                      );
-                    }),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-            // Pestaña 2: Análisis y Exportación (Placeholder)
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.construction_rounded, size: 64, color: colorScheme.secondary.withValues(alpha: 0.5)),
-                  const SizedBox(height: 16),
-                  Text('Sección de Análisis en construcción', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white70)),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.download_rounded),
-                    label: const Text('Exportar Datos Crudos'),
-                    onPressed: () => _exportData(context),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -290,10 +294,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Color _getComplianceColor(double pct) {
-    if (pct >= 85) return accentTeal; // Óptimo
-    if (pct >= 70) return const Color(0xFF854D0E); // Aceptable (Nude oscuro/Ámbar)
-    if (pct >= 50) return const Color(0xFF92400E); // Bajo
-    return const Color(0xFF991B1B); // Crítico (Rojo apagado)
+    if (pct >= 85) return accentTeal;
+    if (pct >= 70) return const Color(0xFF854D0E);
+    if (pct >= 50) return const Color(0xFF92400E);
+    return const Color(0xFF991B1B);
   }
 
   Widget _buildComplianceBar(BuildContext context, DashboardProvider provider) {
@@ -327,16 +331,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildGlobalKPIs(BuildContext context, DashboardProvider provider) {
-    return Row(
-      children: [
-        Expanded(child: _buildKPICard('Pasos Totales', provider.totalSteps?.toString() ?? '--', Icons.directions_walk, nudeColor)),
-        const SizedBox(width: 12),
-        Expanded(child: _buildKPICard('BPM Medio', provider.avgBpm?.toString() ?? '--', Icons.favorite, nudeColor)),
-        const SizedBox(width: 12),
-        Expanded(child: _buildKPICard('Gasto Energético/METs Totales', provider.totalMets?.toStringAsFixed(1) ?? '--', Icons.local_fire_department, nudeColor)),
-        const SizedBox(width: 12),
-        Expanded(child: _buildKPICard('Temperatura Media', provider.avgTemp != null ? '${provider.avgTemp!.toStringAsFixed(1)}°' : '--', Icons.thermostat, nudeColor)),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmall = constraints.maxWidth < 600;
+        final bool isMedium = constraints.maxWidth < 1000;
+        
+        return GridView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: isSmall ? 1 : (isMedium ? 2 : 4),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            mainAxisExtent: 100,
+          ),
+          children: [
+            _buildKPICard('Pasos Totales', provider.totalSteps?.toString() ?? '--', Icons.directions_walk, nudeColor),
+            _buildKPICard('BPM Medio', provider.avgBpm?.toString() ?? '--', Icons.favorite, nudeColor),
+            _buildKPICard('Gasto Energético/METs', provider.totalMets?.toStringAsFixed(1) ?? '--', Icons.local_fire_department, nudeColor),
+            _buildKPICard('Temperatura Media', provider.avgTemp != null ? '${provider.avgTemp!.toStringAsFixed(1)}°' : '--', Icons.thermostat, nudeColor),
+          ],
+        );
+      },
     );
   }
 
@@ -379,108 +395,161 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTimeRangeSelector(BuildContext context, DashboardProvider provider) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.tune_rounded, color: primaryBlue, size: 20),
-          const SizedBox(width: 12),
-          Text(
-            provider.startHour == null && provider.sessionDate == null ? 'Todo el periodo' : 'Rango filtrado',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: primaryBlue, fontSize: 13),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmall = constraints.maxWidth < 650;
+        
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade100),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+            ],
           ),
-          const Spacer(),
-          _TimeButton(
-            icon: Icons.calendar_today_rounded,
-            label: provider.sessionDate != null 
-                ? (provider.endDate != null 
-                    ? '${DateFormat('dd/MM').format(provider.sessionDate!)} - ${DateFormat('dd/MM').format(provider.endDate!)}' 
-                    : DateFormat('dd/MM/yyyy').format(provider.sessionDate!)) 
-                : 'Fecha',
-            onTap: () async {
-              final range = await showDateRangePicker(
-                context: context, 
-                firstDate: DateTime(2020), 
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-                initialDateRange: provider.sessionDate != null 
-                    ? DateTimeRange(start: provider.sessionDate!, end: provider.endDate ?? provider.sessionDate!) 
-                    : null,
-                helpText: 'Seleccionar rango de fechas',
-                confirmText: 'Aceptar',
-                saveText: 'Guardar',
-                builder: (context, child) {
-                  return Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.light(
-                        primary: primaryBlue,
-                        onPrimary: Colors.white,
-                        surface: Colors.white,
-                        onSurface: primaryBlue,
+          child: isSmall 
+            ? Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.tune_rounded, color: primaryBlue, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        provider.startHour == null && provider.sessionDate == null ? 'Todo el periodo' : 'Rango filtrado',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: primaryBlue, fontSize: 13),
+                      ),
+                      const Spacer(),
+                      if (provider.startHour != null || provider.sessionDate != null)
+                        IconButton(
+                          icon: const Icon(Icons.refresh_rounded, size: 20, color: Colors.grey),
+                          onPressed: () {
+                            provider.setDateRange(null, null, widget.participantId, widget.username);
+                            provider.setTimeRange(null, null, widget.participantId, widget.username);
+                          },
+                        ),
+                    ],
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  _buildDateButton(context, provider),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _buildStartTimeButton(context, provider)),
+                      const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('-', style: TextStyle(color: Colors.black26))),
+                      Expanded(child: _buildEndTimeButton(context, provider)),
+                    ],
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  const Icon(Icons.tune_rounded, color: primaryBlue, size: 20),
+                  const SizedBox(width: 12),
+                  Text(
+                    provider.startHour == null && provider.sessionDate == null ? 'Todo el periodo' : 'Rango filtrado',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: primaryBlue, fontSize: 13),
+                  ),
+                  const Spacer(),
+                  _buildDateButton(context, provider),
+                  const SizedBox(width: 10),
+                  _buildStartTimeButton(context, provider),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text('-', style: TextStyle(color: Colors.black26, fontWeight: FontWeight.bold))),
+                  _buildEndTimeButton(context, provider),
+                  if (provider.startHour != null || provider.endHour != null || provider.sessionDate != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: IconButton(
+                        icon: const Icon(Icons.refresh_rounded, size: 20, color: Colors.grey),
+                        tooltip: 'Resetear filtros',
+                        onPressed: () {
+                          provider.setDateRange(null, null, widget.participantId, widget.username);
+                          provider.setTimeRange(null, null, widget.participantId, widget.username);
+                        },
                       ),
                     ),
-                    child: child!,
-                  );
-                },
-              );
-              if (range != null) {
-                provider.setDateRange(range.start, range.end, widget.participantId, widget.username);
-              }
-            },
-          ),
-          const SizedBox(width: 10),
-          _TimeButton(
-            label: provider.startHour?.format(context) ?? 'Hora Inicio',
-            onTap: () async {
-              final time = await showTimePicker(
-                context: context, 
-                initialTime: provider.startHour ?? const TimeOfDay(hour: 0, minute: 0),
-                helpText: 'Seleccionar hora de inicio',
-                confirmText: 'Aceptar',
-                cancelText: 'Cancelar',
-                hourLabelText: 'Hora',
-                minuteLabelText: 'Minuto',
-              );
-              if (time != null) provider.setTimeRange(time, provider.endHour, widget.participantId, widget.username);
-            },
-          ),
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text('-', style: TextStyle(color: Colors.black26, fontWeight: FontWeight.bold))),
-          _TimeButton(
-            label: provider.endHour?.format(context) ?? 'Hora Fin',
-            onTap: () async {
-              final time = await showTimePicker(
-                context: context, 
-                initialTime: provider.endHour ?? const TimeOfDay(hour: 23, minute: 59),
-                helpText: 'Seleccionar hora de fin',
-                confirmText: 'Aceptar',
-                cancelText: 'Cancelar',
-                hourLabelText: 'Hora',
-                minuteLabelText: 'Minuto',
-              );
-              if (time != null) provider.setTimeRange(provider.startHour, time, widget.participantId, widget.username);
-            },
-          ),
-          if (provider.startHour != null || provider.endHour != null || provider.sessionDate != null)
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: IconButton(
-                icon: const Icon(Icons.refresh_rounded, size: 20, color: Colors.grey),
-                tooltip: 'Resetear filtros',
-                onPressed: () {
-                  provider.setDateRange(null, null, widget.participantId, widget.username);
-                  provider.setTimeRange(null, null, widget.participantId, widget.username);
-                },
+                ],
               ),
-            ),
-        ],
-      ),
+        );
+      }
+    );
+  }
+
+  Widget _buildDateButton(BuildContext context, DashboardProvider provider) {
+    return _TimeButton(
+      icon: Icons.calendar_today_rounded,
+      label: provider.sessionDate != null 
+          ? (provider.endDate != null 
+              ? '${DateFormat('dd/MM').format(provider.sessionDate!)} - ${DateFormat('dd/MM').format(provider.endDate!)}' 
+              : DateFormat('dd/MM/yyyy').format(provider.sessionDate!)) 
+          : 'Fecha',
+      onTap: () async {
+        final range = await showDateRangePicker(
+          context: context, 
+          firstDate: DateTime(2020), 
+          lastDate: DateTime.now().add(const Duration(days: 365)),
+          initialDateRange: provider.sessionDate != null 
+              ? DateTimeRange(start: provider.sessionDate!, end: provider.endDate ?? provider.sessionDate!) 
+              : null,
+          helpText: 'Seleccionar rango de fechas',
+          confirmText: 'Aceptar',
+          saveText: 'Guardar',
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: primaryBlue,
+                  onPrimary: Colors.white,
+                  surface: Colors.white,
+                  onSurface: primaryBlue,
+                ),
+              ),
+              child: child!,
+            );
+          },
+        );
+        if (range != null) {
+          provider.setDateRange(range.start, range.end, widget.participantId, widget.username);
+        }
+      },
+    );
+  }
+
+  Widget _buildStartTimeButton(BuildContext context, DashboardProvider provider) {
+    return _TimeButton(
+      label: provider.startHour?.format(context) ?? 'Hora Inicio',
+      onTap: () async {
+        final time = await showTimePicker(
+          context: context, 
+          initialTime: provider.startHour ?? const TimeOfDay(hour: 0, minute: 0),
+          helpText: 'Seleccionar hora de inicio',
+          confirmText: 'Aceptar',
+          cancelText: 'Cancelar',
+          hourLabelText: 'Hora',
+          minuteLabelText: 'Minuto',
+        );
+        if (time != null) provider.setTimeRange(time, provider.endHour, widget.participantId, widget.username);
+      },
+    );
+  }
+
+  Widget _buildEndTimeButton(BuildContext context, DashboardProvider provider) {
+    return _TimeButton(
+      label: provider.endHour?.format(context) ?? 'Hora Fin',
+      onTap: () async {
+        final time = await showTimePicker(
+          context: context, 
+          initialTime: provider.endHour ?? const TimeOfDay(hour: 23, minute: 59),
+          helpText: 'Seleccionar hora de fin',
+          confirmText: 'Aceptar',
+          cancelText: 'Cancelar',
+          hourLabelText: 'Hora',
+          minuteLabelText: 'Minuto',
+        );
+        if (time != null) provider.setTimeRange(provider.startHour, time, widget.participantId, widget.username);
+      },
     );
   }
 

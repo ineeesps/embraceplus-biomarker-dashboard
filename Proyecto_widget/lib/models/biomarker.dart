@@ -1,9 +1,7 @@
-/// [Biomarker] Modelo de datos para representar una muestra fisiológica.
-/// Incluye soporte para el tiempo, tipo de sensor, valor y flag de calidad.
 class Biomarker {
   final DateTime time;
   final String sensorType;
-  final double? value; // Soportamos nulos para los Gaps clínicos
+  final double? value;
   final String qualityFlag;
 
   Biomarker({

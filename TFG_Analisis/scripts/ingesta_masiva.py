@@ -37,7 +37,6 @@ def procesar_carpeta(ruta_base, id_participante):
                 
         if sensor_detectado:
             try:
-                # El nuevo cargar_csv_a_timescale devuelve un dict con estadísticas
                 resultado = cargar_csv_a_timescale(ruta_absoluta, sensor_detectado, id_participante)
                 conteo += 1
                 
@@ -59,11 +58,9 @@ def procesar_carpeta(ruta_base, id_participante):
 def main():
     base_tfg = '/home/ines/Escritorio/universidad/TFG'
     
-    # 1. Participantes de Alberto
     procesar_carpeta(os.path.join(base_tfg, '1a_prueba'), 'PRUEBA 1')
     procesar_carpeta(os.path.join(base_tfg, '2a_prueba'), 'PRUEBA 2')
     
-    # 2. Participantes de Inés
     ruta_nuevos = os.path.join(base_tfg, 'nuevos_usuarios')
     if os.path.exists(ruta_nuevos):
         for i in range(1, 21):
@@ -71,9 +68,6 @@ def main():
             ruta_user = os.path.join(ruta_nuevos, id_participante)
             if os.path.exists(ruta_user):
                 procesar_carpeta(ruta_user, id_participante)
-            else:
-                # Intenta sin el 'user' literal si las carpetas se llaman diferente (ej. user1, user 1, etc.)
-                pass
 
 if __name__ == '__main__':
     print("INICIANDO INGESTA MASIVA EN TIMESCALEDB...")

@@ -19,7 +19,6 @@ app = FastAPI(
     version="2.1.0"
 )
 
-# Configuración de conexión a la base de datos TimescaleDB
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
     "database": os.getenv("DB_NAME", "tfg_embrace"),
@@ -28,7 +27,6 @@ DB_CONFIG = {
     "port": os.getenv("DB_PORT", "5432")
 }
 
-# Mapeo de patrones de nombres de archivo a tipos de sensores en la BD
 PATRONES_SENSORES = {
     'temperature': 'temperature', 'eda': 'eda', 'pulse-rate': 'pulse_rate',
     'respiratory-rate': 'respiratory_rate', 'accelerometers-std': 'accelerometer_std',
@@ -43,7 +41,6 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
-# Datos de ejemplo para investigadores (Simulación de gestión de usuarios)
 INVESTIGADORES = {
     "alberto": {
         "password": "123",
@@ -133,7 +130,6 @@ async def resumen_participantes(username: str):
                 "totalHours": max(total_hours, 1)
             })
 
-        # Participantes sin datos en BD pero asignados
         ids_con_datos = {p["id"] for p in participantes_data}
         for p_id in INVESTIGADORES[username]["participantes"]:
             if p_id not in ids_con_datos:
@@ -185,7 +181,6 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
     if not sensor_detectado:
         raise HTTPException(status_code=400, detail="Tipo de sensor no reconocido")
 
-    # Si se solicita reemplazar, borramos los datos previos de ese sensor para ese participante
     if reemplazar:
         try:
             conn = psycopg2.connect(**DB_CONFIG)
@@ -201,6 +196,7 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
             if 'conn' in locals() and conn:
                 conn.rollback()
                 conn.close()
+            pass
             # Se loguearía el error pero permitimos continuar con la subida
 
     try:
@@ -336,11 +332,9 @@ async def eliminar_participante(id: str, investigador: str):
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
         
-        # Eliminar de la base de datos
         cur.execute("DELETE FROM biomarcadores WHERE participant_id = %s AND investigador = %s", (id, investigador))
         conn.commit()
         
-        # Eliminar de la lista en memoria si existe
         if investigador in INVESTIGADORES and id in INVESTIGADORES[investigador]["participantes"]:
             INVESTIGADORES[investigador]["participantes"].remove(id)
             
@@ -359,12 +353,10 @@ async def renombrar_participante(id: str, nuevo_id: str, investigador: str):
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
         
-        # Comprobar si el nuevo ID ya existe para este investigador
         cur.execute("SELECT 1 FROM biomarcadores WHERE participant_id = %s AND investigador = %s LIMIT 1", (nuevo_id, investigador))
         if cur.fetchone() is not None:
             raise HTTPException(status_code=409, detail=f"El ID '{nuevo_id}' ya está en uso por otro participante.")
 
-        # Actualizar base de datos
         cur.execute("""
             UPDATE biomarcadores 
             SET participant_id = %s 
@@ -372,7 +364,6 @@ async def renombrar_participante(id: str, nuevo_id: str, investigador: str):
         """, (nuevo_id, id, investigador))
         conn.commit()
         
-        # Actualizar memoria
         if investigador in INVESTIGADORES and id in INVESTIGADORES[investigador]["participantes"]:
             idx = INVESTIGADORES[investigador]["participantes"].index(id)
             INVESTIGADORES[investigador]["participantes"][idx] = nuevo_id

@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
+import '../widgets/sidebar_layout.dart';
 import '../services/api_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
-/// [ParticipantData] representa la información resumida de un participante
-/// para su visualización en la lista principal.
 class ParticipantData {
   final String id;
   final double compliance;
@@ -34,8 +33,6 @@ class ParticipantData {
   }
 }
 
-/// Pantalla principal de selección de participantes.
-/// Permite buscar, filtrar, subir datos nuevos y acceder al dashboard de cada paciente.
 class ParticipantSelectionScreen extends StatefulWidget {
   final String username;
   final List<String> assignedParticipants;
@@ -293,8 +290,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
       }
     );
   }
-
-  /// Cierra la sesión y vuelve a la pantalla de login
   void _logout() {
     Navigator.pushReplacement(
       context,
@@ -414,157 +409,82 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     double avgCompliance = _realData.isEmpty ? 0 : 
         _realData.fold(0.0, (sum, p) => sum + p.compliance) / _realData.length;
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          children: [
-            const Icon(Icons.analytics_outlined, color: primaryBlue, size: 28),
-            const SizedBox(width: 12),
-            Text(
-              'EmbracePlus',
-              style: GoogleFonts.inter(
-                color: primaryBlue,
-                fontWeight: FontWeight.w800,
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F766E).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'RESEARCH',
-                style: GoogleFonts.inter(
-                  color: const Color(0xFF0F766E),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Center(
-            child: Text(
-              'Investigador: ${widget.username}',
-              style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 13),
-            ),
-          ),
-          const SizedBox(width: 16),
-          IconButton(
-            icon: const Icon(Icons.logout, color: primaryBlue),
-            tooltip: 'Cerrar Sesión',
-            onPressed: _logout,
-          ),
-          const SizedBox(width: 16),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: Colors.grey.shade200, height: 1.0),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: primaryBlue))
-            : _errorMessage != null
-                ? Center(child: Text('Error: $_errorMessage', style: GoogleFonts.inter(color: Colors.red)))
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-            Row(
-              children: [
-                Expanded(child: _buildKPICard('Total Participantes', '${_realData.length}', Icons.people_rounded, primaryBlue)),
-                const SizedBox(width: 24),
-                Expanded(child: _buildKPICard('Cumplimiento Medio', '${avgCompliance.toStringAsFixed(1)}%', Icons.verified_user_rounded, accentTeal)),
-                const SizedBox(width: 24),
-                Expanded(child: _buildKPICard('Alertas Activas', '$totalAlerts', Icons.error_outline_rounded, totalAlerts > 0 ? const Color(0xFF92400E) : nudeColor)),
-              ],
-            ),
-            const SizedBox(height: 32),
+    return SidebarLayout(
+      username: widget.username,
+      onItemSelected: (index) {},
+      onUpload: _showUploadModal,
+      onLogout: _logout,
+      onHome: () {},
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool isSmall = constraints.maxWidth < 700;
+          final bool isMedium = constraints.maxWidth < 1100;
 
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    style: GoogleFonts.inter(fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar por ID de participante...',
-                      hintStyle: GoogleFonts.inter(color: nudeColor.withOpacity(0.5)),
-                      prefixIcon: const Icon(Icons.search, color: nudeColor),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: primaryBlue),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Row(
+          return Padding(
+            padding: EdgeInsets.all(isSmall ? 16.0 : 32.0),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: primaryBlue))
+                : ListView(
                     children: [
-                      _buildToggleButton(Icons.grid_view_rounded, true),
-                      Container(width: 1, height: 40, color: Colors.grey.shade200),
-                      _buildToggleButton(Icons.table_rows_rounded, false),
+                      // KPIs con disposición flexible
+                      if (isSmall)
+                        Column(
+                          children: [
+                            _buildKPICard('Total Participantes', '${_realData.length}', Icons.people_rounded, primaryBlue),
+                            const SizedBox(height: 16),
+                            _buildKPICard('Cumplimiento Medio', '${avgCompliance.toStringAsFixed(1)}%', Icons.verified_user_rounded, accentTeal),
+                            const SizedBox(height: 16),
+                            _buildKPICard('Alertas Activas', '$totalAlerts', Icons.error_outline_rounded, totalAlerts > 0 ? const Color(0xFF92400E) : nudeColor),
+                          ],
+                        )
+                      else
+                        Row(
+                          children: [
+                            Expanded(child: _buildKPICard('Total Participantes', '${_realData.length}', Icons.people_rounded, primaryBlue)),
+                            const SizedBox(width: 24),
+                            Expanded(child: _buildKPICard('Cumplimiento Medio', '${avgCompliance.toStringAsFixed(1)}%', Icons.verified_user_rounded, accentTeal)),
+                            const SizedBox(width: 24),
+                            Expanded(child: _buildKPICard('Alertas Activas', '$totalAlerts', Icons.error_outline_rounded, totalAlerts > 0 ? const Color(0xFF92400E) : nudeColor)),
+                          ],
+                        ),
+                      const SizedBox(height: 32),
+
+                      // Barra de búsqueda y botones responsive
+                      if (isSmall)
+                        Column(
+                          children: [
+                            _buildSearchField(),
+                            const SizedBox(height: 16),
+                            _buildViewToggles(),
+                          ],
+                        )
+                      else
+                        Row(
+                          children: [
+                            Expanded(child: _buildSearchField()),
+                            const SizedBox(width: 24),
+                            _buildViewToggles(),
+                          ],
+                        ),
+                      const SizedBox(height: 24),
+
+                      _filteredParticipants.isEmpty
+                          ? SizedBox(
+                              height: 200,
+                              child: Center(
+                                child: Text(
+                                  'No se encontraron participantes',
+                                  style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 16),
+                                ),
+                              ),
+                            )
+                          : _isGridView
+                              ? _buildGridView(isSmall ? 1 : (isMedium ? 2 : 3))
+                              : _buildTableView(),
                     ],
                   ),
-                ),
-                const SizedBox(width: 24),
-                ElevatedButton.icon(
-                  onPressed: _showUploadModal,
-                  icon: const Icon(Icons.upload_file, size: 18),
-                  label: Text('Subir Participante', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accentTeal, 
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            Expanded(
-              child: _filteredParticipants.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No se encontraron participantes',
-                        style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 16),
-                      ),
-                    )
-                  : _isGridView
-                      ? _buildGridView()
-                      : _buildTableView(),
-            ),
-                   ],
-                ),
+          );
+        },
       ),
     );
   }
@@ -622,11 +542,59 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     );
   }
 
-  Widget _buildGridView() {
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      onChanged: (val) => setState(() => _searchQuery = val),
+      style: GoogleFonts.inter(fontSize: 14),
+      decoration: InputDecoration(
+        hintText: 'Buscar por ID de participante...',
+        hintStyle: GoogleFonts.inter(color: nudeColor.withOpacity(0.5)),
+        prefixIcon: const Icon(Icons.search, color: nudeColor),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: primaryBlue),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildViewToggles() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildToggleButton(Icons.grid_view_rounded, true),
+          Container(width: 1, height: 40, color: Colors.grey.shade200),
+          _buildToggleButton(Icons.table_rows_rounded, false),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridView(int crossAxisCount) {
     return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: _filteredParticipants.length,
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 300,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
         mainAxisSpacing: 24,
         crossAxisSpacing: 24,
         mainAxisExtent: 220,
