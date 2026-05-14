@@ -153,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: InputDecoration(
                               labelText: 'Usuario',
                               labelStyle: GoogleFonts.inter(color: kTextSecondary, fontSize: 13),
-                              prefixIcon: const Icon(LucideIcons.badge, color: kTextPrimary, size: 18),
+                              prefixIcon: const Icon(LucideIcons.user, color: kTextPrimary, size: 18),
                               contentPadding: const EdgeInsets.symmetric(vertical: 18),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),

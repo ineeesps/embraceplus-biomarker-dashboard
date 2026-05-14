@@ -162,7 +162,7 @@ class _SidebarLayoutState extends State<SidebarLayout> {
                   },
                 ),
                 _buildNavItem(
-                  icon: LucideIcons.activity,
+                  icon: LucideIcons.personStanding,
                   title: 'Movimiento y Actividad',
                   isSelected: widget.selectedIndex == 1,
                   isExpanded: isExpanded,

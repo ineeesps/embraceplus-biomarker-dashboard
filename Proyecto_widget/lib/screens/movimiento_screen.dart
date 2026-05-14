@@ -15,17 +15,17 @@ const Color _text    = AppColors.textPrimary;
 const Color _muted   = AppColors.textSecondary;
 const Color _accent  = AppColors.cyberBlue;
 
-const Color _clsGap     = Color(0xFFE2E8F0);
+const Color _clsGap     = Color(0xFFF1F5F9);
 const Color _clsStill   = Color(0xFF94A3B8);
-const Color _clsWalk    = Color(0xFF64748B);
-const Color _clsRun     = Color(0xFF334155);
+const Color _clsWalk    = Color(0xFF10B981);
+const Color _clsRun     = Color(0xFF6366F1);
 const Color _clsGeneric = Color(0xFF64748B);
 
-const Color _intGap = Color(0xFFE2E8F0);
-const Color _intSed = Color(0xFFF1F5F9);
-const Color _intLPA = Color(0xFFBAE6FD);
-const Color _intMPA = Color(0xFF38BDF8);
-const Color _intVPA = Color(0xFF0284C7);
+const Color _intGap = Color(0xFFF1F5F9);
+const Color _intSed = Color(0xFFE2E8F0);
+const Color _intLPA = Color(0xFFFDE047);
+const Color _intMPA = Color(0xFFFB923C);
+const Color _intVPA = Color(0xFFEF4444);
 
 const Color _kVec = Color(0xFF0EA5E9);
 const Color _kStd = Color(0xFFF43F5E);
@@ -155,7 +155,7 @@ class _ControlPanel extends StatelessWidget {
                   color: _accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(LucideIcons.activity, size: 16, color: _accent),
+                child: const Icon(LucideIcons.personStanding, size: 16, color: _accent),
               );
               final headerTitle = Text(
                 'Movimiento y Actividad',
@@ -380,7 +380,7 @@ class _ActivitySpectrum extends StatelessWidget {
     final int = byType['activity_intensity'] ?? [];
 
     return _SectionCard(
-      icon: LucideIcons.layers,
+      icon: LucideIcons.flame,
       title: 'Activity Spectrum',
       subtitle: 'activity-intensity + activity-classification',
       child: Column(
@@ -504,7 +504,7 @@ class _CargaCinetica extends StatelessWidget {
     final std = byType['accelerometer_std'] ?? [];
 
     return _SectionCard(
-      icon: LucideIcons.activity,
+      icon: LucideIcons.barChart3,
       title: 'Carga Cinética',
       subtitle: 'actigraphy-counts + accelerometers-std',
       child: Column(
