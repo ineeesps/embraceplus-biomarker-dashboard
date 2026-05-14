@@ -17,6 +17,12 @@ const Color _muted   = AppColors.textSecondary;
 const Color _accent  = AppColors.cyberBlue;
 const Color _border  = AppColors.border;
 
+const Color _hrColor    = Color(0xFFE11D48); 
+const Color _hrZone     = Color(0xFFFFE4E6); 
+const Color _rrArea     = Color(0xFF06B6D4); 
+const Color _rrLine     = Color(0xFF0891B2); 
+const Color _ratioColor = Color(0xFF8B5CF6); 
+
 class CardiacoScreen extends StatefulWidget {
   final String participantId;
   final String username;
@@ -31,10 +37,7 @@ class _CardiacoScreenState extends State<CardiacoScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final p = context.read<DashboardProvider>();
-      if (p.cardiacoStart == null && p.dataRangeStart != null) {
-        p.setHourFilter(p.selectedHours, widget.participantId, widget.username);
-      }
+      context.read<DashboardProvider>().fetchCardiacoMetrics(widget.participantId, widget.username);
     });
   }
 
@@ -51,9 +54,12 @@ class _CardiacoScreenState extends State<CardiacoScreen> {
           byType.putIfAbsent(m.sensorType, () => []).add(m);
         }
 
+        final hrData = byType['pulse_rate'] ?? [];
+        final rrData = byType['respiratory_rate'] ?? [];
+
         final sections = [
           _ControlPanel(provider: provider, participantId: widget.participantId, username: widget.username),
-          if (byType.isEmpty)
+          if (hrData.isEmpty && rrData.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 100),
               child: Center(
@@ -62,9 +68,11 @@ class _CardiacoScreenState extends State<CardiacoScreen> {
             )
           else ...[
             const SizedBox(height: 24),
-            _buildSensorCard('pulse_rate', byType['pulse_rate'] ?? []),
-            _buildSensorCard('respiratory_rate', byType['respiratory_rate'] ?? []),
-            _buildSensorCard('prv', byType['prv'] ?? []),
+            _KPIsLayer(hrData: hrData, rrData: rrData),
+            const SizedBox(height: 24),
+            _CouplingGraphLayer(hrData: hrData, rrData: rrData),
+            const SizedBox(height: 24),
+            _ScatterPlotLayer(hrData: hrData, rrData: rrData),
           ]
         ];
 
@@ -81,11 +89,6 @@ class _CardiacoScreenState extends State<CardiacoScreen> {
         );
       },
     );
-  }
-
-  Widget _buildSensorCard(String type, List<Biomarker> data) {
-    if (data.isEmpty) return const SizedBox();
-    return _CardiacCard(sensorType: type, data: data);
   }
 }
 
@@ -303,110 +306,174 @@ class _TimeButton extends StatelessWidget {
   }
 }
 
-class _CardiacCard extends StatelessWidget {
-  final String sensorType;
-  final List<Biomarker> data;
+// ---------------------------------------------------------
+// LAYER 1: KPIs
+// ---------------------------------------------------------
+class _KPIsLayer extends StatelessWidget {
+  final List<Biomarker> hrData;
+  final List<Biomarker> rrData;
 
-  const _CardiacCard({required this.sensorType, required this.data});
+  const _KPIsLayer({required this.hrData, required this.rrData});
 
-  Color _getSensorColor() {
-    switch (sensorType) {
-      case 'pulse_rate': return AppColors.sensorHeart;
-      case 'prv': return AppColors.sensorPRV;
-      case 'respiratory_rate': return AppColors.sensorBreath;
-      default: return AppColors.cyberBlue;
+  @override
+  Widget build(BuildContext context) {
+    final validHR = hrData.where((e) => e.value != null).map((e) => e.value!).toList();
+    final validRR = rrData.where((e) => e.value != null).map((e) => e.value!).toList();
+
+    double avgHR = 0, minHR = 0, maxHR = 0;
+    if (validHR.isNotEmpty) {
+      avgHR = validHR.reduce((a, b) => a + b) / validHR.length;
+      minHR = validHR.reduce((a, b) => a < b ? a : b);
+      maxHR = validHR.reduce((a, b) => a > b ? a : b);
     }
-  }
 
-  String _getTitle() {
-    switch (sensorType) {
-      case 'pulse_rate': return 'Frecuencia Cardíaca';
-      case 'prv': return 'Variabilidad Cardíaca (PRV)';
-      case 'respiratory_rate': return 'Tasa Respiratoria';
-      default: return sensorType;
+    double avgRR = 0;
+    if (validRR.isNotEmpty) {
+      avgRR = validRR.reduce((a, b) => a + b) / validRR.length;
     }
-  }
 
-  String _getSubtitle() {
-    switch (sensorType) {
-      case 'pulse_rate': return 'lpm · Señal fotopletismográfica';
-      case 'prv': return 'ms · Intervalo R-R';
-      case 'respiratory_rate': return 'rpm · Estimación acelerométrica';
-      default: return '';
+    double avgRatio = 0;
+    int ratioCount = 0;
+    final rrMap = {for (var e in rrData) if (e.value != null) e.time.millisecondsSinceEpoch: e.value!};
+    for (var hr in hrData) {
+      if (hr.value != null) {
+        final rrVal = rrMap[hr.time.millisecondsSinceEpoch];
+        if (rrVal != null && rrVal > 0) {
+          avgRatio += (hr.value! / rrVal);
+          ratioCount++;
+        }
+      }
     }
-  }
+    if (ratioCount > 0) avgRatio /= ratioCount;
 
-  IconData _getIcon() {
-    switch (sensorType) {
-      case 'pulse_rate': return LucideIcons.heartPulse;
-      case 'prv': return LucideIcons.activity;
-      case 'respiratory_rate': return LucideIcons.wind;
-      default: return LucideIcons.barChart2;
-    }
-  }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmall = constraints.maxWidth < 700;
+        final children = [
+          Expanded(
+            flex: isSmall ? 0 : 1,
+            child: _KPICard(
+              title: 'Frecuencia Cardíaca',
+              value: validHR.isEmpty ? '--' : '${avgHR.round()} BPM',
+              subtitle: validHR.isEmpty ? 'Sin datos' : 'Min: ${minHR.round()}  |  Max: ${maxHR.round()}',
+              icon: LucideIcons.activity,
+              color: _hrColor,
+            ),
+          ),
+          if (!isSmall) const SizedBox(width: 16),
+          Expanded(
+            flex: isSmall ? 0 : 1,
+            child: _KPICard(
+              title: 'Tasa Respiratoria',
+              value: validRR.isEmpty ? '--' : '${avgRR.round()} BrPM',
+              subtitle: 'Media del tramo',
+              icon: LucideIcons.wind,
+              color: _rrLine,
+            ),
+          ),
+          if (!isSmall) const SizedBox(width: 16),
+          Expanded(
+            flex: isSmall ? 0 : 1,
+            child: _KPICard(
+              title: 'Ratio Cardiorrespiratorio',
+              value: ratioCount == 0 ? '--' : avgRatio.toStringAsFixed(1),
+              subtitle: 'Latidos por respiración',
+              icon: LucideIcons.infinity,
+              color: _ratioColor,
+            ),
+          ),
+        ];
 
-  Widget _buildStatusTag(String flag) {
-    Color color = const Color(0xFF34D399); 
-    String label = 'NORMAL';
-    if (flag == 'worn_during_motion') { color = const Color(0xFFFBBF24); label = 'MOVIMIENTO'; }
-    else if (flag == 'worn_with_low_signal_quality' || flag == 'low_signal_quality') { color = const Color(0xFFFB7185); label = 'SEÑAL BAJA'; }
-    else if (flag == 'device_not_recording') { color = _muted; label = 'GAP'; }
-    else if (flag == 'device_not_worn_correctly') { color = _muted; label = 'NO PUESTO'; }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
-      ),
-      child: Text(label, style: GoogleFonts.inter(color: color, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+        if (isSmall) {
+          return Column(
+            children: [
+              children[0],
+              const SizedBox(height: 16),
+              children[2],
+              const SizedBox(height: 16),
+              children[4],
+            ],
+          );
+        }
+        return Row(children: children);
+      },
     );
   }
+}
 
-  Widget _buildStatsTable(BuildContext context, Color sensorColor) {
-    final validValues = data.where((e) => e.value != null).map((e) => e.value!).toList();
-    if (validValues.isEmpty) return const SizedBox();
+class _KPICard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
 
-    double mean = validValues.reduce((a, b) => a + b) / validValues.length;
-    double min = validValues.reduce((a, b) => a < b ? a : b);
-    double max = validValues.reduce((a, b) => a > b ? a : b);
-    double variance = validValues.map((v) => math.pow(v - mean, 2)).reduce((a, b) => a + b) / validValues.length;
-    double sd = math.sqrt(variance);
+  const _KPICard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+  });
 
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _bg,
-        borderRadius: BorderRadius.circular(12),
+        color: _surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _StatItem(label: 'MEDIA', value: mean.toStringAsFixed(2), color: sensorColor),
-          _StatItem(label: 'SD', value: sd.toStringAsFixed(2), color: _muted),
-          _StatItem(label: 'MIN', value: min.toStringAsFixed(2), color: _muted),
-          _StatItem(label: 'MAX', value: max.toStringAsFixed(2), color: _muted),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: _muted)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(value, style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: _text)),
+          const SizedBox(height: 4),
+          Text(subtitle, style: GoogleFonts.jetBrainsMono(fontSize: 11, fontWeight: FontWeight.w600, color: _muted)),
         ],
       ),
     );
   }
+}
+
+// ---------------------------------------------------------
+// LAYER 2: Coupling Graph
+// ---------------------------------------------------------
+class _CouplingGraphLayer extends StatelessWidget {
+  final List<Biomarker> hrData;
+  final List<Biomarker> rrData;
+
+  const _CouplingGraphLayer({required this.hrData, required this.rrData});
 
   @override
   Widget build(BuildContext context) {
-    final sensorColor = _getSensorColor();
-    final hasData = data.any((b) => b.value != null);
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _border),
-        boxShadow: [
-          BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.05), blurRadius: 16, offset: const Offset(0, 4)),
-        ],
+        boxShadow: [BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.04), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,61 +481,21 @@ class _CardiacCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(24),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: sensorColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(_getIcon(), size: 22, color: sensorColor),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getTitle(),
-                        style: GoogleFonts.outfit(color: _text, fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _getSubtitle(),
-                        style: GoogleFonts.inter(color: _muted, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-                if (data.isNotEmpty) _buildStatusTag(data.first.qualityFlag),
+                Icon(LucideIcons.activity, size: 20, color: _text),
+                const SizedBox(width: 12),
+                Text('Acoplamiento Cardiorrespiratorio', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: _text)),
               ],
             ),
           ),
           const Divider(height: 1, color: _border),
           Padding(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (hasData) _buildStatsTable(context, sensorColor),
-                if (hasData) const SizedBox(height: 24),
-                if (hasData)
-                  SizedBox(
-                    height: 250,
-                    child: LineChart(_buildChartData()),
-                  )
-                else
-                  SizedBox(
-                    height: 100,
-                    child: Center(
-                      child: Text(
-                        'Sin valores representables (gaps de calidad)',
-                        style: GoogleFonts.inter(color: _muted),
-                      ),
-                    ),
-                  ),
-              ],
+            child: SizedBox(
+              height: 300,
+              child: hrData.isEmpty && rrData.isEmpty
+                  ? Center(child: Text('Sin datos para graficar', style: GoogleFonts.inter(color: _muted)))
+                  : LineChart(_buildChartData()),
             ),
           ),
         ],
@@ -477,125 +504,100 @@ class _CardiacCard extends StatelessWidget {
   }
 
   LineChartData _buildChartData() {
-    final displayData = data;
+    // Escalar RR para que conviva visualmente con HR
+    // HR suele estar entre 50 y 150. RR suele estar entre 10 y 30.
+    // Factor de escala ideal: x4
+    const double rrScale = 4.0; 
+
     final List<LineChartBarData> bars = [];
-    
-    List<List<FlSpot>> segments = [];
-    List<String> segmentQualities = [];
-    
-    if (displayData.isNotEmpty) {
-      List<FlSpot> currentSegment = [];
-      String currentQuality = displayData[0].qualityFlag;
-      DateTime? lastTime = displayData[0].time;
-      const int splitThresholdMs = 5 * 60 * 1000;
 
-      for (int i = 0; i < displayData.length; i++) {
-        final currentDT = displayData[i].time;
-        double xVal = currentDT.toUtc().millisecondsSinceEpoch.toDouble();
-        
-        bool timeGap = lastTime != null && (currentDT.difference(lastTime).inMilliseconds).abs() > splitThresholdMs;
-        bool qualityChange = displayData[i].qualityFlag != currentQuality;
+    // Tachycardia Zone (Background)
+    final extraLines = ExtraLinesData(
+      horizontalLines: [
+        HorizontalLine(
+          y: 100,
+          color: _hrZone.withValues(alpha: 0.8),
+          strokeWidth: 0,
+          label: HorizontalLineLabel(
+            show: true,
+            alignment: Alignment.topRight,
+            padding: const EdgeInsets.only(right: 8, bottom: 4),
+            style: GoogleFonts.inter(color: _hrColor, fontSize: 10, fontWeight: FontWeight.bold),
+            labelResolver: (_) => 'TAQUICARDIA (>100)',
+          ),
+        ),
+      ],
+    );
 
-        if (qualityChange || timeGap) {
-          if (currentSegment.isNotEmpty) {
-            segments.add(currentSegment);
-            segmentQualities.add(currentQuality);
-          }
-          currentSegment = [];
-          currentQuality = displayData[i].qualityFlag;
+    // RR Area
+    if (rrData.isNotEmpty) {
+      List<FlSpot> rrSpots = [];
+      for (var d in rrData) {
+        if (d.value != null) {
+          rrSpots.add(FlSpot(d.time.toUtc().millisecondsSinceEpoch.toDouble(), d.value! * rrScale));
         }
-
-        if (displayData[i].value != null) {
-          currentSegment.add(FlSpot(xVal, displayData[i].value!));
-        }
-        lastTime = currentDT;
       }
-      if (currentSegment.isNotEmpty) {
-        segments.add(currentSegment);
-        segmentQualities.add(currentQuality);
+      if (rrSpots.isNotEmpty) {
+        bars.add(LineChartBarData(
+          spots: rrSpots,
+          isCurved: true,
+          color: _rrLine,
+          barWidth: 1.5,
+          dotData: const FlDotData(show: false),
+          belowBarData: BarAreaData(
+            show: true,
+            color: _rrArea.withValues(alpha: 0.15),
+          ),
+        ));
       }
     }
 
-    final sensorColor = _getSensorColor();
-
-    bars.addAll(segments.asMap().entries.map((entry) {
-      final spots = entry.value;
-      final quality = segmentQualities[entry.key];
-      Color color = sensorColor;
-      bool isProblematic = false;
-      if (quality == 'worn_during_motion') { color = const Color(0xFFF59E0B); isProblematic = true; }
-      else if (quality == 'worn_with_low_signal_quality' || quality == 'low_signal_quality') { color = const Color(0xFFEF4444); isProblematic = true; }
-      else if (quality == 'device_not_recording') { color = const Color(0xFF94A3B8).withValues(alpha: 0.6); }
-      else if (quality == 'device_not_worn_correctly') { color = const Color(0xFF94A3B8).withValues(alpha: 0.4); }
-
-      return LineChartBarData(
-        spots: spots,
-        isCurved: true,
-        color: color,
-        barWidth: isProblematic ? 2.5 : 2,
-        dotData: const FlDotData(show: false),
-        belowBarData: BarAreaData(
-          show: true,
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [color.withValues(alpha: isProblematic ? 0.2 : 0.1), color.withValues(alpha: 0.0)],
-          ),
-        ),
-      );
-    }));
-
-    const int gapThresholdMs = 10 * 60 * 1000;
-    for (int i = 0; i < segments.length - 1; i++) {
-      final lastSpotOfCurrent = segments[i].last;
-      final firstSpotOfNext = segments[i+1].first;
-      
-      if ((firstSpotOfNext.x - lastSpotOfCurrent.x).abs() < gapThresholdMs) {
+    // HR Line
+    if (hrData.isNotEmpty) {
+      List<FlSpot> hrSpots = [];
+      for (var d in hrData) {
+        if (d.value != null) {
+          hrSpots.add(FlSpot(d.time.toUtc().millisecondsSinceEpoch.toDouble(), d.value!));
+        }
+      }
+      if (hrSpots.isNotEmpty) {
         bars.add(LineChartBarData(
-          spots: [lastSpotOfCurrent, firstSpotOfNext],
-          isCurved: false,
-          color: const Color(0xFF94A3B8).withValues(alpha: 0.4),
-          barWidth: 1.5,
-          dashArray: [4, 4],
+          spots: hrSpots,
+          isCurved: true,
+          color: _hrColor,
+          barWidth: 2.5,
           dotData: const FlDotData(show: false),
         ));
       }
     }
 
-    final allValues = displayData.where((e) => e.value != null).map((e) => e.value!);
-    double minY = allValues.isEmpty ? 0.0 : allValues.reduce((a, b) => a < b ? a : b);
-    double maxY = allValues.isEmpty ? 100.0 : allValues.reduce((a, b) => a > b ? a : b);
-    double padding = (maxY - minY) * 0.15;
-    if (padding == 0) padding = 1.0;
-    minY = (minY - padding).clamp(0.0, double.infinity);
-    maxY = maxY + padding;
-    double yInterval = (maxY - minY) / 5;
-    if (yInterval <= 0) yInterval = 1.0;
-
-    double minX = displayData.isNotEmpty ? displayData.first.time.toUtc().millisecondsSinceEpoch.toDouble() : 0.0;
-    double maxX = displayData.isNotEmpty ? displayData.last.time.toUtc().millisecondsSinceEpoch.toDouble() : 0.0;
-    
-    double xInterval = (maxX - minX) / 5;
-    if (xInterval <= 0) xInterval = 3600000; 
+    // Calcular ejes X
+    double minX = 0;
+    double maxX = 0;
+    final allT = [...hrData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble()), ...rrData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble())];
+    if (allT.isNotEmpty) {
+      minX = allT.reduce(math.min);
+      maxX = allT.reduce(math.max);
+    }
+    double xInterval = (maxX - minX) / 6;
+    if (xInterval <= 0) xInterval = 3600000;
 
     return LineChartData(
       minX: minX,
       maxX: maxX,
-      minY: minY,
-      maxY: maxY,
-      clipData: const FlClipData.all(),
+      minY: 0,
+      maxY: 160, // Fijo para asegurar proporción clínica
+      lineBarsData: bars,
+      extraLinesData: extraLines,
       gridData: FlGridData(
         show: true,
-        horizontalInterval: yInterval,
-        verticalInterval: xInterval,
-        getDrawingHorizontalLine: (v) => FlLine(color: _border, strokeWidth: 1),
-        getDrawingVerticalLine: (v) => FlLine(color: _border.withValues(alpha: 0.6), strokeWidth: 1),
-        drawVerticalLine: true,
+        drawVerticalLine: false,
+        horizontalInterval: 20,
+        getDrawingHorizontalLine: (v) => FlLine(color: _border.withValues(alpha: 0.5), strokeWidth: 1),
       ),
       titlesData: FlTitlesData(
         show: true,
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
@@ -613,27 +615,44 @@ class _CardiacCard extends StatelessWidget {
           )
         ),
         leftTitles: AxisTitles(
+          axisNameWidget: Text('HR (BPM)', style: GoogleFonts.inter(fontSize: 10, color: _hrColor, fontWeight: FontWeight.bold)),
+          axisNameSize: 20,
           sideTitles: SideTitles(
             showTitles: true,
-            interval: yInterval,
-            reservedSize: 45,
+            reservedSize: 35,
+            interval: 40,
             getTitlesWidget: (v, meta) {
-              return SideTitleWidget(axisSide: meta.axisSide, space: 8, child: Text(v >= 1000 ? '${(v/1000).toStringAsFixed(1)}k' : v.toStringAsFixed(0), style: GoogleFonts.inter(color: _muted, fontSize: 10, fontWeight: FontWeight.bold)));
+              return Text(v.toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _hrColor, fontSize: 10, fontWeight: FontWeight.bold));
+            }
+          )
+        ),
+        rightTitles: AxisTitles(
+          axisNameWidget: Text('RR (BrPM)', style: GoogleFonts.inter(fontSize: 10, color: _rrLine, fontWeight: FontWeight.bold)),
+          axisNameSize: 20,
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 35,
+            interval: 40, // 40 / rrScale = 10 BrPM
+            getTitlesWidget: (v, meta) {
+              return Text((v / rrScale).toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _rrLine, fontSize: 10, fontWeight: FontWeight.bold));
             }
           )
         ),
       ),
       borderData: FlBorderData(show: false),
-      lineBarsData: bars,
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
           getTooltipColor: (_) => Colors.white,
           tooltipBorder: const BorderSide(color: _border),
           getTooltipItems: (touchedSpots) {
             return touchedSpots.map((spot) {
+              final isRR = spot.bar.color == _rrLine;
+              final val = isRR ? spot.y / rrScale : spot.y;
+              final label = isRR ? 'RR' : 'HR';
+              final color = isRR ? _rrLine : _hrColor;
               return LineTooltipItem(
-                spot.y.toStringAsFixed(2),
-                GoogleFonts.inter(color: _text, fontWeight: FontWeight.bold),
+                '$label: ${val.toStringAsFixed(1)}',
+                GoogleFonts.inter(color: color, fontWeight: FontWeight.bold),
               );
             }).toList();
           },
@@ -643,20 +662,128 @@ class _CardiacCard extends StatelessWidget {
   }
 }
 
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? color;
-  const _StatItem({required this.label, required this.value, this.color});
+// ---------------------------------------------------------
+// LAYER 3: Scatter Plot
+// ---------------------------------------------------------
+class _ScatterPlotLayer extends StatelessWidget {
+  final List<Biomarker> hrData;
+  final List<Biomarker> rrData;
+
+  const _ScatterPlotLayer({required this.hrData, required this.rrData});
+
   @override
   Widget build(BuildContext context) {
-    final c = color ?? _accent;
-    return Column(
-      children: [
-        Text(label, style: GoogleFonts.inter(color: _muted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-        const SizedBox(height: 6),
-        Text(value, style: GoogleFonts.outfit(color: c, fontSize: 20, fontWeight: FontWeight.bold)),
-      ],
+    final rrMap = {for (var e in rrData) if (e.value != null) e.time.millisecondsSinceEpoch: e.value!};
+    List<ScatterSpot> spots = [];
+    
+    for (var hr in hrData) {
+      if (hr.value != null) {
+        final rrVal = rrMap[hr.time.millisecondsSinceEpoch];
+        if (rrVal != null && rrVal > 0) {
+          spots.add(ScatterSpot(
+            rrVal, 
+            hr.value!, 
+            dotPainter: FlDotCirclePainter(
+              color: _ratioColor.withValues(alpha: 0.5),
+              radius: 5,
+              strokeWidth: 0,
+            ),
+          ));
+        }
+      }
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border),
+        boxShadow: [BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.04), blurRadius: 16, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(LucideIcons.scatterChart, size: 20, color: _ratioColor),
+                    const SizedBox(width: 12),
+                    Text('Matriz de Dispersión Cardiorrespiratoria', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: _text)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('Correlación entre tasa respiratoria (X) y frecuencia cardíaca (Y).', style: GoogleFonts.inter(color: _muted, fontSize: 13)),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: _border),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: SizedBox(
+              height: 250,
+              child: spots.isEmpty
+                  ? Center(child: Text('Datos insuficientes para el análisis de dispersión', style: GoogleFonts.inter(color: _muted)))
+                  : ScatterChart(_buildScatterData(spots)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  ScatterChartData _buildScatterData(List<ScatterSpot> spots) {
+    return ScatterChartData(
+      scatterSpots: spots,
+      minX: 5,
+      maxX: 40,
+      minY: 40,
+      maxY: 180,
+      gridData: FlGridData(
+        show: true,
+        getDrawingHorizontalLine: (v) => FlLine(color: _border.withValues(alpha: 0.4), strokeWidth: 1),
+        getDrawingVerticalLine: (v) => FlLine(color: _border.withValues(alpha: 0.4), strokeWidth: 1),
+      ),
+      titlesData: FlTitlesData(
+        show: true,
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        bottomTitles: AxisTitles(
+          axisNameWidget: Text('Respiración (BrPM)', style: GoogleFonts.inter(fontSize: 10, color: _rrLine, fontWeight: FontWeight.bold)),
+          axisNameSize: 20,
+          sideTitles: SideTitles(
+            showTitles: true,
+            interval: 5,
+            reservedSize: 24,
+            getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _muted, fontSize: 10)),
+          ),
+        ),
+        leftTitles: AxisTitles(
+          axisNameWidget: Text('Pulso (BPM)', style: GoogleFonts.inter(fontSize: 10, color: _hrColor, fontWeight: FontWeight.bold)),
+          axisNameSize: 20,
+          sideTitles: SideTitles(
+            showTitles: true,
+            interval: 20,
+            reservedSize: 35,
+            getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _muted, fontSize: 10)),
+          ),
+        ),
+      ),
+      borderData: FlBorderData(show: true, border: Border.all(color: _border)),
+      scatterTouchData: ScatterTouchData(
+        enabled: true,
+        touchTooltipData: ScatterTouchTooltipData(
+          getTooltipColor: (_) => Colors.white,
+          getTooltipItems: (touchedSpot) => ScatterTooltipItem(
+            'HR: ${touchedSpot.y.toInt()}\nRR: ${touchedSpot.x.toInt()}',
+            textStyle: GoogleFonts.jetBrainsMono(color: _ratioColor, fontWeight: FontWeight.bold),
+            bottomMargin: 8,
+          ),
+        ),
+      ),
     );
   }
 }

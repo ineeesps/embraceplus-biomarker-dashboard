@@ -13,29 +13,30 @@ const Color _surface = AppColors.bgCard;
 const Color _border  = AppColors.border;
 const Color _text    = AppColors.textPrimary;
 const Color _muted   = AppColors.textSecondary;
-const Color _accent  = Color(0xFF8B5CF6);
+const Color _accent  = AppColors.cyberBlue;
+const Color _iconAccent = Colors.orange;
 
 const Color _clsGap     = Color(0xFFF1F5F9);
 const Color _clsStill   = Color(0xFF94A3B8);
 const Color _clsWalk    = Color(0xFF10B981);
-const Color _clsRun     = Color(0xFF6366F1);
+const Color _clsRun     = Color(0xFF8B5CF6);
 const Color _clsGeneric = Color(0xFF64748B);
 
 const Color _intGap = Color(0xFFF1F5F9);
 const Color _intSed = Color(0xFFE2E8F0);
 const Color _intLPA = Color(0xFFFDE047);
 const Color _intMPA = Color(0xFFFB923C);
-const Color _intVPA = Color(0xFFEF4444);
+const Color _intVPA = Color(0xFFEA580C);
 
-const Color _kVec = Color(0xFF0EA5E9);
-const Color _kStd = Color(0xFFF43F5E);
+const Color _kVec = Color(0xFF8B5CF6);
+const Color _kStd = Color(0xFF10B981);
 
-const Color _gaitBar = Color(0xFF0D9488);
-const Color _gaitBg  = Color(0xFFF1F5F9);
+const Color _gaitBar = Colors.orange;
+const Color _gaitBg  = Color(0xFFF8FAFC);
 
-const Color _axisX = Color(0xFFEF4444);
-const Color _axisY = Color(0xFF22C55E);
-const Color _axisZ = Color(0xFF3B82F6);
+const Color _axisX = Color(0xFF8B5CF6);
+const Color _axisY = Color(0xFF10B981);
+const Color _axisZ = Color(0xFFF59E0B);
 
 class MovimientoScreen extends StatefulWidget {
   final String participantId;
@@ -152,10 +153,10 @@ class _ControlPanel extends StatelessWidget {
               final headerIcon = Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _accent.withValues(alpha: 0.1),
+                  color: _iconAccent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(LucideIcons.personStanding, size: 16, color: _accent),
+                child: const Icon(LucideIcons.personStanding, size: 16, color: _iconAccent),
               );
               final headerTitle = Text(
                 'Movimiento y Actividad',
@@ -362,6 +363,8 @@ class _ActivitySpectrum extends StatelessWidget {
     }
   }
 
+
+
   Color _colorInt(Biomarker m) {
     if (_isGap(m.qualityFlag)) return _intGap;
     if (m.value == null) return _intGap;
@@ -406,6 +409,23 @@ class _ActivitySpectrum extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _SpectrumLegendCls extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('CLASIFICACIÓN', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _muted, letterSpacing: 0.5)),
+      const SizedBox(height: 12),
+      Wrap(spacing: 16, runSpacing: 10, children: [
+        _LegendItem('Quieto',    _clsStill),
+        _LegendItem('Caminata',  _clsWalk),
+        _LegendItem('Carrera',   _clsRun),
+        _LegendItem('Genérico',  _clsGeneric),
+        _LegendItem('Sin datos', _clsGap),
+      ]),
+    ]);
   }
 }
 
@@ -460,22 +480,7 @@ class _HeatmapPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter old) => true;
 }
 
-class _SpectrumLegendCls extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('CLASIFICACIÓN', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _muted, letterSpacing: 0.5)),
-      const SizedBox(height: 12),
-      Wrap(spacing: 16, runSpacing: 10, children: [
-        _LegendItem('Quieto',    _clsStill),
-        _LegendItem('Caminata',  _clsWalk),
-        _LegendItem('Carrera',   _clsRun),
-        _LegendItem('Genérico',  _clsGeneric),
-        _LegendItem('Sin datos', _clsGap),
-      ]),
-    ]);
-  }
-}
+
 
 class _SpectrumLegendInt extends StatelessWidget {
   @override
@@ -678,8 +683,8 @@ class _EficienciaMarcha extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Wrap(spacing: 28, runSpacing: 12, children: [
-            _LegendItem('Pasos acumulados', _gaitBar),
-            _LegendItem('Objetivo no alcanzado', _gaitBg),
+            _LegendItem('Pasos detectados', _gaitBar),
+            _LegendItem('Periodo de inactividad', _gaitBg),
           ]),
         ],
       ),
@@ -817,9 +822,9 @@ class _SectionCard extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: _accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                  child: Icon(icon, size: 20, color: _accent),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: _iconAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                  child: Icon(icon, size: 20, color: _iconAccent),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
