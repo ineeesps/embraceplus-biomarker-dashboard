@@ -8,6 +8,14 @@ class AppToast {
   static OverlayEntry? _current;
 
   static void show(BuildContext context, String message, {ToastType type = ToastType.info}) {
+    _show(Overlay.of(context), message, type: type);
+  }
+
+  static void showOnOverlay(OverlayState overlay, String message, {ToastType type = ToastType.info}) {
+    _show(overlay, message, type: type);
+  }
+
+  static void _show(OverlayState overlay, String message, {ToastType type = ToastType.info}) {
     _current?.remove();
     _current = null;
 
@@ -17,7 +25,7 @@ class AppToast {
     );
 
     _current = entry;
-    Overlay.of(context).insert(entry);
+    overlay.insert(entry);
 
     Future.delayed(const Duration(seconds: 3), () {
       entry.remove();

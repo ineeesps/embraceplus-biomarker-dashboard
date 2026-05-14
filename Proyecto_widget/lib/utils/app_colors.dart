@@ -16,17 +16,15 @@ abstract class AppColors {
   static const Color sidebarBorder = Color(0xFF334155);
   static const Color sidebarHover  = Color(0xFF334155);
 
-  // PALETA CLÍNICA ESTANDARIZADA
-  static const Color clinicalHeart  = Color(0xFFE11D48); // Rose 600
-  static const Color clinicalBreath = Color(0xFF06B6D4); // Cyan 500
-  static const Color clinicalMove   = Color(0xFFF97316); // Orange 500
-  static const Color clinicalTeal   = Color(0xFF0D9488); // Teal 600
-  static const Color clinicalViolet = Color(0xFF8B5CF6); // Violet 500
-  static const Color clinicalSlate  = Color(0xFF64748B); // Slate 500
+  static const Color clinicalHeart  = Color(0xFFE11D48);
+  static const Color clinicalBreath = Color(0xFF06B6D4);
+  static const Color clinicalMove   = Color(0xFFF97316);
+  static const Color clinicalTeal   = Color(0xFF0D9488);
+  static const Color clinicalViolet = Color(0xFF8B5CF6);
+  static const Color clinicalSlate  = Color(0xFF64748B);
 
-  // SENSORES (Alias para compatibilidad)
   static const Color sensorHeart  = clinicalHeart;
-  static const Color sensorPRV    = Color(0xFFF43F5E); // Mantenemos el tono rojizo específico
+  static const Color sensorPRV    = Color(0xFFF43F5E);
   static const Color sensorBreath = clinicalBreath;
   static const Color sensorMove   = clinicalMove;
   static const Color sensorEDA    = Color(0xFF10B981);

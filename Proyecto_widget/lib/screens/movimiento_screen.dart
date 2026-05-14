@@ -85,7 +85,8 @@ class _MovimientoScreenState extends State<MovimientoScreen> {
 
     final byType = <String, List<Biomarker>>{};
     for (final m in metrics) {
-      byType.putIfAbsent(m.sensorType, () => []).add(m);
+      final type = m.sensorType.toLowerCase().replaceAll('-', '_');
+      byType.putIfAbsent(type, () => []).add(m);
     }
 
     return LayoutBuilder(

@@ -146,8 +146,8 @@ class ApiService {
     }
   }
 
-  Future<List<int>> exportParticipantCsv(String participantId, {String bucketSize = '1 minute'}) async {
-    final url = '$baseUrl/participante/$participantId/exportar?bucket_size=${Uri.encodeComponent(bucketSize)}';
+  Future<List<int>> exportParticipantCsv(String participantId, String username, {String bucketSize = '1 minute'}) async {
+    final url = '$baseUrl/participante/$participantId/exportar?investigador=$username&bucket_size=${Uri.encodeComponent(bucketSize)}';
     try {
       final response = await http.get(Uri.parse(url))
           .timeout(const Duration(seconds: 30));

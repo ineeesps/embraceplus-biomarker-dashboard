@@ -6,6 +6,8 @@ import pandas as pd
 import io
 import os
 import sys
+import math
+import traceback
 
 dir_actual = os.path.dirname(os.path.abspath(__file__))
 ruta_scripts = os.path.join(dir_actual, '..', 'scripts')
@@ -28,13 +30,22 @@ DB_CONFIG = {
 }
 
 PATRONES_SENSORES = {
-    'temperature': 'temperature', 'eda': 'eda', 'pulse-rate': 'pulse_rate',
-    'respiratory-rate': 'respiratory_rate', 'accelerometers-std': 'accelerometer_std',
-    'prv': 'prv', 'step-counts': 'step_count', 'met': 'met',
-    'activity-intensity': 'activity_intensity', 'wearing-detection': 'wearing_detection',
-    'activity-classification': 'activity_class', 'activity-counts': 'activity_counts',
-    'actigraphy-counts': 'actigraphy_vector', 'body-position': 'body_position',
-    'acticounts': 'acticounts_total', 'sleep-detection': 'sleep_detection',
+    'temperature': 'temperature', 
+    'eda': 'eda', 
+    'pulse-rate': 'pulse_rate', 'pulse_rate': 'pulse_rate',
+    'respiratory-rate': 'respiratory_rate', 'respiratory_rate': 'respiratory_rate',
+    'accelerometers-std': 'accelerometer_std', 'accelerometer_std': 'accelerometer_std',
+    'prv': 'prv', 
+    'step-counts': 'step_count', 'step_count': 'step_count',
+    'met': 'met',
+    'activity-intensity': 'activity_intensity', 'activity_intensity': 'activity_intensity',
+    'wearing-detection': 'wearing_detection', 'wearing_detection': 'wearing_detection',
+    'activity-classification': 'activity_class', 'activity_class': 'activity_class',
+    'activity-counts': 'activity_counts', 'activity_counts': 'activity_counts',
+    'actigraphy-counts': 'actigraphy_vector', 'actigraphy_vector': 'actigraphy_vector',
+    'body-position': 'body_position', 'body_position': 'body_position',
+    'acticounts': 'acticounts_total', 
+    'sleep-detection': 'sleep_detection', 'sleep_detection': 'sleep_detection',
     'acticounts_x': 'acticounts_x', 'acticounts_y': 'acticounts_y', 'acticounts_z': 'acticounts_z'
 }
 
@@ -53,6 +64,25 @@ INVESTIGADORES = {
     }
 }
 
+async def get_lista_participantes_db(username: str):
+    """
+    Obtiene la lista de participantes de la base de datos para un investigador,
+    fusionándola con la lista por defecto.
+    """
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT participant_id FROM biomarcadores WHERE investigador = %s", (username,))
+        db_ids = [row[0] for row in cur.fetchall()]
+        cur.close()
+        conn.close()
+        
+        # Unir con la lista en memoria (evitando duplicados)
+        default_ids = INVESTIGADORES.get(username, {}).get("participantes", [])
+        return sorted(list(set(default_ids + db_ids)))
+    except Exception:
+        return INVESTIGADORES.get(username, {}).get("participantes", [])
+
 @app.post("/login")
 async def login(req: LoginRequest):
     """
@@ -63,9 +93,17 @@ async def login(req: LoginRequest):
         return {
             "status": "success",
             "username": user,
-            "participantes_asignados": INVESTIGADORES[user]["participantes"]
+            "participantes_asignados": await get_lista_participantes_db(user)
         }
-    raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+    raise HTTPException(status_code=401, detail="Credenciales inválidas")
+
+@app.get("/participantes/{username}")
+async def get_participantes(username: str):
+    if username not in INVESTIGADORES:
+        raise HTTPException(status_code=404, detail="Investigador no encontrado")
+    
+    participantes = await get_lista_participantes_db(username)
+    return {"investigador": username, "participantes": participantes}
 
 @app.get("/")
 async def root():
@@ -77,7 +115,7 @@ async def health():
         conn = psycopg2.connect(**DB_CONFIG)
         conn.close()
         return {"status": "ok", "db": "connected"}
-    except:
+    except Exception:
         return {"status": "error", "db": "disconnected"}
 
 @app.get("/investigador/{username}/resumen_participantes")
@@ -240,10 +278,9 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
     except HTTPException as http_e:
         raise http_e
     except Exception as e:
-        import traceback
         error_info = traceback.format_exc()
         print(error_info)
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}\n{error_info}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 @app.get("/participante/{id}/sensor/{sensor_type}/existe")
 async def verificar_existencia_sensor(id: str, sensor_type: str, investigador: str):
@@ -311,12 +348,11 @@ async def consultar_datos(id: str, investigador: str, start: str = None, end: st
         
         cur.execute(query, tuple(params))
         res = cur.fetchall()
-        import math
         for row in res:
             row['time'] = row['bucket'].isoformat()
             del row['bucket']
             val = row.get('value')
-            if val is not None and (isinstance(val, float) and (math.isnan(val) or math.isinf(val))):
+            if val is not None and isinstance(val, float) and (math.isnan(val) or math.isinf(val)):
                 row['value'] = None
         
         cur.close()
@@ -423,10 +459,7 @@ async def obtener_metadata_participante(id: str, investigador: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/participante/{id}/exportar")
-async def exportar_datos(id: str, bucket_size: str = '1 minute'):
-    """
-    Exportación de datos agregados en formato CSV para análisis externo.
-    """
+async def exportar_datos(id: str, investigador: str, bucket_size: str = '1 minute'):
     from fastapi.responses import StreamingResponse
     try:
         conn = psycopg2.connect(**DB_CONFIG)
@@ -442,11 +475,11 @@ async def exportar_datos(id: str, bucket_size: str = '1 minute'):
                     ELSE AVG(value)
                 END as value
             FROM biomarcadores
-            WHERE participant_id = %s
+            WHERE participant_id = %s AND investigador = %s
             GROUP BY timestamp, sensor_type
             ORDER BY timestamp ASC
         """
-        df = pd.read_sql_query(query, conn, params=[bucket_size, id])
+        df = pd.read_sql_query(query, conn, params=[bucket_size, id, investigador])
         conn.close()
 
         if df.empty:
@@ -456,7 +489,7 @@ async def exportar_datos(id: str, bucket_size: str = '1 minute'):
         output = io.StringIO()
         df_pivot.to_csv(output, index=False)
         output.seek(0)
-        
+
         return StreamingResponse(
             output,
             media_type="text/csv",

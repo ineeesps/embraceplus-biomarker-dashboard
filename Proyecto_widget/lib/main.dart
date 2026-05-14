@@ -21,10 +21,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static const Color kTextPrimary  = AppColors.textPrimary;
-  static const Color kCyberBlue    = AppColors.cyberBlue;
-  static const Color kBgScreen     = AppColors.bgScreen;
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -34,23 +30,23 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: kTextPrimary,
-          primary: kTextPrimary,
-          secondary: kCyberBlue,
+          seedColor: AppColors.textPrimary,
+          primary: AppColors.textPrimary,
+          secondary: AppColors.cyberBlue,
           surface: Colors.white,
-          onSurface: kTextPrimary,
+          onSurface: AppColors.textPrimary,
         ),
-        scaffoldBackgroundColor: kBgScreen,
+        scaffoldBackgroundColor: AppColors.bgScreen,
         textSelectionTheme: TextSelectionThemeData(
-          cursorColor: kTextPrimary,
-          selectionColor: kTextPrimary.withValues(alpha: 0.2),
-          selectionHandleColor: kTextPrimary,
+          cursorColor: AppColors.textPrimary,
+          selectionColor: AppColors.textPrimary.withValues(alpha: 0.2),
+          selectionHandleColor: AppColors.textPrimary,
         ),
         inputDecorationTheme: InputDecorationTheme(
           labelStyle: const TextStyle(color: Colors.grey),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: kTextPrimary, width: 2),
+            borderSide: const BorderSide(color: AppColors.textPrimary, width: 2),
           ),
         ),
       ),

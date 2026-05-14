@@ -98,32 +98,33 @@ class DashboardProvider with ChangeNotifier {
     if (hours <= 3)  return '1 minute';
     if (hours <= 6)  return '2 minutes';
     if (hours <= 12) return '5 minutes';
-    return '1 minute';
+    return '10 minutes';
   }
-
+  static String _resolucionLabel(String bucket) {
+    return bucket
+        .replaceAll(' seconds', ' seg')
+        .replaceAll(' minutes', ' min')
+        .replaceAll(' minute', ' min');
+  }
 
   String get movimientoResolucion {
     if (_movimientoStart == null || _movimientoEnd == null) return '';
-    final bucket = _bucketForHours(_selectedHours);
-    return bucket.replaceAll(' seconds', ' seg').replaceAll(' minutes', ' min');
+    return _resolucionLabel(_bucketForHours(_selectedHours));
   }
 
   String get cardiacoResolucion {
     if (_cardiacoStart == null || _cardiacoEnd == null) return '';
-    final bucket = _bucketForHours(_selectedCardiacoHours);
-    return bucket.replaceAll(' seconds', ' seg').replaceAll(' minutes', ' min');
+    return _resolucionLabel(_bucketForHours(_selectedCardiacoHours));
   }
 
   String get estresResolucion {
     if (_estresStart == null || _estresEnd == null) return '';
-    final bucket = _bucketForHours(_selectedEstresHours);
-    return bucket.replaceAll(' seconds', ' seg').replaceAll(' minutes', ' min');
+    return _resolucionLabel(_bucketForHours(_selectedEstresHours));
   }
 
   String get suenoResolucion {
     if (_suenoStart == null || _suenoEnd == null) return '';
-    final bucket = _bucketForHours(_selectedSuenoHours);
-    return bucket.replaceAll(' seconds', ' seg').replaceAll(' minutes', ' min');
+    return _resolucionLabel(_bucketForHours(_selectedSuenoHours));
   }
 
   void _applyHourFilter() {
@@ -182,7 +183,10 @@ class DashboardProvider with ChangeNotifier {
         endTime:   _movimientoEnd!.toUtc().toIso8601String(),
         bucketSize: bucket,
       );
-      _movimientoMetrics = all.where((m) => kMovimientoSensores.contains(m.sensorType)).toList();
+      _movimientoMetrics = all.where((m) {
+        final norm = m.sensorType.toLowerCase().replaceAll('-', '_');
+        return kMovimientoSensores.contains(norm);
+      }).toList();
     } catch (_) {
       _movimientoMetrics = [];
     } finally {
@@ -204,7 +208,10 @@ class DashboardProvider with ChangeNotifier {
         endTime:   _cardiacoEnd!.toUtc().toIso8601String(),
         bucketSize: bucket,
       );
-      _cardiacoMetrics = all.where((m) => kCardiacoSensores.contains(m.sensorType)).toList();
+      _cardiacoMetrics = all.where((m) {
+        final norm = m.sensorType.toLowerCase().replaceAll('-', '_');
+        return kCardiacoSensores.contains(norm);
+      }).toList();
     } catch (_) {
       _cardiacoMetrics = [];
     } finally {
@@ -226,7 +233,10 @@ class DashboardProvider with ChangeNotifier {
         endTime:   _estresEnd!.toUtc().toIso8601String(),
         bucketSize: bucket,
       );
-      _estresMetrics = all.where((m) => kEstresSensores.contains(m.sensorType)).toList();
+      _estresMetrics = all.where((m) {
+        final norm = m.sensorType.toLowerCase().replaceAll('-', '_');
+        return kEstresSensores.contains(norm);
+      }).toList();
     } catch (_) {
       _estresMetrics = [];
     } finally {

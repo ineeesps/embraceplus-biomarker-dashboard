@@ -9,12 +9,22 @@ class SensorAdapter:
         raise NotImplementedError
 
 class DefaultAdapter(SensorAdapter):
-    def __init__(self, target_column):
+    def __init__(self, target_column, tipo_sensor):
         self.target_column = target_column
+        self.tipo_sensor = tipo_sensor
 
     def map_row(self, row, dataframe):
-        val = getattr(row, self.target_column) if self.target_column in dataframe.columns else None
-        return [(self.target_column, val)]
+        # Intentar con el nombre objetivo
+        if self.target_column in dataframe.columns:
+            return [(self.tipo_sensor, getattr(row, self.target_column))]
+        
+        # Si no existe, buscar alternativas comunes (sin el sufijo de unidades o con el tipo_sensor directo)
+        alternativas = [self.tipo_sensor, self.tipo_sensor.replace('_', '-')]
+        for alt in alternativas:
+            if alt in dataframe.columns:
+                return [(self.tipo_sensor, getattr(row, alt))]
+        
+        return [(self.tipo_sensor, None)]
 
 class ActicountsAdapter(SensorAdapter):
     def map_row(self, row, dataframe):
@@ -43,25 +53,25 @@ class CategoricalAdapter(SensorAdapter):
 
     def map_row(self, row, dataframe):
         val = getattr(row, self.target_column, None)
-        if val is None or pd.isnull(val): return [(self.target_column, None)]
+        if pd.isnull(val): return [(self.target_column, None)]
         if isinstance(val, (int, float)): return [(self.target_column, int(val))]
         s_val = str(val).lower().strip()
         return [(self.target_column, self.category_map.get(s_val))]
 
 class SleepAdapter(SensorAdapter):
     def map_row(self, row, dataframe):
-        valor_raw = getattr(row, 'sleep_detection_stage') if 'sleep_detection_stage' in dataframe.columns else None
-        if pd.notnull(valor_raw):
-            try:
-                v = float(valor_raw)
-                if 0 <= v <= 99: res = 0
-                elif 100 <= v <= 299: res = 1
-                elif 300 <= v <= 399: res = 2
+        try:
+            stage = getattr(row, 'sleep_detection_stage', None)
+            if pd.notnull(stage):
+                v = int(stage)
+                if v == 100: res = 0
+                elif v == 200: res = 1
+                elif v == 300: res = 2
                 elif v == 400: res = 3
                 else: res = None
                 return [('sleep_detection', res)]
-            except:
-                pass
+        except:
+            pass
         return [('sleep_detection', None)]
 
 class BodyPositionAdapter(SensorAdapter):
@@ -106,13 +116,9 @@ class AdapterFactory:
                 'activity_counts': 'activity_counts',
                 'actigraphy_vector': 'vector_magnitude'
             }
-            return DefaultAdapter(mapa_columnas.get(tipo_sensor))
+            return DefaultAdapter(mapa_columnas.get(tipo_sensor, tipo_sensor), tipo_sensor)
 
 def _parse_hardware_state(calidad, missing_reason, valor_original=None):
-    """
-    Analiza los flags de calidad y las razones de pérdida de datos.
-    Detecta estados específicos del hardware (memoria llena, temperatura crítica, etc).
-    """
     if pd.isnull(missing_reason):
         return calidad
     

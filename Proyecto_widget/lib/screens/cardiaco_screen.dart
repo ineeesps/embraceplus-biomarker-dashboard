@@ -51,7 +51,8 @@ class _CardiacoScreenState extends State<CardiacoScreen> {
 
         final byType = <String, List<Biomarker>>{};
         for (var m in provider.cardiacoMetrics) {
-          byType.putIfAbsent(m.sensorType, () => []).add(m);
+          final type = m.sensorType.toLowerCase().replaceAll('-', '_');
+          byType.putIfAbsent(type, () => []).add(m);
         }
 
         final hrData = byType['pulse_rate'] ?? [];
@@ -580,12 +581,10 @@ class _CouplingGraphLayer extends StatelessWidget {
 
   LineChartData _buildChartData(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    // Escalar RR para que conviva visualmente con HR
-    const double rrScale = 4.0; 
+    const double rrScale = 4.0;
 
     final List<LineChartBarData> bars = [];
 
-    // Tachycardia Zone (Background)
     final extraLines = ExtraLinesData(
       horizontalLines: [
         HorizontalLine(
@@ -604,7 +603,6 @@ class _CouplingGraphLayer extends StatelessWidget {
       ],
     );
 
-    // RR Area
     if (rrData.isNotEmpty) {
       List<FlSpot> rrSpots = [];
       for (var d in rrData) {
@@ -627,7 +625,6 @@ class _CouplingGraphLayer extends StatelessWidget {
       }
     }
 
-    // HR Line
     if (hrData.isNotEmpty) {
       List<FlSpot> hrSpots = [];
       for (var d in hrData) {
@@ -646,7 +643,6 @@ class _CouplingGraphLayer extends StatelessWidget {
       }
     }
 
-    // Calcular ejes X
     double minX = 0;
     double maxX = 0;
     final allT = [...hrData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble()), ...rrData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble())];
@@ -661,7 +657,7 @@ class _CouplingGraphLayer extends StatelessWidget {
       minX: minX,
       maxX: maxX,
       minY: 0,
-      maxY: 160, // Fijo para asegurar proporción clínica
+      maxY: 160,
       lineBarsData: bars,
       extraLinesData: extraLines,
       gridData: FlGridData(
@@ -707,7 +703,7 @@ class _CouplingGraphLayer extends StatelessWidget {
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: isMobile ? 25 : 35,
-            interval: 40, // 40 / rrScale = 10 BrPM
+            interval: 40,
             getTitlesWidget: (v, meta) {
               return Text((v / rrScale).toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _rrLine, fontSize: 9, fontWeight: FontWeight.bold));
             }

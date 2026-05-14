@@ -50,7 +50,8 @@ class _EstresScreenState extends State<EstresScreen> {
 
         final byType = <String, List<Biomarker>>{};
         for (var m in provider.estresMetrics) {
-          byType.putIfAbsent(m.sensorType, () => []).add(m);
+          final type = m.sensorType.toLowerCase().replaceAll('-', '_');
+          byType.putIfAbsent(type, () => []).add(m);
         }
 
         final edaData  = byType['eda'] ?? [];
@@ -82,21 +83,7 @@ class _EstresScreenState extends State<EstresScreen> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isMobile = constraints.maxWidth < 600;
-                  final isLaptop = constraints.maxWidth > 1100;
                   final padding  = isMobile ? 12.0 : (constraints.maxWidth > 720 ? 24.0 : 16.0);
-
-                  if (isLaptop && listSections.length >= 5) {
-                    return ListView(
-                      padding: EdgeInsets.all(padding),
-                      children: [
-                        listSections[0], // KPIs
-                        const SizedBox(height: 24),
-                        listSections[2], // Reactividad
-                        const SizedBox(height: 24),
-                        listSections[4], // Contexto
-                      ],
-                    );
-                  }
 
                   return ListView(
                     padding: EdgeInsets.all(padding),
@@ -861,7 +848,7 @@ class _ContextoGraphLayer extends StatelessWidget {
 
   LineChartData _buildChartData(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    const double metScale = 5.0; // Escalar METs (0-5) para equiparar a Temp (25-35)
+    const double metScale = 5.0;
 
     final List<LineChartBarData> bars = [];
 

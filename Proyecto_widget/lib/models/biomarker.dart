@@ -12,9 +12,10 @@ class Biomarker {
   });
 
   factory Biomarker.fromJson(Map<String, dynamic> json) {
+    final typeStr = json['sensor_type']?.toString() ?? 'unknown';
     return Biomarker(
       time: DateTime.parse(json['time'].toString()),
-      sensorType: json['sensor_type']?.toString() ?? 'unknown',
+      sensorType: typeStr.toLowerCase().replaceAll('-', '_'),
       value: json['value'] == null ? null : double.tryParse(json['value'].toString()),
       qualityFlag: json['quality_flag']?.toString() ?? 'unknown',
     );

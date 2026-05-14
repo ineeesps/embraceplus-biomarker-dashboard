@@ -161,6 +161,8 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                             }
                             setModalState(() => errorMessage = '');
 
+                            final nav = Navigator.of(context);
+                            final overlay = Overlay.of(context);
                             final result = await FilePicker.pickFiles(
                               allowMultiple: true,
                               type: FileType.custom,
@@ -207,8 +209,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                                       if (exists) {
                                         setModalState(() => isUploading = false);
                                         final confirm = await showDialog<bool>(
-                                          // ignore: use_build_context_synchronously
-                                          context: context,
+                                          context: nav.context, // ignore: use_build_context_synchronously
                                           barrierDismissible: false,
                                           builder: (context) => AlertDialog(
                                             title: const Text('Archivo ya existente'),
@@ -255,18 +256,18 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                                 }
 
                               if (mounted) {
-                                // ignore: use_build_context_synchronously
-                                Navigator.pop(context);
-                                AppToast.show(
-                                  // ignore: use_build_context_synchronously
-                                  context,
-                                  errorCount == 0
-                                    ? 'Subida completada: $successCount archivos correctos'
-                                    : 'Subida parcial: $successCount correctos, $errorCount errores',
-                                  type: errorCount == 0 ? ToastType.success : ToastType.error,
-                                );
-                                setState(() { _isLoading = true; });
-                                _loadData();
+                                nav.pop();
+                                if (mounted) {
+                                  AppToast.showOnOverlay(
+                                    overlay,
+                                    errorCount == 0
+                                      ? 'Subida completada: $successCount archivos correctos'
+                                      : 'Subida parcial: $successCount correctos, $errorCount errores',
+                                    type: errorCount == 0 ? ToastType.success : ToastType.error,
+                                  );
+                                  setState(() { _isLoading = true; });
+                                  _loadData();
+                                }
                               }
                             }
                           },
