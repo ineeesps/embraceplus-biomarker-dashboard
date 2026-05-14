@@ -14,14 +14,14 @@ const Color _bg      = AppColors.bgScreen;
 const Color _surface = AppColors.bgCard;
 const Color _text    = AppColors.textPrimary;
 const Color _muted   = AppColors.textSecondary;
-const Color _accent  = AppColors.cyberBlue;
+const Color _accent  = AppColors.clinicalHeart; 
 const Color _border  = AppColors.border;
 
-const Color _hrColor    = Color(0xFFE11D48); 
-const Color _hrZone     = Color(0xFFFFE4E6); 
-const Color _rrArea     = Color(0xFF06B6D4); 
+const Color _hrColor    = AppColors.clinicalHeart; 
+const Color _rrArea     = AppColors.clinicalBreath; 
 const Color _rrLine     = Color(0xFF0891B2); 
-const Color _ratioColor = Color(0xFF8B5CF6); 
+const Color _ratioColor = AppColors.clinicalViolet; 
+const Color _tooltipBg  = Color(0xFF0F172A); 
 
 class CardiacoScreen extends StatefulWidget {
   final String participantId;
@@ -78,11 +78,34 @@ class _CardiacoScreenState extends State<CardiacoScreen> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+            final isLaptop = constraints.maxWidth > 1100;
+            final padding  = isMobile ? 12.0 : (constraints.maxWidth > 720 ? 24.0 : 16.0);
+
+            if (isLaptop && sections.length >= 7) {
+              return ListView(
+                padding: EdgeInsets.all(padding),
+                children: [
+                  sections[0], // Control Panel
+                  const SizedBox(height: 24),
+                  sections[2], // KPIs Layer
+                  const SizedBox(height: 24),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: sections[4]), // Coupling Graph
+                        const SizedBox(width: 20),
+                        Expanded(child: sections[6]), // Scatter Plot
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+
             return ListView(
-              padding: EdgeInsets.symmetric(
-                horizontal: constraints.maxWidth < 600 ? 16 : 32,
-                vertical: constraints.maxWidth < 600 ? 20 : 40,
-              ),
+              padding: EdgeInsets.all(padding),
               children: sections,
             );
           },
@@ -100,8 +123,9 @@ class _ControlPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24, vertical: 12),
       decoration: const BoxDecoration(
         color: _surface,
         border: Border(bottom: BorderSide(color: _border)),
@@ -120,43 +144,53 @@ class _ControlPanel extends StatelessWidget {
                 ),
                 child: const Icon(LucideIcons.heartPulse, size: 16, color: AppColors.sensorHeart),
               );
-              final headerTitle = Text(
-                'Cardíaco y Respiratorio',
-                style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: _text),
+              final headerTitle = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Monitorización Cardiopulmonar',
+                    style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: _text),
+                  ),
+                  Text(
+                    'Análisis continuo del acoplamiento entre la demanda ventilatoria y la respuesta cardíaca.',
+                    style: GoogleFonts.inter(fontSize: 11, color: _muted),
+                  ),
+                ],
               );
               final resolutionBadge = provider.cardiacoResolucion.isEmpty
                   ? const SizedBox()
                   : Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _accent.withValues(alpha: 0.08),
+                        color: _hrColor.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: _accent.withValues(alpha: 0.2)),
+                        border: Border.all(color: _hrColor.withValues(alpha: 0.2)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(LucideIcons.gauge, size: 11, color: _accent),
+                          const Icon(LucideIcons.gauge, size: 11, color: _hrColor),
                           const SizedBox(width: 6),
                           Text(
                             provider.cardiacoResolucion,
-                            style: GoogleFonts.jetBrainsMono(fontSize: 11, fontWeight: FontWeight.bold, color: _accent),
+                            style: GoogleFonts.jetBrainsMono(fontSize: 11, fontWeight: FontWeight.bold, color: _hrColor),
                           ),
                         ],
                       ),
                     );
 
               if (isSmall) {
-                return Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 10,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [headerIcon, const SizedBox(width: 12), headerTitle],
+                      children: [
+                        headerIcon,
+                        const SizedBox(width: 12),
+                        Expanded(child: headerTitle),
+                      ],
                     ),
+                    const SizedBox(height: 12),
                     resolutionBadge,
                   ],
                 );
@@ -237,38 +271,31 @@ class _TimeRangeSelector extends StatelessWidget {
     final endStr = DateFormat('HH:mm').format(provider.cardiacoEnd!);
     final dateStr = DateFormat('dd MMM yyyy').format(provider.cardiacoStart!);
 
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 12,
+      spacing: isMobile ? 8 : 12,
       runSpacing: 8,
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.calendarDays, size: 14, color: _muted),
-            const SizedBox(width: 8),
-            Text(dateStr, style: GoogleFonts.inter(fontSize: 13, color: _text, fontWeight: FontWeight.w600)),
+            Icon(LucideIcons.calendarDays, size: 13, color: _muted),
+            const SizedBox(width: 6),
+            Text(dateStr, style: GoogleFonts.inter(fontSize: 12, color: _text, fontWeight: FontWeight.w600)),
           ],
         ),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.clock, size: 14, color: _muted),
-            const SizedBox(width: 8),
-            Text('Tramo horario:', style: GoogleFonts.inter(fontSize: 13, color: _muted, fontWeight: FontWeight.w500)),
-            const SizedBox(width: 12),
-            _TimeButton(
-              time: startStr,
-              onTap: () => _pickTime(context, true),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Text('-', style: TextStyle(color: _muted)),
-            ),
-            _TimeButton(
-              time: endStr,
-              onTap: () => _pickTime(context, false),
-            ),
+            Icon(LucideIcons.clock, size: 13, color: _muted),
+            const SizedBox(width: 6),
+            if (!isMobile)
+              Text('Tramo:', style: GoogleFonts.inter(fontSize: 12, color: _muted, fontWeight: FontWeight.w500)),
+            if (!isMobile) const SizedBox(width: 8),
+            _TimeButton(time: startStr, onTap: () => _pickTime(context, true)),
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('-', style: TextStyle(color: _muted))),
+            _TimeButton(time: endStr, onTap: () => _pickTime(context, false)),
           ],
         ),
       ],
@@ -298,7 +325,7 @@ class _TimeButton extends StatelessWidget {
           style: GoogleFonts.jetBrainsMono(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: _accent,
+            color: _hrColor,
           ),
         ),
       ),
@@ -353,9 +380,10 @@ class _KPIsLayer extends StatelessWidget {
           Expanded(
             flex: isSmall ? 0 : 1,
             child: _KPICard(
-              title: 'Frecuencia Cardíaca',
+              title: 'Frecuencia Cardíaca (HR)',
               value: validHR.isEmpty ? '--' : '${avgHR.round()} BPM',
               subtitle: validHR.isEmpty ? 'Sin datos' : 'Min: ${minHR.round()}  |  Max: ${maxHR.round()}',
+              tooltip: 'Ritmo cardíaco promedio en el tramo. Valores sostenidos por encima de 100 BPM en reposo activan alertas de taquicardia.',
               icon: LucideIcons.activity,
               color: _hrColor,
             ),
@@ -364,9 +392,10 @@ class _KPIsLayer extends StatelessWidget {
           Expanded(
             flex: isSmall ? 0 : 1,
             child: _KPICard(
-              title: 'Tasa Respiratoria',
+              title: 'Frecuencia Ventilatoria (RR)',
               value: validRR.isEmpty ? '--' : '${avgRR.round()} BrPM',
               subtitle: 'Media del tramo',
+              tooltip: 'Tasa respiratoria media. Un adulto sano en reposo oscila entre 12 y 20 BrPM. Alteraciones pueden indicar estrés metabólico o respiratorio.',
               icon: LucideIcons.wind,
               color: _rrLine,
             ),
@@ -375,9 +404,10 @@ class _KPIsLayer extends StatelessWidget {
           Expanded(
             flex: isSmall ? 0 : 1,
             child: _KPICard(
-              title: 'Ratio Cardiorrespiratorio',
+              title: 'Índice de Acoplamiento (HR/RR)',
               value: ratioCount == 0 ? '--' : avgRatio.toStringAsFixed(1),
               subtitle: 'Latidos por respiración',
+              tooltip: 'Proporción de latidos por cada ciclo respiratorio. Una desviación drástica de la media normal (aprox. 4.0) indica un desacoplamiento fisiológico.',
               icon: LucideIcons.infinity,
               color: _ratioColor,
             ),
@@ -389,9 +419,9 @@ class _KPIsLayer extends StatelessWidget {
             children: [
               children[0],
               const SizedBox(height: 16),
-              children[2],
+              children[1],
               const SizedBox(height: 16),
-              children[4],
+              children[2],
             ],
           );
         }
@@ -405,6 +435,7 @@ class _KPICard extends StatelessWidget {
   final String title;
   final String value;
   final String subtitle;
+  final String? tooltip;
   final IconData icon;
   final Color color;
 
@@ -412,17 +443,19 @@ class _KPICard extends StatelessWidget {
     required this.title,
     required this.value,
     required this.subtitle,
+    this.tooltip,
     required this.icon,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 16 : 20),
       decoration: BoxDecoration(
         color: _surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
         border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
@@ -432,25 +465,47 @@ class _KPICard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(isMobile ? 6 : 8),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
                 ),
-                child: Icon(icon, size: 18, color: color),
+                child: Icon(icon, size: isMobile ? 16 : 18, color: color),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: _muted)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
+                      children: [
+                        Text(title, style: GoogleFonts.inter(fontSize: isMobile ? 11 : 12, fontWeight: FontWeight.bold, color: _muted)),
+                        if (tooltip != null) ...[
+                          const SizedBox(width: 4),
+                          Tooltip(
+                            message: tooltip!,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: _tooltipBg, borderRadius: BorderRadius.circular(8)),
+                            textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+                            child: Icon(LucideIcons.info, size: 12, color: _muted.withValues(alpha: 0.5)),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(value, style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: _text)),
+          const SizedBox(height: isMobile ? 12 : 16),
+          Text(value, style: GoogleFonts.inter(fontSize: isMobile ? 24 : 28, fontWeight: FontWeight.bold, color: _text, letterSpacing: -0.5)),
           const SizedBox(height: 4),
-          Text(subtitle, style: GoogleFonts.jetBrainsMono(fontSize: 11, fontWeight: FontWeight.w600, color: _muted)),
+          Text(subtitle, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: _muted)),
         ],
       ),
     );
@@ -480,11 +535,26 @@ class _CouplingGraphLayer extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.all(24),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(LucideIcons.activity, size: 20, color: _text),
-                const SizedBox(width: 12),
-                Text('Acoplamiento Cardiorrespiratorio', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: _text)),
+                Row(
+                  children: [
+                    Icon(LucideIcons.activity, size: 20, color: _text),
+                    const SizedBox(width: 12),
+                    Text('Dinámica de Acoplamiento Temporal', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: _text)),
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: "Evaluación de la sincronía entre el pulso y la respiración. Una base rítmica estable indica un buen estado autonómico.",
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: _tooltipBg, borderRadius: BorderRadius.circular(8)),
+                      textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+                      child: Icon(LucideIcons.info, size: 14, color: _muted.withValues(alpha: 0.5)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('Superposición de la variabilidad del pulso sobre la base de frecuencia respiratoria.', style: GoogleFonts.inter(color: _muted, fontSize: 13)),
               ],
             ),
           ),
@@ -495,7 +565,7 @@ class _CouplingGraphLayer extends StatelessWidget {
               height: 300,
               child: hrData.isEmpty && rrData.isEmpty
                   ? Center(child: Text('Sin datos para graficar', style: GoogleFonts.inter(color: _muted)))
-                  : LineChart(_buildChartData()),
+                  : LineChart(_buildChartData(context)),
             ),
           ),
         ],
@@ -503,7 +573,8 @@ class _CouplingGraphLayer extends StatelessWidget {
     );
   }
 
-  LineChartData _buildChartData() {
+  LineChartData _buildChartData(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     // Escalar RR para que conviva visualmente con HR
     // HR suele estar entre 50 y 150. RR suele estar entre 10 y 30.
     // Factor de escala ideal: x4
@@ -516,8 +587,9 @@ class _CouplingGraphLayer extends StatelessWidget {
       horizontalLines: [
         HorizontalLine(
           y: 100,
-          color: _hrZone.withValues(alpha: 0.8),
-          strokeWidth: 0,
+          color: _hrColor.withValues(alpha: 0.3),
+          strokeWidth: 1.5,
+          dashArray: [5, 5],
           label: HorizontalLineLabel(
             show: true,
             alignment: Alignment.topRight,
@@ -615,26 +687,26 @@ class _CouplingGraphLayer extends StatelessWidget {
           )
         ),
         leftTitles: AxisTitles(
-          axisNameWidget: Text('HR (BPM)', style: GoogleFonts.inter(fontSize: 10, color: _hrColor, fontWeight: FontWeight.bold)),
+          axisNameWidget: Text('HR', style: GoogleFonts.inter(fontSize: 10, color: _hrColor, fontWeight: FontWeight.bold)),
           axisNameSize: 20,
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 35,
+            reservedSize: isMobile ? 25 : 35,
             interval: 40,
             getTitlesWidget: (v, meta) {
-              return Text(v.toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _hrColor, fontSize: 10, fontWeight: FontWeight.bold));
+              return Text(v.toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _hrColor, fontSize: 9, fontWeight: FontWeight.bold));
             }
           )
         ),
         rightTitles: AxisTitles(
-          axisNameWidget: Text('RR (BrPM)', style: GoogleFonts.inter(fontSize: 10, color: _rrLine, fontWeight: FontWeight.bold)),
+          axisNameWidget: Text('RR', style: GoogleFonts.inter(fontSize: 10, color: _rrLine, fontWeight: FontWeight.bold)),
           axisNameSize: 20,
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 35,
+            reservedSize: isMobile ? 25 : 35,
             interval: 40, // 40 / rrScale = 10 BrPM
             getTitlesWidget: (v, meta) {
-              return Text((v / rrScale).toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _rrLine, fontSize: 10, fontWeight: FontWeight.bold));
+              return Text((v / rrScale).toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _rrLine, fontSize: 9, fontWeight: FontWeight.bold));
             }
           )
         ),
@@ -642,17 +714,16 @@ class _CouplingGraphLayer extends StatelessWidget {
       borderData: FlBorderData(show: false),
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
-          getTooltipColor: (_) => Colors.white,
-          tooltipBorder: const BorderSide(color: _border),
+          getTooltipColor: (_) => _tooltipBg,
+          tooltipBorder: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
           getTooltipItems: (touchedSpots) {
             return touchedSpots.map((spot) {
               final isRR = spot.bar.color == _rrLine;
               final val = isRR ? spot.y / rrScale : spot.y;
               final label = isRR ? 'RR' : 'HR';
-              final color = isRR ? _rrLine : _hrColor;
               return LineTooltipItem(
                 '$label: ${val.toStringAsFixed(1)}',
-                GoogleFonts.inter(color: color, fontWeight: FontWeight.bold),
+                GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
               );
             }).toList();
           },
@@ -673,6 +744,7 @@ class _ScatterPlotLayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     final rrMap = {for (var e in rrData) if (e.value != null) e.time.millisecondsSinceEpoch: e.value!};
     List<ScatterSpot> spots = [];
     
@@ -708,14 +780,23 @@ class _ScatterPlotLayer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 8,
                   children: [
                     Icon(LucideIcons.scatterChart, size: 20, color: _ratioColor),
-                    const SizedBox(width: 12),
                     Text('Matriz de Dispersión Cardiorrespiratoria', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: _text)),
+                    Tooltip(
+                      message: "Análisis bivariado. Una dispersión lineal ascendente sugiere un sistema cardiorrespiratorio sano y reactivo. Nubes de puntos erráticas señalan falta de sincronización autonómica.",
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: _tooltipBg, borderRadius: BorderRadius.circular(8)),
+                      textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+                      child: Icon(LucideIcons.info, size: 14, color: _muted.withValues(alpha: 0.5)),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text('Correlación entre tasa respiratoria (X) y frecuencia cardíaca (Y).', style: GoogleFonts.inter(color: _muted, fontSize: 13)),
               ],
             ),
@@ -727,7 +808,7 @@ class _ScatterPlotLayer extends StatelessWidget {
               height: 250,
               child: spots.isEmpty
                   ? Center(child: Text('Datos insuficientes para el análisis de dispersión', style: GoogleFonts.inter(color: _muted)))
-                  : ScatterChart(_buildScatterData(spots)),
+                  : ScatterChart(_buildScatterData(context, spots)),
             ),
           ),
         ],
@@ -735,7 +816,8 @@ class _ScatterPlotLayer extends StatelessWidget {
     );
   }
 
-  ScatterChartData _buildScatterData(List<ScatterSpot> spots) {
+  ScatterChartData _buildScatterData(BuildContext context, List<ScatterSpot> spots) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return ScatterChartData(
       scatterSpots: spots,
       minX: 5,
@@ -762,13 +844,13 @@ class _ScatterPlotLayer extends StatelessWidget {
           ),
         ),
         leftTitles: AxisTitles(
-          axisNameWidget: Text('Pulso (BPM)', style: GoogleFonts.inter(fontSize: 10, color: _hrColor, fontWeight: FontWeight.bold)),
+          axisNameWidget: Text('Pulso', style: GoogleFonts.inter(fontSize: 10, color: _hrColor, fontWeight: FontWeight.bold)),
           axisNameSize: 20,
           sideTitles: SideTitles(
             showTitles: true,
             interval: 20,
-            reservedSize: 35,
-            getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _muted, fontSize: 10)),
+            reservedSize: isMobile ? 25 : 35,
+            getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _muted, fontSize: 9)),
           ),
         ),
       ),
@@ -776,10 +858,10 @@ class _ScatterPlotLayer extends StatelessWidget {
       scatterTouchData: ScatterTouchData(
         enabled: true,
         touchTooltipData: ScatterTouchTooltipData(
-          getTooltipColor: (_) => Colors.white,
+          getTooltipColor: (_) => _tooltipBg,
           getTooltipItems: (touchedSpot) => ScatterTooltipItem(
             'HR: ${touchedSpot.y.toInt()}\nRR: ${touchedSpot.x.toInt()}',
-            textStyle: GoogleFonts.jetBrainsMono(color: _ratioColor, fontWeight: FontWeight.bold),
+            textStyle: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
             bottomMargin: 8,
           ),
         ),

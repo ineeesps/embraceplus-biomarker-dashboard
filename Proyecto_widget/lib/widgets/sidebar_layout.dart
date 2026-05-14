@@ -162,7 +162,7 @@ class _SidebarLayoutState extends State<SidebarLayout> {
                   },
                 ),
                 _buildNavItem(
-                  icon: LucideIcons.personStanding,
+                  icon: LucideIcons.move,
                   title: 'Movimiento y Actividad',
                   isSelected: widget.selectedIndex == 1,
                   isExpanded: isExpanded,
@@ -172,7 +172,7 @@ class _SidebarLayoutState extends State<SidebarLayout> {
                   },
                 ),
                 _buildNavItem(
-                  icon: LucideIcons.heart,
+                  icon: LucideIcons.heartPulse,
                   title: 'Cardíaco y Respiratorio',
                   isSelected: widget.selectedIndex == 2,
                   isExpanded: isExpanded,

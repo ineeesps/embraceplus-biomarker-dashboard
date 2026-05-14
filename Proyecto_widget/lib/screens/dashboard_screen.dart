@@ -150,7 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   runSpacing: 16,
                   alignment: WrapAlignment.center,
                   children: [
-                    _buildIAStatusLabel(LucideIcons.personStanding, 'Estado actual', provider.lastActivity, isMobile),
+                    _buildIAStatusLabel(LucideIcons.move, 'Estado actual', provider.lastActivity, isMobile),
                     _buildIAStatusLabel(LucideIcons.moon, 'Última posición', provider.lastPosition, isMobile),
                   ],
                 ),
@@ -168,7 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildIAStatusLabel(IconData icon, String title, String value, bool isMobile) {
     return Container(
-      constraints: BoxConstraints(maxWidth: isMobile ? 160 : 220),
+      constraints: BoxConstraints(maxWidth: isMobile ? 140 : 220),
       padding: const EdgeInsets.fromLTRB(6, 12, 16, 12),
       decoration: BoxDecoration(
         color: Colors.white,
