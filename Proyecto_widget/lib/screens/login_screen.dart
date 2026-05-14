@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/api_service.dart';
 import 'participant_selection_screen.dart';
+import '../utils/app_colors.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -18,11 +19,11 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   String? _errorMessage;
 
-  static const Color kTextPrimary    = Color(0xFF0F172A);
-  static const Color kCyberBlue      = Color(0xFF0EA5E9);
-  static const Color kBgScreen       = Color(0xFFF8FAFC);
-  static const Color kTextSecondary  = Color(0xFF64748B);
-  static const Color kBorderColor    = Color(0xFFE2E8F0);
+  static const Color kTextPrimary    = AppColors.textPrimary;
+  static const Color kCyberBlue      = AppColors.cyberBlue;
+  static const Color kBgScreen       = AppColors.bgScreen;
+  static const Color kTextSecondary  = AppColors.textSecondary;
+  static const Color kBorderColor    = AppColors.border;
 
   Future<void> _login() async {
     setState(() => _errorMessage = null);

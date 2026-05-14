@@ -145,4 +145,19 @@ class ApiService {
       throw Exception('Error de conexión: $e');
     }
   }
+
+  Future<List<int>> exportParticipantCsv(String participantId, {String bucketSize = '1 minute'}) async {
+    final url = '$baseUrl/participante/$participantId/exportar?bucket_size=${Uri.encodeComponent(bucketSize)}';
+    try {
+      final response = await http.get(Uri.parse(url))
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        throw Exception('Error al exportar datos (${response.statusCode})');
+      }
+    } catch (e) {
+      throw Exception('Error al exportar: $e');
+    }
+  }
 }

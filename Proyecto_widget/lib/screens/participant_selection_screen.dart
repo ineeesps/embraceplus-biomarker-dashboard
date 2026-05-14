@@ -7,6 +7,7 @@ import '../widgets/sidebar_layout.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/confirm_dialog.dart';
 import '../services/api_service.dart';
+import '../utils/app_colors.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
@@ -60,10 +61,10 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
 
   List<ParticipantData> _realData = [];
 
-  static const Color primaryBlue    = Color(0xFF0F172A);
-  static const Color accentTeal     = Color(0xFF0EA5E9);
-  static const Color nudeColor      = Color(0xFF64748B);
-  static const Color kBorderColor   = Color(0xFFE2E8F0);
+  static const Color primaryBlue    = AppColors.textPrimary;
+  static const Color accentTeal     = AppColors.cyberBlue;
+  static const Color nudeColor      = AppColors.textSecondary;
+  static const Color kBorderColor   = AppColors.border;
   
   @override
   void initState() {
@@ -76,7 +77,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     }
   }
 
-  /// Carga los datos de los participantes asignados al investigador actual
   Future<void> _loadData() async {
     try {
       final api = ApiService();
@@ -103,7 +103,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     super.dispose();
   }
 
-  /// Navega al dashboard de un participante específico
   void _navigateToDashboard(String id) {
     if (id.trim().isEmpty) return;
     Navigator.push(
@@ -114,7 +113,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     );
   }
 
-  /// Muestra el modal para la subida de archivos CSV de un participante
   void _showUploadModal({String? prefilledId}) {
     final TextEditingController idController = TextEditingController(text: prefilledId);
     bool isUploading = false;
@@ -184,7 +182,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                                   setModalState(() => statusMessage = 'Subiendo archivo ${i + 1} de ${result.files.length}...\n${file.name}');
                                   
                                   try {
-                                    // Detectar tipo de sensor
                                     String? sensorType;
                                     final fileNameLower = file.name.toLowerCase();
                                     final patrones = {
@@ -208,7 +205,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                                     if (sensorType != null) {
                                       final exists = await api.checkSensorDataExists(pId, sensorType, widget.username);
                                       if (exists) {
-                                        // Pausamos la subida para preguntar
                                         setModalState(() => isUploading = false);
                                         final confirm = await showDialog<bool>(
                                           // ignore: use_build_context_synchronously
@@ -321,7 +317,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     }
   }
 
-  /// Elimina un participante y todos sus datos asociados
   Future<void> _deleteParticipant(String id) async {
     final confirmed = await showConfirmDialog(
       context,
@@ -343,7 +338,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     }
   }
 
-  /// Muestra las opciones de edición (renombrar o subir más datos)
   void _showEditOptions(String id) {
     showModalBottomSheet(
       context: context,
@@ -378,7 +372,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     );
   }
 
-  /// Diálogo para cambiar el identificador de un participante
   Future<void> _showRenameDialog(String oldId) async {
     final controller = TextEditingController(text: oldId);
     final newId = await showDialog<String>(
@@ -470,7 +463,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                       )
                     : ListView(
                     children: [
-                      // KPIs con disposición flexible
                       if (isSmall)
                         Column(
                           children: [
@@ -493,7 +485,6 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                         ),
                       const SizedBox(height: 32),
 
-                      // Barra de búsqueda y botones responsive
                       if (isSmall)
                         Column(
                           children: [

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
+import 'dart:io';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../providers/dashboard_provider.dart';
@@ -11,16 +12,17 @@ import '../widgets/quality_legend.dart';
 import '../widgets/sidebar_layout.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/confirm_dialog.dart';
+import '../services/api_service.dart';
+import '../utils/app_colors.dart';
 import 'movimiento_screen.dart';
 import 'login_screen.dart';
 
-const Color primaryBlue  = Color(0xFF0F172A);
-const Color bgColor      = Color(0xFF0F172A);
-const Color accentTeal   = Color(0xFF38BDF8);
-const Color nudeColor    = Color(0xFF94A3B8);
-const Color kBorderColor = Color(0xFF334155);
-const Color _dsSurface   = Color(0xFF1E293B);
-const Color _dsBg        = Color(0xFF0F172A);
+const Color primaryBlue  = AppColors.textPrimary;
+const Color accentTeal   = AppColors.cyberBlue;
+const Color nudeColor    = AppColors.textSecondary;
+const Color kBorderColor = AppColors.border;
+const Color kBgScreen    = AppColors.bgScreen;
+const Color _dsSurface   = AppColors.bgCard;
 
 class DashboardScreen extends StatefulWidget {
   final String participantId;
@@ -312,7 +314,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildKPICard(String title, String value, IconData icon, Color color, bool isMobile) {
-    // Definimos padding responsive para evitar overflows en tablets
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isSmallCard = constraints.maxHeight < 140;
@@ -365,9 +366,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     Color _getComplianceColor(double pct) {
-      if (pct >= 85) return const Color(0xFF10B981); // Verde esmeralda
-      if (pct >= 60) return const Color(0xFFF59E0B); // Naranja ámbar
-      return const Color(0xFFEF4444); // Rojo vibrante
+      if (pct >= 85) return const Color(0xFF10B981);
+      if (pct >= 60) return const Color(0xFFF59E0B);
+      return const Color(0xFFEF4444);
     }
   Widget _buildSensorSection(DashboardProvider provider, List<String> allowedSensors) {
     final filteredMetrics = Map.fromEntries(
@@ -379,11 +380,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         children: [
           Container(
-            color: _dsSurface,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: kBorderColor)),
+            ),
             child: TabBar(
               indicatorColor: accentTeal,
               indicatorWeight: 3,
-              labelColor: accentTeal,
+              labelColor: primaryBlue,
               unselectedLabelColor: nudeColor,
               labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
               tabs: const [
@@ -423,7 +427,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       )
                     : Container(
-                        color: _dsBg,
+                        color: kBgScreen,
                         child: ListView(
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                           children: [
@@ -439,24 +443,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ],
                         ),
                       ),
-                SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 40),
-                        Icon(LucideIcons.wrench, size: 64, color: accentTeal.withValues(alpha: 0.5)),
-                        const SizedBox(height: 16),
-                        Text('Sección de Análisis en construcción', style: GoogleFonts.inter(color: primaryBlue, fontSize: 16)),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          icon: const Icon(LucideIcons.download, size: 18),
-                          label: const Text('Exportar Datos Crudos'),
-                          onPressed: () => _exportData(context),
-                        ),
-                        const SizedBox(height: 40),
-                      ],
+                Container(
+                  color: kBgScreen,
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 40),
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: accentTeal.withValues(alpha: 0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(LucideIcons.download, size: 48, color: accentTeal),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Exportar Datos del Participante',
+                            style: GoogleFonts.inter(color: primaryBlue, fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Descarga todos los biomarcadores en formato CSV para análisis externo.',
+                            style: GoogleFonts.inter(color: nudeColor, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+                          ElevatedButton.icon(
+                            icon: const Icon(LucideIcons.download, size: 18),
+                            label: const Text('Descargar CSV'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryBlue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed: () => _exportData(context),
+                          ),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -504,8 +533,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
 
-  void _exportData(BuildContext context) {
-    AppToast.show(context, 'Exportando datos de ${widget.participantId}...', type: ToastType.info);
+  Future<void> _exportData(BuildContext context) async {
+    AppToast.show(context, 'Preparando exportación...', type: ToastType.info);
+    try {
+      final api = ApiService();
+      final bytes = await api.exportParticipantCsv(widget.participantId);
+      final timestamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
+      final fileName = '${widget.participantId}_$timestamp.csv';
+      final dir = Directory('/home/${Platform.environment['USER'] ?? 'ines'}/Escritorio');
+      final savePath = '${dir.path}/$fileName';
+      await File(savePath).writeAsBytes(bytes);
+      if (context.mounted) {
+        AppToast.show(context, 'CSV guardado en Escritorio: $fileName', type: ToastType.success);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        AppToast.show(context, 'Error al exportar: $e', type: ToastType.error);
+      }
+    }
   }
 }
 
@@ -526,7 +571,7 @@ class BiomarkerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: kBorderColor),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 8)),
+          BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -552,7 +597,7 @@ class BiomarkerCard extends StatelessWidget {
                     children: [
                       Text(
                         _formatSensorTitle(sensorType),
-                        style: GoogleFonts.outfit(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.outfit(color: primaryBlue, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -610,7 +655,7 @@ class BiomarkerCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _dsBg,
+        color: kBgScreen,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: kBorderColor),
       ),
@@ -693,16 +738,16 @@ class BiomarkerCard extends StatelessWidget {
 
   Color _sensorColor(String sensorType) {
     switch (sensorType) {
-      case 'pulse_rate':         return const Color(0xFFFB7185); // Rose 400
-      case 'prv':                return const Color(0xFFF43F5E); // Rose 500
-      case 'respiratory_rate':   return const Color(0xFF38BDF8); // Cyber Blue
-      case 'eda':                return const Color(0xFF34D399); // Emerald 400
-      case 'temperature':        return const Color(0xFFFBBF24); // Amber 400
-      case 'sleep_detection':    return const Color(0xFF818CF8); // Indigo 400
+      case 'pulse_rate':         return AppColors.sensorHeart;
+      case 'prv':                return AppColors.sensorPRV;
+      case 'respiratory_rate':   return AppColors.sensorBreath;
+      case 'eda':                return AppColors.sensorEDA;
+      case 'temperature':        return AppColors.sensorTemp;
+      case 'sleep_detection':    return AppColors.sensorSleep;
       case 'activity_class':
-      case 'activity_intensity': return const Color(0xFFA78BFA); // Violet 400
+      case 'activity_intensity': return AppColors.sensorMove;
       case 'accelerometer_std':
-      case 'acticounts_total':   return const Color(0xFF38BDF8); // Cyber Blue
+      case 'acticounts_total':   return AppColors.cyberBlue;
       default:                   return accentTeal;
     }
   }
@@ -819,8 +864,8 @@ class BiomarkerCard extends StatelessWidget {
         show: true,
         horizontalInterval: yInterval,
         verticalInterval: xInterval,
-        getDrawingHorizontalLine: (v) => FlLine(color: kBorderColor.withValues(alpha: 0.3), strokeWidth: 1),
-        getDrawingVerticalLine: (v) => FlLine(color: kBorderColor.withValues(alpha: 0.15), strokeWidth: 1),
+        getDrawingHorizontalLine: (v) => FlLine(color: const Color(0xFFE2E8F0), strokeWidth: 1),
+        getDrawingVerticalLine: (v) => FlLine(color: const Color(0xFFE2E8F0).withValues(alpha: 0.6), strokeWidth: 1),
         drawVerticalLine: true,
       ),
       titlesData: FlTitlesData(
@@ -838,7 +883,7 @@ class BiomarkerCard extends StatelessWidget {
               final format = (maxX - minX) > 86400000 ? 'dd/MM HH:mm' : 'HH:mm';
               return SideTitleWidget(
                 axisSide: meta.axisSide,
-                child: Text(DateFormat(format).format(dt), style: GoogleFonts.inter(color: nudeColor, fontSize: 10))
+                child: Text(DateFormat(format).format(dt), style: GoogleFonts.inter(color: const Color(0xFF64748B), fontSize: 10))
               );
             }
           )
@@ -877,12 +922,13 @@ class BiomarkerCard extends StatelessWidget {
       lineBarsData: bars,
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
-          getTooltipColor: (_) => _dsSurface,
+          getTooltipColor: (_) => Colors.white,
+          tooltipBorder: BorderSide(color: kBorderColor),
           getTooltipItems: (touchedSpots) {
             return touchedSpots.map((spot) {
               return LineTooltipItem(
                 spot.y.toStringAsFixed(2),
-                GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+                GoogleFonts.inter(color: primaryBlue, fontWeight: FontWeight.bold),
               );
             }).toList();
           },
@@ -902,7 +948,7 @@ class _StatItem extends StatelessWidget {
     final c = color ?? accentTeal;
     return Column(
       children: [
-        Text(label, style: GoogleFonts.inter(color: nudeColor, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+        Text(label, style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
         const SizedBox(height: 6),
         Text(value, style: GoogleFonts.outfit(color: c, fontSize: 20, fontWeight: FontWeight.bold)),
       ],

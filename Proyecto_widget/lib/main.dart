@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/login_screen.dart';
 import 'providers/dashboard_provider.dart';
+import 'utils/app_colors.dart';
 
 void main() {
   GoogleFonts.config.allowRuntimeFetching = true;
@@ -20,9 +21,9 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static const Color kTextPrimary  = Color(0xFF0F172A);
-  static const Color kCyberBlue    = Color(0xFF0EA5E9);
-  static const Color kBgScreen     = Color(0xFFF8FAFC);
+  static const Color kTextPrimary  = AppColors.textPrimary;
+  static const Color kCyberBlue    = AppColors.cyberBlue;
+  static const Color kBgScreen     = AppColors.bgScreen;
 
   @override
   Widget build(BuildContext context) {

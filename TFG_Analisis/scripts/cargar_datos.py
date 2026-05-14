@@ -8,16 +8,14 @@ class SensorAdapter:
     def map_row(self, row, dataframe):
         raise NotImplementedError
 
-# Adaptador base para sensores con mapeo directo de columna.
 class DefaultAdapter(SensorAdapter):
     def __init__(self, target_column):
         self.target_column = target_column
 
     def map_row(self, row, dataframe):
         val = getattr(row, self.target_column) if self.target_column in dataframe.columns else None
-        return [(self.target_column, val)] # Devolvemos lista de tuplas
+        return [(self.target_column, val)]
 
-# Adaptador específico para Acticounts (Calcula magnitud vectorial desde ejes X, Y, Z).
 class ActicountsAdapter(SensorAdapter):
     def map_row(self, row, dataframe):
         try:
@@ -38,7 +36,6 @@ class ActicountsAdapter(SensorAdapter):
             pass
         return []
 
-# Adaptador para variables categóricas (Mapeo de texto a valores numéricos discretos).
 class CategoricalAdapter(SensorAdapter):
     def __init__(self, target_column, category_map):
         self.target_column = target_column
@@ -82,7 +79,6 @@ class BodyPositionAdapter(SensorAdapter):
         s_val = str(val).lower().strip()
         return [('body_position', self.category_map.get(s_val))]
 
-# Factoría para instanciar el adaptador correcto según el tipo de sensor detectado.
 class AdapterFactory:
     @staticmethod
     def get_adapter(tipo_sensor):
@@ -137,41 +133,40 @@ def _parse_hardware_state(calidad, missing_reason, valor_original=None):
     return flag_result if missing_str != 'good' else calidad
 
 def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigador='ines'):
-    """
-    Función principal de ingesta: Lee el CSV, aplica adaptadores e inserta en TimescaleDB.
-    """
-    dir_actual = os.path.dirname(os.path.abspath(__file__))
-    ruta_entrada = os.path.join(dir_actual, '..', 'data', archivo_nombre)
+    if os.path.isabs(archivo_nombre):
+        ruta_entrada = archivo_nombre
+    else:
+        dir_actual = os.path.dirname(os.path.abspath(__file__))
+        ruta_entrada = os.path.join(dir_actual, '..', 'data', archivo_nombre)
 
-    if not os.path.exists(ruta_entrada): 
+    if not os.path.exists(ruta_entrada):
         raise FileNotFoundError(f"No encontrado: {ruta_entrada}")
 
     try:
-        db_host = os.getenv("DB_HOST", "localhost")
-        db_name = os.getenv("DB_NAME", "tfg_embrace")
-        db_user = os.getenv("DB_USER", "ines")
-        db_pass = os.getenv("DB_PASSWORD", "123") # Cambiado a 123 por consistencia
-        db_port = os.getenv("DB_PORT", "5432")
-
         conn = psycopg2.connect(
-            dbname=db_name, user=db_user, password=db_pass, host=db_host, port=db_port
+            dbname=os.getenv("DB_NAME", "tfg_embrace"),
+            user=os.getenv("DB_USER", "ines"),
+            password=os.getenv("DB_PASSWORD", "tfg_password"),
+            host=os.getenv("DB_HOST", "localhost"),
+            port=os.getenv("DB_PORT", "5433")
         )
         cur = conn.cursor()
-        
+
         df = pd.read_csv(ruta_entrada, low_memory=False)
         adapter = AdapterFactory.get_adapter(tipo_sensor)
-        
+
+        col_tiempo = next((c for c in df.columns if c.lower() in ['time', 'timestamp', 'timestamp_iso', 'time (iso)']), None)
+        timestamps = df[col_tiempo].tolist() if col_tiempo else []
+
         total_rows = len(df)
         invalid_rows = 0
         datos_finales = []
-    
-        # Intentamos detectar la columna de tiempo de forma más flexible
-        col_tiempo = next((c for c in df.columns if c.lower() in ['time', 'timestamp', 'timestamp_iso', 'time (iso)']), None)
 
-        for r in df.itertuples():
+        for i, r in enumerate(df.itertuples()):
             try:
-                tiempo = getattr(r, col_tiempo) if col_tiempo else None
-                if pd.isnull(tiempo): continue
+                tiempo = timestamps[i] if timestamps else None
+                if pd.isnull(tiempo):
+                    continue
 
                 resultados = adapter.map_row(r, df)
                 if not isinstance(resultados, list):
@@ -179,7 +174,7 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigad
 
                 calidad_base = getattr(r, 'quality_flag', 'good') if hasattr(r, 'quality_flag') else 'good'
                 missing_reason = getattr(r, 'missing_value_reason', None)
-                
+
                 valor_crudo = None
                 for col in ['activity_class', 'activity_intensity', 'body_position_left', 'body_position_right', 'sleep_detection_stage']:
                     if hasattr(r, col):
@@ -187,10 +182,11 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigad
                         if pd.notnull(v):
                             valor_crudo = v
                             break
-                
+
                 calidad_final = _parse_hardware_state(calidad_base, missing_reason, valor_original=str(valor_crudo) if valor_crudo else None)
                 is_bad_signal = any(f in str(calidad_final) for f in ['device_not_recording', 'device_not_worn_correctly'])
-                if is_bad_signal: invalid_rows += 1
+                if is_bad_signal:
+                    invalid_rows += 1
 
                 for s_type, s_val in resultados:
                     if s_val is None and not is_bad_signal:
@@ -203,7 +199,7 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigad
             sql = "INSERT INTO biomarcadores (time, participant_id, sensor_type, value, quality_flag, investigador) VALUES %s"
             extras.execute_values(cur, sql, datos_finales, page_size=1000)
             conn.commit()
-            
+
         return {
             'inserted': len(datos_finales),
             'loss_percentage': (invalid_rows / total_rows * 100) if total_rows > 0 else 0,
@@ -211,9 +207,11 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigad
         }
 
     except Exception as e:
-        if 'conn' in locals(): conn.rollback()
-        print(f"DEBUG ERROR: {str(e)}")
+        if 'conn' in locals():
+            conn.rollback()
         raise Exception(f"Error en ingesta ({tipo_sensor}): {str(e)}")
     finally:
-        if 'cur' in locals(): cur.close()
-        if 'conn' in locals(): conn.close()
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()

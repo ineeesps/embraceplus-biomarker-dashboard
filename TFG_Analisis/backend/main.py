@@ -198,8 +198,6 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
             if 'conn' in locals() and conn:
                 conn.rollback()
                 conn.close()
-            pass
-            # Se loguearía el error pero permitimos continuar con la subida
 
     try:
         contenido = await file.read()
@@ -255,11 +253,9 @@ async def verificar_existencia_sensor(id: str, sensor_type: str, investigador: s
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
-        
-        # Validar si el sensor_type es uno de los permitidos
+
         if sensor_type not in PATRONES_SENSORES.values():
-             # Intentamos buscar si es un nombre de archivo (ej: step-counts)
-             sensor_type = PATRONES_SENSORES.get(sensor_type, sensor_type)
+            sensor_type = PATRONES_SENSORES.get(sensor_type, sensor_type)
 
         cur.execute(
             "SELECT 1 FROM biomarcadores WHERE participant_id = %s AND sensor_type = %s AND investigador = %s LIMIT 1",
@@ -319,7 +315,6 @@ async def consultar_datos(id: str, investigador: str, start: str = None, end: st
         for row in res:
             row['time'] = row['bucket'].isoformat()
             del row['bucket']
-            # Limpieza de valores para JSON (NaN/Inf -> None)
             val = row.get('value')
             if val is not None and (isinstance(val, float) and (math.isnan(val) or math.isinf(val))):
                 row['value'] = None
@@ -394,22 +389,19 @@ async def obtener_metadata_participante(id: str, investigador: str):
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # Obtenemos rango temporal absoluto
+
         cur.execute(
             "SELECT MIN(time) as start_time, MAX(time) as end_time FROM biomarcadores WHERE participant_id = %s AND investigador = %s",
             (id, investigador)
         )
         range_data = cur.fetchone()
-        
-        # Obtenemos el rango donde REALMENTE hay datos (no nulos)
+
         cur.execute(
             "SELECT MIN(time) as active_start, MAX(time) as active_end FROM biomarcadores WHERE participant_id = %s AND investigador = %s AND value IS NOT NULL",
             (id, investigador)
         )
         active_data = cur.fetchone()
-        
-        # Obtenemos sensores únicos con datos reales
+
         cur.execute(
             "SELECT DISTINCT sensor_type FROM biomarcadores WHERE participant_id = %s AND investigador = %s AND value IS NOT NULL",
             (id, investigador)
@@ -438,23 +430,23 @@ async def exportar_datos(id: str, bucket_size: str = '1 minute'):
     from fastapi.responses import StreamingResponse
     try:
         conn = psycopg2.connect(**DB_CONFIG)
-        query = f"""
-            SELECT 
-                time_bucket(CAST('{bucket_size}' AS INTERVAL), time) AS timestamp,
+        query = """
+            SELECT
+                time_bucket(CAST(%s AS INTERVAL), time) AS timestamp,
                 sensor_type,
-                CASE 
-                    WHEN sensor_type IN ('activity_class', 'activity_intensity', 'body_position', 'sleep_detection') 
+                CASE
+                    WHEN sensor_type IN ('activity_class', 'activity_intensity', 'body_position', 'sleep_detection')
                     THEN mode() WITHIN GROUP (ORDER BY value)
                     WHEN sensor_type IN ('step_count', 'acticounts_total')
                     THEN SUM(value)
                     ELSE AVG(value)
                 END as value
             FROM biomarcadores
-            WHERE participant_id = '{id}'
+            WHERE participant_id = %s
             GROUP BY timestamp, sensor_type
             ORDER BY timestamp ASC
         """
-        df = pd.read_sql_query(query, conn)
+        df = pd.read_sql_query(query, conn, params=[bucket_size, id])
         conn.close()
 
         if df.empty:

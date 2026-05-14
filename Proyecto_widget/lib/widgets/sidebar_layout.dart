@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../utils/app_colors.dart';
 
 class SidebarLayout extends StatefulWidget {
   final Widget body;
@@ -31,12 +32,12 @@ class SidebarLayout extends StatefulWidget {
 class _SidebarLayoutState extends State<SidebarLayout> {
   bool _isExpanded = false;
 
-  static const Color kSidebarBg      = Color(0xFF1E293B);
-  static const Color kSidebarHover   = Color(0xFF334155);
-  static const Color kCyberBlue      = Color(0xFF0EA5E9);
-  static const Color kIconInactive   = Color(0xFF94A3B8);
-  static const Color kTextPrimary    = Color(0xFF0F172A);
-  static const Color kBgScreen       = Color(0xFFF8FAFC);
+  static const Color kSidebarBg      = AppColors.sidebarBg;
+  static const Color kSidebarHover   = AppColors.sidebarHover;
+  static const Color kCyberBlue      = AppColors.cyberBlue;
+  static const Color kIconInactive   = AppColors.textMuted;
+  static const Color kTextPrimary    = AppColors.textPrimary;
+  static const Color kBgScreen       = AppColors.bgScreen;
 
   @override
   Widget build(BuildContext context) {
