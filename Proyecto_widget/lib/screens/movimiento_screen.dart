@@ -13,7 +13,7 @@ const Color _surface = AppColors.bgCard;
 const Color _border  = AppColors.border;
 const Color _text    = AppColors.textPrimary;
 const Color _muted   = AppColors.textSecondary;
-const Color _accent  = AppColors.cyberBlue;
+const Color _accent  = Color(0xFF8B5CF6);
 
 const Color _clsGap     = Color(0xFFF1F5F9);
 const Color _clsStill   = Color(0xFF94A3B8);

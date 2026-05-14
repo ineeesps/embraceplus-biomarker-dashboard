@@ -15,6 +15,12 @@ const List<String> kMovimientoSensores = [
   'acticounts_z',
 ];
 
+const List<String> kCardiacoSensores = [
+  'pulse_rate',
+  'respiratory_rate',
+  'prv',
+];
+
 const List<int> kHourOptions = [1, 3, 6, 12, 24];
 
 class DashboardProvider with ChangeNotifier {
@@ -22,26 +28,36 @@ class DashboardProvider with ChangeNotifier {
 
   List<Biomarker> _metrics = [];
   List<Biomarker> _movimientoMetrics = [];
+  List<Biomarker> _cardiacoMetrics = [];
   bool _isLoading = false;
   bool _isMovimientoLoading = false;
+  bool _isCardiacoLoading = false;
   String? _error;
 
   DateTime? _movimientoStart;
   DateTime? _movimientoEnd;
+  DateTime? _cardiacoStart;
+  DateTime? _cardiacoEnd;
   DateTime? _dataRangeStart;
   DateTime? _dataRangeEnd;
   int _selectedHours = 24;
+  int _selectedCardiacoHours = 24;
 
   List<Biomarker> get metrics           => _metrics;
   List<Biomarker> get movimientoMetrics => _movimientoMetrics;
+  List<Biomarker> get cardiacoMetrics   => _cardiacoMetrics;
   bool get isLoading                    => _isLoading;
   bool get isMovimientoLoading          => _isMovimientoLoading;
+  bool get isCardiacoLoading            => _isCardiacoLoading;
   String? get error                     => _error;
   DateTime? get movimientoStart         => _movimientoStart;
   DateTime? get movimientoEnd           => _movimientoEnd;
+  DateTime? get cardiacoStart           => _cardiacoStart;
+  DateTime? get cardiacoEnd             => _cardiacoEnd;
   DateTime? get dataRangeStart          => _dataRangeStart;
   DateTime? get dataRangeEnd            => _dataRangeEnd;
   int get selectedHours                 => _selectedHours;
+  int get selectedCardiacoHours         => _selectedCardiacoHours;
 
   static String _bucketForHours(int hours) {
     if (hours <= 1)  return '30 seconds';
@@ -58,12 +74,22 @@ class DashboardProvider with ChangeNotifier {
     return bucket.replaceAll(' seconds', ' seg').replaceAll(' minutes', ' min');
   }
 
+  String get cardiacoResolucion {
+    if (_cardiacoStart == null || _cardiacoEnd == null) return '';
+    final bucket = _bucketForHours(_selectedCardiacoHours);
+    return bucket.replaceAll(' seconds', ' seg').replaceAll(' minutes', ' min');
+  }
+
   void _applyHourFilter() {
     if (_dataRangeEnd == null || _dataRangeStart == null) return;
     final end = _dataRangeEnd!;
-    final start = end.subtract(Duration(hours: _selectedHours));
+    final startMov = end.subtract(Duration(hours: _selectedHours));
     _movimientoEnd   = end;
-    _movimientoStart = start.isBefore(_dataRangeStart!) ? _dataRangeStart! : start;
+    _movimientoStart = startMov.isBefore(_dataRangeStart!) ? _dataRangeStart! : startMov;
+
+    final startCar = end.subtract(Duration(hours: _selectedCardiacoHours));
+    _cardiacoEnd   = end;
+    _cardiacoStart = startCar.isBefore(_dataRangeStart!) ? _dataRangeStart! : startCar;
   }
 
   Future<void> fetchMetrics(String participantId, String username) async {
@@ -111,10 +137,34 @@ class DashboardProvider with ChangeNotifier {
     }
   }
 
+  Future<void> fetchCardiacoMetrics(String participantId, String username) async {
+    if (_cardiacoStart == null || _cardiacoEnd == null) return;
+    _isCardiacoLoading = true;
+    notifyListeners();
+    try {
+      final bucket = _bucketForHours(_selectedCardiacoHours);
+      final all = await _apiService.getMetrics(
+        participantId,
+        username,
+        startTime: _cardiacoStart!.toUtc().toIso8601String(),
+        endTime:   _cardiacoEnd!.toUtc().toIso8601String(),
+        bucketSize: bucket,
+      );
+      _cardiacoMetrics = all.where((m) => kCardiacoSensores.contains(m.sensorType)).toList();
+    } catch (_) {
+      _cardiacoMetrics = [];
+    } finally {
+      _isCardiacoLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> setHourFilter(int hours, String participantId, String username) async {
     _selectedHours = hours;
+    _selectedCardiacoHours = hours;
     _applyHourFilter();
     await fetchMovimientoMetrics(participantId, username);
+    await fetchCardiacoMetrics(participantId, username);
   }
 
   Future<void> setMovimientoRango(
@@ -127,6 +177,18 @@ class DashboardProvider with ChangeNotifier {
     _movimientoEnd   = end;
     _selectedHours   = _durationToNearestHours(end.difference(start));
     await fetchMovimientoMetrics(participantId, username);
+  }
+
+  Future<void> setCardiacoRango(
+    DateTime start,
+    DateTime end,
+    String participantId,
+    String username,
+  ) async {
+    _cardiacoStart = start;
+    _cardiacoEnd   = end;
+    _selectedCardiacoHours = _durationToNearestHours(end.difference(start));
+    await fetchCardiacoMetrics(participantId, username);
   }
 
   static int _durationToNearestHours(Duration d) {

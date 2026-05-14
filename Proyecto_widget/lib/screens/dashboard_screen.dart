@@ -15,6 +15,7 @@ import '../widgets/confirm_dialog.dart';
 import '../services/api_service.dart';
 import '../utils/app_colors.dart';
 import 'movimiento_screen.dart';
+import 'cardiaco_screen.dart';
 import 'login_screen.dart';
 
 const Color primaryBlue  = AppColors.textPrimary;
@@ -111,7 +112,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               username: widget.username,
             );
           case 2:
-            return _buildSensorSection(provider, ['pulse_rate', 'respiratory_rate', 'prv']);
+            return CardiacoScreen(
+              participantId: widget.participantId,
+              username: widget.username,
+            );
           case 3:
             return _buildSensorSection(provider, ['eda', 'temperature']);
           case 4:

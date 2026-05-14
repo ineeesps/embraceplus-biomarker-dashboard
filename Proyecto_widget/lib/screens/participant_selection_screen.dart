@@ -468,9 +468,9 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                           children: [
                             _buildKPICard('Total Participantes', '${_realData.length}', LucideIcons.users, primaryBlue),
                             const SizedBox(height: 16),
-                            _buildKPICard('Tasa de Uso Media', '${avgCompliance.toStringAsFixed(2)}%', LucideIcons.shieldCheck, accentTeal),
+                            _buildKPICard('Tasa de Uso Media', '${avgCompliance.toStringAsFixed(2)}%', LucideIcons.shieldCheck, AppColors.statusGood),
                             const SizedBox(height: 16),
-                            _buildKPICard('Alertas Activas', '$totalAlerts', LucideIcons.alertCircle, totalAlerts > 0 ? const Color(0xFF92400E) : nudeColor),
+                            _buildKPICard('Alertas Activas', '$totalAlerts', LucideIcons.alertCircle, totalAlerts > 0 ? AppColors.statusWarning : nudeColor),
                           ],
                         )
                       else
@@ -478,9 +478,9 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                           children: [
                             Expanded(child: _buildKPICard('Total Participantes', '${_realData.length}', LucideIcons.users, primaryBlue)),
                             const SizedBox(width: 24),
-                            Expanded(child: _buildKPICard('Tasa de Uso Media', '${avgCompliance.toStringAsFixed(2)}%', LucideIcons.shieldCheck, accentTeal)),
+                            Expanded(child: _buildKPICard('Tasa de Uso Media', '${avgCompliance.toStringAsFixed(2)}%', LucideIcons.shieldCheck, AppColors.statusGood)),
                             const SizedBox(width: 24),
-                            Expanded(child: _buildKPICard('Alertas Activas', '$totalAlerts', LucideIcons.alertCircle, totalAlerts > 0 ? const Color(0xFF92400E) : nudeColor)),
+                            Expanded(child: _buildKPICard('Alertas Activas', '$totalAlerts', LucideIcons.alertCircle, totalAlerts > 0 ? AppColors.statusWarning : nudeColor)),
                           ],
                         ),
                       const SizedBox(height: 32),
