@@ -373,6 +373,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Media de conductancia',
             icon: LucideIcons.zap,
             color: _edaColor,
+            tooltip: "Mide la conductancia eléctrica de la piel en microsiemens (μS). Los aumentos rápidos o picos (SCR) son indicadores directos de la activación del sistema nervioso simpático ante estímulos estresantes, emocionales o de alerta cognitiva.",
           ),
           _KPICard(
             title: 'Capacidad de Recuperación',
@@ -380,6 +381,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Valor RMSSD (PRV)',
             icon: LucideIcons.heartHandshake,
             color: _prvColor,
+            tooltip: "Variabilidad de la frecuencia cardíaca calculada mediante la métrica RMSSD (milisegundos). Es el marcador principal del tono vagal; una PRV alta indica una buena capacidad de recuperación y equilibrio del sistema nervioso parasimpático.",
           ),
           _KPICard(
             title: 'Gasto Metabólico',
@@ -387,6 +389,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Valor acumulado',
             icon: LucideIcons.flame,
             color: _metsColor,
+            tooltip: "Equivalente Metabólico de Tarea. Representa la razón entre la tasa metabólica durante una actividad y la tasa metabólica en reposo (1.0 MET). Es esencial para discernir si la activación fisiológica es debida a esfuerzo físico o estrés psicológico.",
           ),
           _KPICard(
             title: 'Estabilidad Térmica',
@@ -394,6 +397,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: validTemp.isEmpty ? 'Sin datos' : 'Rango: ${minTemp.toStringAsFixed(1)} - ${maxTemp.toStringAsFixed(1)}',
             icon: LucideIcons.thermometer,
             color: _tempColor,
+            tooltip: "Temperatura monitorizada continuamente en la muñeca (ºC). En contextos de estrés agudo, es común observar descensos leves debido a la vasoconstricción periférica, mientras que una temperatura estable sugiere un estado homeostático.",
           ),
         ];
 
@@ -434,8 +438,16 @@ class _KPICard extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Color color;
+  final String tooltip;
 
-  const _KPICard({required this.title, required this.value, required this.subtitle, required this.icon, required this.color});
+  const _KPICard({
+    required this.title, 
+    required this.value, 
+    required this.subtitle, 
+    required this.icon, 
+    required this.color,
+    required this.tooltip,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -464,7 +476,26 @@ class _KPICard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: GoogleFonts.inter(fontSize: isMobile ? 10 : 12, fontWeight: FontWeight.bold, color: _muted), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
+                      children: [
+                        Text(title, style: GoogleFonts.inter(fontSize: isMobile ? 10 : 12, fontWeight: FontWeight.bold, color: _muted)),
+                        Tooltip(
+                          message: tooltip,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _tooltipBg,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)
+                            ],
+                          ),
+                          textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11, height: 1.4),
+                          child: Icon(LucideIcons.info, size: 12, color: _muted.withValues(alpha: 0.5)),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -504,18 +535,26 @@ class _ReactividadGraphLayer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 8,
+                Row(
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(LucideIcons.activity, size: 20, color: _text),
-                        const SizedBox(width: 12),
-                        Text('Análisis de Respuesta al Estrés', style: GoogleFonts.outfit(fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold, color: _text)),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _edaColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(LucideIcons.activity, size: 16, color: _edaColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Análisis de Respuesta al Estrés',
+                        style: GoogleFonts.outfit(
+                          fontSize: isMobile ? 16 : 18, 
+                          fontWeight: FontWeight.bold, 
+                          color: _text
+                        ),
+                      ),
                     ),
                     Tooltip(
                       message: "Permite identificar eventos de activación del sistema nervioso simpático. Una caída de la PRV coincidente con un aumento de la EDA es un biomarcador robusto de estrés psicológico.",
@@ -526,20 +565,35 @@ class _ReactividadGraphLayer extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text('Correlación entre picos de conductancia galvánica y variabilidad vagal.', 
-                        style: GoogleFonts.inter(color: _muted, fontSize: 13)),
-                    ),
-                    _GraphLegend(items: [
-                      _LegendItem(label: 'EDA', color: _edaColor),
-                      _LegendItem(label: 'PRV', color: _prvColor, isDashed: true),
-                    ]),
-                  ],
-                ),
+                const SizedBox(height: 8),
+                if (isMobile)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Correlación entre picos de conductancia galvánica y variabilidad vagal.', 
+                        style: GoogleFonts.inter(color: _muted, fontSize: 12)),
+                      const SizedBox(height: 12),
+                      _GraphLegend(items: [
+                        _LegendItem(label: 'EDA', color: _edaColor),
+                        _LegendItem(label: 'PRV', color: _prvColor, isDashed: true),
+                      ]),
+                    ],
+                  )
+                else
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text('Correlación entre picos de conductancia galvánica y variabilidad vagal.', 
+                          style: GoogleFonts.inter(color: _muted, fontSize: 13)),
+                      ),
+                      const SizedBox(width: 16),
+                      _GraphLegend(items: [
+                        _LegendItem(label: 'EDA', color: _edaColor),
+                        _LegendItem(label: 'PRV', color: _prvColor, isDashed: true),
+                      ]),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -725,18 +779,26 @@ class _ContextoGraphLayer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 8,
+                Row(
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(LucideIcons.thermometer, size: 20, color: _text),
-                        const SizedBox(width: 12),
-                        Text('Demanda Metabólica y Termorregulación', style: GoogleFonts.outfit(fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold, color: _text)),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _tempColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(LucideIcons.thermometer, size: 16, color: _tempColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Demanda Metabólica y Termorregulación',
+                        style: GoogleFonts.outfit(
+                          fontSize: isMobile ? 16 : 18, 
+                          fontWeight: FontWeight.bold, 
+                          color: _text
+                        ),
+                      ),
                     ),
                     Tooltip(
                       message: "Utilice esta vista para descartar falsos positivos de estrés. Si los METs son bajos, los cambios en la EDA y temperatura se atribuyen a estados emocionales o cognitivos.",
@@ -747,20 +809,35 @@ class _ContextoGraphLayer extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text('Validación de la carga física frente a la respuesta térmica cutánea.', 
-                        style: GoogleFonts.inter(color: _muted, fontSize: 13)),
-                    ),
-                    _GraphLegend(items: [
-                      _LegendItem(label: 'METs', color: _metsColor),
-                      _LegendItem(label: 'Temp', color: _tempColor),
-                    ]),
-                  ],
-                ),
+                const SizedBox(height: 8),
+                if (isMobile)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Validación de la carga física frente a la respuesta térmica cutánea.', 
+                        style: GoogleFonts.inter(color: _muted, fontSize: 12)),
+                      const SizedBox(height: 12),
+                      _GraphLegend(items: [
+                        _LegendItem(label: 'METs', color: _metsColor),
+                        _LegendItem(label: 'Temp', color: _tempColor),
+                      ]),
+                    ],
+                  )
+                else
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text('Validación de la carga física frente a la respuesta térmica cutánea.', 
+                          style: GoogleFonts.inter(color: _muted, fontSize: 13)),
+                      ),
+                      const SizedBox(width: 16),
+                      _GraphLegend(items: [
+                        _LegendItem(label: 'METs', color: _metsColor),
+                        _LegendItem(label: 'Temp', color: _tempColor),
+                      ]),
+                    ],
+                  ),
               ],
             ),
           ),
