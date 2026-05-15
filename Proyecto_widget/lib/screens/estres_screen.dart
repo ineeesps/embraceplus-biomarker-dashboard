@@ -445,7 +445,9 @@ class _KPICard extends StatelessWidget {
         color: _surface,
         borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
         border: Border.all(color: _border),
-        boxShadow: [BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -455,7 +457,10 @@ class _KPICard extends StatelessWidget {
             children: [
               Container(
                 padding: EdgeInsets.all(isMobile ? 6 : 8),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(isMobile ? 8 : 10)),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
+                ),
                 child: Icon(icon, size: isMobile ? 16 : 18, color: color),
               ),
               const SizedBox(width: 12),
@@ -475,9 +480,7 @@ class _KPICard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: _text.withValues(alpha: 0.95),
                             borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)
-                            ],
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)],
                           ),
                           textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11, height: 1.4),
                           child: Icon(LucideIcons.info, size: 12, color: _muted.withValues(alpha: 0.5)),

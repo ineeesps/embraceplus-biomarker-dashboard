@@ -1,10 +1,11 @@
 -- 1. Creamos la tabla base
 CREATE TABLE biomarcadores (
-    time TIMESTAMPTZ NOT NULL,
-    participant_id TEXT NOT NULL,
-    sensor_type TEXT NOT NULL,
-    value DOUBLE PRECISION NOT NULL,
-    quality_flag TEXT -- Para etiquetas como 'worn_during_motion' o 'low_signal_quality'
+    time           TIMESTAMPTZ      NOT NULL,
+    participant_id TEXT             NOT NULL,
+    sensor_type    TEXT             NOT NULL,
+    value          DOUBLE PRECISION,          -- NULL permitido (señal ausente o mala calidad)
+    quality_flag   TEXT,
+    investigador   TEXT             NOT NULL DEFAULT 'ines'
 );
 
 -- 2. Convertimos la tabla en Hypertable
@@ -17,3 +18,6 @@ CREATE INDEX idx_participant_time ON biomarcadores (participant_id, time DESC);
 
 -- 4. Índice para búsquedas rápidas por tipo de sensor
 CREATE INDEX idx_sensor_type ON biomarcadores (sensor_type, time DESC);
+
+-- 5. Índice multi-tenant
+CREATE INDEX idx_investigador ON biomarcadores (investigador, participant_id, time DESC);

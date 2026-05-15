@@ -14,11 +14,9 @@ class DefaultAdapter(SensorAdapter):
         self.tipo_sensor = tipo_sensor
 
     def map_row(self, row, dataframe):
-        # Intentar con el nombre objetivo
         if self.target_column in dataframe.columns:
             return [(self.tipo_sensor, getattr(row, self.target_column))]
-        
-        # Si no existe, buscar alternativas comunes (sin el sufijo de unidades o con el tipo_sensor directo)
+
         alternativas = [self.tipo_sensor, self.tipo_sensor.replace('_', '-')]
         for alt in alternativas:
             if alt in dataframe.columns:
@@ -139,6 +137,8 @@ def _parse_hardware_state(calidad, missing_reason, valor_original=None):
     return flag_result if missing_str != 'good' else calidad
 
 def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigador='ines'):
+    if investigador is None:
+        investigador = 'ines'
     if os.path.isabs(archivo_nombre):
         ruta_entrada = archivo_nombre
     else:

@@ -29,7 +29,6 @@ const List<String> kEstresSensores = [
 
 const List<String> kSuenoSensores = [
   'sleep_detection',
-  'sleep_stages',
   'body_position',
   'activity_class',
   'pulse_rate',
@@ -125,6 +124,15 @@ class DashboardProvider with ChangeNotifier {
   String get suenoResolucion {
     if (_suenoStart == null || _suenoEnd == null) return '';
     return _resolucionLabel(_bucketForHours(_selectedSuenoHours));
+  }
+
+  int get suenoMinutosPorPunto {
+    final bucket = _bucketForHours(_selectedSuenoHours);
+    if (bucket.contains('30 seconds')) return 1;
+    if (bucket.contains('1 minute'))   return 1;
+    if (bucket.contains('2 minutes'))  return 2;
+    if (bucket.contains('5 minutes'))  return 5;
+    return 10;
   }
 
   void _applyHourFilter() {

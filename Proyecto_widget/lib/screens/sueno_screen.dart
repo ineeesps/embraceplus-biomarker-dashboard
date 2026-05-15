@@ -68,11 +68,9 @@ class _SuenoScreenState extends State<SuenoScreen> {
         }
 
         final sleepDetData = byType['sleep_detection'] ?? [];
-        final sleepStgData = byType['sleep_stages'] ?? [];
         final posData      = byType['body_position'] ?? [];
         final activity     = byType['activity_class'] ?? [];
 
-        // Lógica de Badge Semántico
         bool hasGoodHygiene = false;
         if (sleepDetData.isNotEmpty) {
           final sleepMins = sleepDetData.where((e) => e.value != null && e.value! > 0).length;
@@ -80,7 +78,7 @@ class _SuenoScreenState extends State<SuenoScreen> {
         }
 
         final listSections = [
-          if (sleepDetData.isEmpty && sleepStgData.isEmpty && posData.isEmpty)
+          if (sleepDetData.isEmpty && posData.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 100),
               child: Center(
@@ -90,7 +88,7 @@ class _SuenoScreenState extends State<SuenoScreen> {
           else ...[
             _KPIsLayer(sleepData: sleepDetData, posData: posData, provider: provider),
             const SizedBox(height: 24),
-            _HipnogramaLayer(sleepData: sleepDetData, stagesData: sleepStgData, activity: activity),
+            _HipnogramaLayer(sleepData: sleepDetData, activity: activity),
             const SizedBox(height: 24),
             _GanttPosturalLayer(posData: posData, sleepData: sleepDetData),
           ]
@@ -383,15 +381,17 @@ class _KPIsLayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final int totalPoints = sleepData.length;
     final int asleepPoints = sleepData.where((d) => d.value != null && d.value! > 0).length;
-    
+
     final double efficiency = totalPoints > 0 ? (asleepPoints / totalPoints) * 100 : 0.0;
-    
-    final int tstMinutes = asleepPoints;
+
+    // Cada punto de datos representa minsPorPunto minutos según el bucket activo
+    final int minsPorPunto = provider.suenoMinutosPorPunto;
+    final int tstMinutes = asleepPoints * minsPorPunto;
     final int tstHours   = tstMinutes ~/ 60;
     final int tstRemMins = tstMinutes % 60;
 
     // Cálculo Índice WASO: Minutos despierto tras el primer sueño consolidado
-    int wasoMinutes = 0;
+    int wasoPoints = 0;
     bool sleepOnsetReached = false;
     for (var d in sleepData) {
       if (!sleepOnsetReached && d.value != null && d.value! > 0) {
@@ -399,9 +399,10 @@ class _KPIsLayer extends StatelessWidget {
         continue;
       }
       if (sleepOnsetReached && d.value != null && d.value! == 0) {
-        wasoMinutes++;
+        wasoPoints++;
       }
     }
+    final int wasoMinutes = wasoPoints * minsPorPunto;
 
     // Cálculo Índice de Rotación: Cambios de postura por hora
     int postureChanges = 0;
@@ -456,9 +457,9 @@ class _KPIsLayer extends StatelessWidget {
         if (isSmall) {
           return Column(
             children: [
-              Row(children: [ Expanded(child: kpis[0]), const SizedBox(width: 16), Expanded(child: kpis[1]) ]),
-              const SizedBox(height: 16),
-              Row(children: [ Expanded(child: kpis[2]), const SizedBox(width: 16), Expanded(child: kpis[3]) ]),
+              Row(children: [Expanded(child: kpis[0]), const SizedBox(width: 12), Expanded(child: kpis[1])]),
+              const SizedBox(height: 12),
+              Row(children: [Expanded(child: kpis[2]), const SizedBox(width: 12), Expanded(child: kpis[3])]),
             ],
           );
         }
@@ -496,7 +497,7 @@ class _KPICard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
-      padding: EdgeInsets.all(isMobile ? 16 : 20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
@@ -526,15 +527,19 @@ class _KPICard extends StatelessWidget {
                   children: [
                     Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 6,
+                      spacing: 4,
                       children: [
-                        Text(title, style: GoogleFonts.inter(fontSize: isMobile ? 11 : 12, fontWeight: FontWeight.bold, color: _muted)),
-                        const SizedBox(width: 4),
+                        Text(title, style: GoogleFonts.inter(fontSize: isMobile ? 10 : 12, fontWeight: FontWeight.bold, color: _muted)),
                         Tooltip(
                           message: tooltip,
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: _text.withValues(alpha: 0.95), borderRadius: BorderRadius.circular(8)),
-                          textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          decoration: BoxDecoration(
+                            color: _text.withValues(alpha: 0.95),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)],
+                          ),
+                          textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11, height: 1.4),
                           child: Icon(LucideIcons.info, size: 12, color: _muted.withValues(alpha: 0.5)),
                         ),
                       ],
@@ -545,9 +550,9 @@ class _KPICard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(value, style: GoogleFonts.inter(fontSize: isMobile ? 24 : 28, fontWeight: FontWeight.bold, color: _text, letterSpacing: -0.5)),
+          Text(value, style: GoogleFonts.inter(fontSize: isMobile ? 20 : 24, fontWeight: FontWeight.bold, color: _text, letterSpacing: -0.5)),
           const SizedBox(height: 4),
-          Text(subtitle, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: _muted)),
+          Text(subtitle, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: _muted), overflow: TextOverflow.ellipsis),
         ],
       ),
     );
@@ -556,10 +561,9 @@ class _KPICard extends StatelessWidget {
 
 class _HipnogramaLayer extends StatelessWidget {
   final List<Biomarker> sleepData;
-  final List<Biomarker> stagesData;
   final List<Biomarker> activity;
 
-  const _HipnogramaLayer({required this.sleepData, required this.stagesData, required this.activity});
+  const _HipnogramaLayer({required this.sleepData, required this.activity});
 
   @override
   Widget build(BuildContext context) {
@@ -597,18 +601,14 @@ class _HipnogramaLayer extends StatelessWidget {
   }
 
   LineChartData _buildChartData(BuildContext context) {
-    final List<Biomarker> target = stagesData.isNotEmpty ? stagesData : sleepData;
     final List<FlSpot> spots = [];
-    for (var d in target) {
+    for (var d in sleepData) {
       if (d.value == null) continue;
+      // sleep_detection values: 0=awake, 1=light sleep, 2+=deep sleep
       double yVal;
-      if (stagesData.isNotEmpty) {
-        if (d.value! == 0)      { yVal = 3; } // Awake
-        else if (d.value! == 1) { yVal = 2; } // Light
-        else                    { yVal = 1; } // Deep
-      } else {
-        yVal = d.value! > 0 ? 2 : 3;
-      }
+      if (d.value! == 0)      { yVal = 3; } // DESPIERTO
+      else if (d.value! == 1) { yVal = 2; } // LIGERO
+      else                    { yVal = 1; } // PROFUNDO
       spots.add(FlSpot(d.time.toUtc().millisecondsSinceEpoch.toDouble(), yVal));
     }
 
@@ -617,7 +617,7 @@ class _HipnogramaLayer extends StatelessWidget {
     for (var act in activity) {
       if (act.value != null && act.value! > 0) {
         final t = act.time.toUtc().millisecondsSinceEpoch.toDouble();
-        final correspondingSleep = target.where((s) => (s.time.toUtc().millisecondsSinceEpoch.toDouble() - t).abs() < 60000).firstOrNull;
+        final correspondingSleep = sleepData.where((s) => (s.time.toUtc().millisecondsSinceEpoch.toDouble() - t).abs() < 60000).firstOrNull;
         if (correspondingSleep != null && correspondingSleep.value != null && correspondingSleep.value! > 0) {
           redMarkers.add(VerticalLine(x: t, color: _accentRed.withValues(alpha: 0.6), strokeWidth: 2));
         }

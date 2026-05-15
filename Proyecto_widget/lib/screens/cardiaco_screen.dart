@@ -67,7 +67,7 @@ class _CardiacoScreenState extends State<CardiacoScreen> {
               ),
             )
           else ...[
-            _KPIsLayer(hrData: hrData, rrData: rrData),
+            _KPIsLayer(hrData: hrData, rrData: rrData, provider: provider),
             const SizedBox(height: 24),
             _CouplingGraphLayer(hrData: hrData, rrData: rrData),
             const SizedBox(height: 24),
@@ -340,8 +340,9 @@ class _TimeButton extends StatelessWidget {
 class _KPIsLayer extends StatelessWidget {
   final List<Biomarker> hrData;
   final List<Biomarker> rrData;
+  final DashboardProvider provider;
 
-  const _KPIsLayer({required this.hrData, required this.rrData});
+  const _KPIsLayer({required this.hrData, required this.rrData, required this.provider});
 
   @override
   Widget build(BuildContext context) {
@@ -374,59 +375,64 @@ class _KPIsLayer extends StatelessWidget {
     }
     if (ratioCount > 0) avgRatio /= ratioCount;
 
+    final compliance = provider.compliancePercentage ?? 0.0;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isSmall = constraints.maxWidth < 700;
-        final children = [
-          Expanded(
-            flex: isSmall ? 0 : 1,
-            child: _KPICard(
-              title: 'Frecuencia Cardíaca (HR)',
-              value: validHR.isEmpty ? '--' : '${avgHR.round()} BPM',
-              subtitle: validHR.isEmpty ? 'Sin datos' : 'Min: ${minHR.round()}  |  Max: ${maxHR.round()}',
-              tooltip: 'Ritmo cardíaco promedio en el tramo. Valores sostenidos por encima de 100 BPM en reposo activan alertas de taquicardia.',
-              icon: LucideIcons.activity,
-              color: _hrColor,
-            ),
+        final isMobile = constraints.maxWidth < 600;
+        final kpis = [
+          _KPICard(
+            title: 'Frecuencia Cardíaca (HR)',
+            value: validHR.isEmpty ? '--' : '${avgHR.round()} BPM',
+            subtitle: validHR.isEmpty ? 'Sin datos' : 'Min: ${minHR.round()}  |  Max: ${maxHR.round()}',
+            tooltip: 'Ritmo cardíaco promedio en el tramo. Valores sostenidos por encima de 100 BPM en reposo activan alertas de taquicardia.',
+            icon: LucideIcons.activity,
+            color: _hrColor,
           ),
-          if (!isSmall) const SizedBox(width: 16),
-          Expanded(
-            flex: isSmall ? 0 : 1,
-            child: _KPICard(
-              title: 'Frecuencia Ventilatoria (RR)',
-              value: validRR.isEmpty ? '--' : '${avgRR.round()} BrPM',
-              subtitle: 'Media del tramo',
-              tooltip: 'Tasa respiratoria media. Un adulto sano en reposo oscila entre 12 y 20 BrPM. Alteraciones pueden indicar estrés metabólico o respiratorio.',
-              icon: LucideIcons.wind,
-              color: _rrLine,
-            ),
+          _KPICard(
+            title: 'Frecuencia Ventilatoria (RR)',
+            value: validRR.isEmpty ? '--' : '${avgRR.round()} BrPM',
+            subtitle: 'Media del tramo',
+            tooltip: 'Tasa respiratoria media. Un adulto sano en reposo oscila entre 12 y 20 BrPM. Alteraciones pueden indicar estrés metabólico o respiratorio.',
+            icon: LucideIcons.wind,
+            color: _rrLine,
           ),
-          if (!isSmall) const SizedBox(width: 16),
-          Expanded(
-            flex: isSmall ? 0 : 1,
-            child: _KPICard(
-              title: 'Índice de Acoplamiento (HR/RR)',
-              value: ratioCount == 0 ? '--' : avgRatio.toStringAsFixed(1),
-              subtitle: 'Latidos por respiración',
-              tooltip: 'Proporción de latidos por cada ciclo respiratorio. Una desviación drástica de la media normal (aprox. 4.0) indica un desacoplamiento fisiológico.',
-              icon: LucideIcons.infinity,
-              color: _ratioColor,
-            ),
+          _KPICard(
+            title: 'Índice de Acoplamiento',
+            value: ratioCount == 0 ? '--' : avgRatio.toStringAsFixed(1),
+            subtitle: 'Latidos por respiración',
+            tooltip: 'Proporción de latidos por cada ciclo respiratorio. Una desviación drástica de la media normal (aprox. 4.0) indica un desacoplamiento fisiológico.',
+            icon: LucideIcons.infinity,
+            color: _ratioColor,
+          ),
+          _KPICard(
+            title: 'Tasa de Uso',
+            value: '${compliance.toStringAsFixed(1)}%',
+            subtitle: 'Compliance del sensor',
+            icon: LucideIcons.checkCircle2,
+            color: AppColors.cyberBlue,
+            tooltip: "Porcentaje de tiempo en el que el dispositivo ha estado correctamente colocado y registrando datos de calidad suficiente para el análisis clínico.",
           ),
         ];
 
-        if (isSmall) {
+        if (isMobile) {
           return Column(
             children: [
-              children[0],
-              const SizedBox(height: 16),
-              children[1],
-              const SizedBox(height: 16),
-              children[2],
+              Row(children: [Expanded(child: kpis[0]), const SizedBox(width: 12), Expanded(child: kpis[1])]),
+              const SizedBox(height: 12),
+              Row(children: [Expanded(child: kpis[2]), const SizedBox(width: 12), Expanded(child: kpis[3])]),
             ],
           );
         }
-        return Row(children: children);
+
+        return Row(
+          children: [
+            Expanded(child: kpis[0]), const SizedBox(width: 16),
+            Expanded(child: kpis[1]), const SizedBox(width: 16),
+            Expanded(child: kpis[2]), const SizedBox(width: 16),
+            Expanded(child: kpis[3]),
+          ],
+        );
       },
     );
   }
@@ -453,7 +459,7 @@ class _KPICard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
-      padding: EdgeInsets.all(isMobile ? 16 : 20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
@@ -483,16 +489,20 @@ class _KPICard extends StatelessWidget {
                   children: [
                     Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 6,
+                      spacing: 4,
                       children: [
-                        Text(title, style: GoogleFonts.inter(fontSize: isMobile ? 11 : 12, fontWeight: FontWeight.bold, color: _muted)),
+                        Text(title, style: GoogleFonts.inter(fontSize: isMobile ? 10 : 12, fontWeight: FontWeight.bold, color: _muted)),
                         if (tooltip != null) ...[
-                          const SizedBox(width: 4),
                           Tooltip(
                             message: tooltip!,
                             padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: _tooltipBg, borderRadius: BorderRadius.circular(8)),
-                            textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+                            margin: const EdgeInsets.symmetric(horizontal: 24),
+                            decoration: BoxDecoration(
+                              color: _text.withValues(alpha: 0.95),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)],
+                            ),
+                            textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11, height: 1.4),
                             child: Icon(LucideIcons.info, size: 12, color: _muted.withValues(alpha: 0.5)),
                           ),
                         ],
@@ -504,9 +514,9 @@ class _KPICard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(value, style: GoogleFonts.inter(fontSize: isMobile ? 24 : 28, fontWeight: FontWeight.bold, color: _text, letterSpacing: -0.5)),
+          Text(value, style: GoogleFonts.inter(fontSize: isMobile ? 20 : 24, fontWeight: FontWeight.bold, color: _text, letterSpacing: -0.5)),
           const SizedBox(height: 4),
-          Text(subtitle, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: _muted)),
+          Text(subtitle, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: _muted), overflow: TextOverflow.ellipsis),
         ],
       ),
     );
@@ -559,7 +569,7 @@ class _CouplingGraphLayer extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text('Superposición de la variabilidad del pulso sobre la base de frecuencia respiratoria.', style: GoogleFonts.inter(color: _muted, fontSize: 13)),
               ],
             ),
@@ -762,7 +772,6 @@ class _ScatterPlotLayer extends StatelessWidget {
     }
 
     return Container(
-      margin: EdgeInsets.only(bottom: isMobile ? 12 : 24),
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(isMobile ? 12 : 20),
@@ -782,8 +791,14 @@ class _ScatterPlotLayer extends StatelessWidget {
                   spacing: 12,
                   runSpacing: 8,
                   children: [
-                    Icon(LucideIcons.scatterChart, size: 20, color: _ratioColor),
-                    Text('Matriz de Dispersión Cardiorrespiratoria', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: _text)),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.scatterChart, size: 20, color: _ratioColor),
+                        const SizedBox(width: 12),
+                        Text('Matriz de Dispersión Cardiorrespiratoria', style: GoogleFonts.outfit(fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold, color: _text)),
+                      ],
+                    ),
                     Tooltip(
                       message: "Análisis bivariado. Una dispersión lineal ascendente sugiere un sistema cardiorrespiratorio sano y reactivo. Nubes de puntos erráticas señalan falta de sincronización autonómica.",
                       padding: const EdgeInsets.all(12),
@@ -802,7 +817,7 @@ class _ScatterPlotLayer extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(24),
             child: SizedBox(
-              height: 250,
+              height: 300,
               child: spots.isEmpty
                   ? Center(child: Text('Datos insuficientes para el análisis de dispersión', style: GoogleFonts.inter(color: _muted)))
                   : ScatterChart(_buildScatterData(context, spots)),

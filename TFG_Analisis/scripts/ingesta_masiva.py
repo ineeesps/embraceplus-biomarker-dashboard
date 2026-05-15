@@ -16,7 +16,7 @@ PATRONES_SENSORES = {
     'acticounts': 'acticounts_total', 'sleep-detection': 'sleep_detection'
 }
 
-def procesar_carpeta(ruta_base, id_participante):
+def procesar_carpeta(ruta_base, id_participante, investigador='ines'):
     print(f"\n[{id_participante}] Buscando archivos en {ruta_base}...")
     archivos_csv = glob.glob(os.path.join(ruta_base, '**', '*.csv'), recursive=True)
 
@@ -35,7 +35,7 @@ def procesar_carpeta(ruta_base, id_participante):
 
         if sensor_detectado:
             try:
-                resultado = cargar_csv_a_timescale(ruta_absoluta, sensor_detectado, id_participante)
+                resultado = cargar_csv_a_timescale(ruta_absoluta, sensor_detectado, id_participante, investigador=investigador)
                 conteo += 1
 
                 if resultado['clinical_warning']:
@@ -59,8 +59,8 @@ def main():
 
     print(f"Buscando datos en: {base_tfg}")
 
-    procesar_carpeta(os.path.join(base_tfg, '1a_prueba'), 'PRUEBA 1')
-    procesar_carpeta(os.path.join(base_tfg, '2a_prueba'), 'PRUEBA 2')
+    procesar_carpeta(os.path.join(base_tfg, '1a_prueba'), 'PRUEBA 1', investigador='alberto')
+    procesar_carpeta(os.path.join(base_tfg, '2a_prueba'), 'PRUEBA 2', investigador='alberto')
 
     ruta_nuevos = os.path.join(base_tfg, 'nuevos_usuarios')
     if os.path.exists(ruta_nuevos):
@@ -68,7 +68,7 @@ def main():
             id_participante = f'user{i}'
             ruta_user = os.path.join(ruta_nuevos, id_participante)
             if os.path.exists(ruta_user):
-                procesar_carpeta(ruta_user, id_participante)
+                procesar_carpeta(ruta_user, id_participante, investigador='ines')
 
 if __name__ == '__main__':
     print("INICIANDO INGESTA MASIVA EN TIMESCALEDB...")

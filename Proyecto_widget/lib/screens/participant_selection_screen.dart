@@ -177,12 +177,12 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
 
                               final api = ApiService();
                               int successCount = 0;
-                              int errorCount = 0;
+                              final List<String> errorDetails = [];
 
                                 for (int i = 0; i < result.files.length; i++) {
                                   final file = result.files[i];
                                   setModalState(() => statusMessage = 'Subiendo archivo ${i + 1} de ${result.files.length}...\n${file.name}');
-                                  
+
                                   try {
                                     String? sensorType;
                                     final fileNameLower = file.name.toLowerCase();
@@ -195,7 +195,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                                       'actigraphy-counts': 'actigraphy_vector', 'body-position': 'body_position',
                                       'acticounts': 'acticounts_total', 'sleep-detection': 'sleep_detection'
                                     };
-                                    
+
                                     for (var entry in patrones.entries) {
                                       if (fileNameLower.contains(entry.key)) {
                                         sensorType = entry.value;
@@ -203,66 +203,85 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                                       }
                                     }
 
+                                    if (sensorType == null) {
+                                      errorDetails.add('${file.name}: tipo de sensor no reconocido');
+                                      continue;
+                                    }
+
                                     bool shouldReplace = false;
-                                    if (sensorType != null) {
-                                      final exists = await api.checkSensorDataExists(pId, sensorType, widget.username);
-                                      if (exists) {
-                                        setModalState(() => isUploading = false);
-                                        final confirm = await showDialog<bool>(
-                                          context: nav.context, // ignore: use_build_context_synchronously
-                                          barrierDismissible: false,
-                                          builder: (context) => AlertDialog(
-                                            title: const Text('Archivo ya existente'),
-                                            content: Text('Este archivo ya existe o el participante ya tiene datos de $sensorType. ¿Desea reemplazarlo o cancelamos?'),
-                                            actions: [
-                                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCELAR')),
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(context, true),
-                                                child: const Text('REEMPLAZAR', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                        
-                                        if (confirm != true) {
-                                          setModalState(() {
-                                            isUploading = true;
-                                            statusMessage = 'Saltando ${file.name}...';
-                                          });
-                                          continue;
-                                        }
-                                        shouldReplace = true;
+                                    final exists = await api.checkSensorDataExists(pId, sensorType, widget.username);
+                                    if (exists) {
+                                      setModalState(() => isUploading = false);
+                                      final confirm = await showDialog<bool>(
+                                        context: nav.context, // ignore: use_build_context_synchronously
+                                        barrierDismissible: false,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Archivo ya existente'),
+                                          content: Text('El participante ya tiene datos de $sensorType. ¿Desea reemplazarlos?'),
+                                          actions: [
+                                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCELAR')),
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context, true),
+                                              child: const Text('REEMPLAZAR', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (confirm != true) {
                                         setModalState(() {
                                           isUploading = true;
-                                          statusMessage = 'Reemplazando datos de ${file.name}...';
+                                          statusMessage = 'Saltando ${file.name}...';
                                         });
+                                        continue;
                                       }
+                                      shouldReplace = true;
+                                      setModalState(() {
+                                        isUploading = true;
+                                        statusMessage = 'Reemplazando datos de ${file.name}...';
+                                      });
                                     }
 
                                     List<int> bytes = file.bytes ?? [];
                                     if (bytes.isEmpty && file.path != null) {
                                       bytes = await File(file.path!).readAsBytes();
                                     }
-                                    
-                                    if (bytes.isNotEmpty) {
-                                      await api.uploadCsv(pId, widget.username, bytes, file.name, replace: shouldReplace);
-                                      successCount++;
-                                    } else {
-                                      errorCount++;
+
+                                    if (bytes.isEmpty) {
+                                      errorDetails.add('${file.name}: no se pudo leer el archivo');
+                                      continue;
                                     }
+
+                                    await api.uploadCsv(pId, widget.username, bytes, file.name, replace: shouldReplace);
+                                    successCount++;
                                   } catch (e) {
-                                    errorCount++;
+                                    String msg = e.toString().replaceFirst('Exception: ', '');
+                                    if (msg.contains('"detail"')) {
+                                      try {
+                                        final match = RegExp(r'"detail"\s*:\s*"([^"]+)"').firstMatch(msg);
+                                        if (match != null) msg = match.group(1)!;
+                                      } catch (_) {}
+                                    }
+                                    errorDetails.add('${file.name}: $msg');
                                   }
                                 }
 
                               if (mounted) {
                                 nav.pop();
                                 if (mounted) {
+                                  final errorCount = errorDetails.length;
+                                  String toastMsg;
+                                  if (errorCount == 0) {
+                                    toastMsg = 'Subida completada: $successCount archivos correctos';
+                                  } else if (successCount == 0) {
+                                    toastMsg = 'Error en todos los archivos: ${errorDetails.first}';
+                                  } else {
+                                    toastMsg = 'Subida parcial: $successCount correctos, $errorCount errores. '
+                                        'Fallidos: ${errorDetails.join(' | ')}';
+                                  }
                                   AppToast.showOnOverlay(
                                     overlay,
-                                    errorCount == 0
-                                      ? 'Subida completada: $successCount archivos correctos'
-                                      : 'Subida parcial: $successCount correctos, $errorCount errores',
+                                    toastMsg,
                                     type: errorCount == 0 ? ToastType.success : ToastType.error,
                                   );
                                   setState(() { _isLoading = true; });

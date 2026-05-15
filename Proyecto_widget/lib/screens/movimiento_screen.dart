@@ -96,6 +96,8 @@ class _MovimientoScreenState extends State<MovimientoScreen> {
         final padding  = isMobile ? 12.0 : (constraints.maxWidth > 720 ? 24.0 : 16.0);
 
         final sections = [
+          _KPIsLayer(byType: byType, provider: provider),
+          const SizedBox(height: 24),
           _ActivitySpectrum(byType: byType),
           _CargaCinetica(byType: byType),
           _EficienciaMarcha(
@@ -110,18 +112,20 @@ class _MovimientoScreenState extends State<MovimientoScreen> {
             padding: EdgeInsets.all(padding),
             children: [
               sections[0],
+              const SizedBox(height: 24),
+              sections[2],
               const SizedBox(height: 4),
               IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(child: sections[1]),
+                    Expanded(child: sections[3]),
                     const SizedBox(width: 20),
-                    Expanded(child: sections[2]),
+                    Expanded(child: sections[4]),
                   ],
                 ),
               ),
-              sections[3],
+              sections[5],
             ],
           );
         }
@@ -321,6 +325,175 @@ class _TimeRangeSelector extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _KPIsLayer extends StatelessWidget {
+  final Map<String, List<Biomarker>> byType;
+  final DashboardProvider provider;
+
+  const _KPIsLayer({required this.byType, required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final stepsData = byType['step_count'] ?? [];
+    final int totalSteps = stepsData.where((e) => e.value != null).fold(0, (a, b) => a + b.value!.toInt());
+
+    final intensityData = byType['activity_intensity'] ?? [];
+    double avgIntensity = 0;
+    if (intensityData.isNotEmpty) {
+      avgIntensity = intensityData.where((e) => e.value != null).map((e) => e.value!).reduce((a, b) => a + b) / intensityData.length;
+    }
+
+    final vecData = byType['actigraphy_vector'] ?? byType['acticounts_total'] ?? [];
+    double avgVec = 0;
+    if (vecData.isNotEmpty) {
+      avgVec = vecData.where((e) => e.value != null).map((e) => e.value!).reduce((a, b) => a + b) / vecData.length;
+    }
+
+    final compliance = provider.compliancePercentage ?? 0.0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final kpis = [
+          _KPICard(
+            title: 'Pasos Totales',
+            value: totalSteps == 0 ? '--' : '$totalSteps',
+            subtitle: 'Actividad acumulada',
+            icon: LucideIcons.footprints,
+            color: _identidad,
+            tooltip: "Suma total de pasos detectados en el tramo seleccionado. Los objetivos clínicos suelen situarse por encima de los 250 pasos/hora durante el periodo de vigilia.",
+          ),
+          _KPICard(
+            title: 'Intensidad Media',
+            value: intensityData.isEmpty ? '--' : avgIntensity.toStringAsFixed(1),
+            subtitle: 'Nivel METs est.',
+            icon: LucideIcons.gauge,
+            color: _intMPA,
+            tooltip: "Promedio de la intensidad metabólica estimada. Permite discernir entre periodos de sedentarismo (LPA) y actividad física moderada o vigorosa (MPA/VPA).",
+          ),
+          _KPICard(
+            title: 'Volumen Cinético',
+            value: vecData.isEmpty ? '--' : avgVec.toStringAsFixed(0),
+            subtitle: 'Acticounts (Total)',
+            icon: LucideIcons.activity,
+            color: _kStability,
+            tooltip: "Magnitud vectorial de la aceleración. Representa la potencia bruta del movimiento realizado, independiente de su clasificación postural.",
+          ),
+          _KPICard(
+            title: 'Tasa de Uso',
+            value: '${compliance.toStringAsFixed(1)}%',
+            subtitle: 'Compliance del sensor',
+            icon: LucideIcons.checkCircle2,
+            color: AppColors.cyberBlue,
+            tooltip: "Porcentaje de tiempo en el que el dispositivo ha estado correctamente colocado y registrando datos de calidad suficiente para el análisis clínico.",
+          ),
+        ];
+
+        if (isMobile) {
+          return Column(
+            children: [
+              Row(children: [Expanded(child: kpis[0]), const SizedBox(width: 12), Expanded(child: kpis[1])]),
+              const SizedBox(height: 12),
+              Row(children: [Expanded(child: kpis[2]), const SizedBox(width: 12), Expanded(child: kpis[3])]),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: kpis[0]), const SizedBox(width: 16),
+            Expanded(child: kpis[1]), const SizedBox(width: 16),
+            Expanded(child: kpis[2]), const SizedBox(width: 16),
+            Expanded(child: kpis[3]),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _KPICard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+
+  const _KPICard({
+    required this.title, 
+    required this.value, 
+    required this.subtitle, 
+    required this.icon, 
+    required this.color,
+    required this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.all(isMobile ? 6 : 8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
+                ),
+                child: Icon(icon, size: isMobile ? 16 : 18, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
+                      children: [
+                        Text(title, style: GoogleFonts.inter(fontSize: isMobile ? 10 : 12, fontWeight: FontWeight.bold, color: _muted)),
+                        Tooltip(
+                          message: tooltip,
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          decoration: BoxDecoration(
+                            color: _text.withValues(alpha: 0.95),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)],
+                          ),
+                          textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11, height: 1.4),
+                          child: Icon(LucideIcons.info, size: 12, color: _muted.withValues(alpha: 0.5)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(value, style: GoogleFonts.inter(fontSize: isMobile ? 20 : 24, fontWeight: FontWeight.bold, color: _text, letterSpacing: -0.5)),
+          const SizedBox(height: 4),
+          Text(subtitle, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: _muted), overflow: TextOverflow.ellipsis),
+        ],
+      ),
     );
   }
 }

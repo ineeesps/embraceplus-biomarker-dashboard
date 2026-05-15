@@ -57,7 +57,8 @@ class ApiService {
         if (startTime != null) 'start=${Uri.encodeComponent(startTime)}',
         if (endTime != null)   'end=${Uri.encodeComponent(endTime)}',
       ];
-      final url = '$baseUrl/participante/$participantId/metricas?${params.join('&')}';
+      final encodedId = Uri.encodeComponent(participantId);
+      final url = '$baseUrl/participante/$encodedId/metricas?${params.join('&')}';
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
@@ -73,9 +74,10 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> uploadCsv(String participantId, String username, List<int> bytes, String fileName, {bool replace = false}) async {
+    final encodedId = Uri.encodeComponent(participantId);
     final request = http.MultipartRequest(
       'POST',
-      Uri.parse('$baseUrl/participante/$participantId/cargar?investigador=$username&reemplazar=$replace'),
+      Uri.parse('$baseUrl/participante/$encodedId/cargar?investigador=$username&reemplazar=$replace'),
     );
     
     request.files.add(
@@ -98,8 +100,10 @@ class ApiService {
 
   Future<bool> checkSensorDataExists(String participantId, String sensorType, String username) async {
     try {
+      final encodedId = Uri.encodeComponent(participantId);
+      final encodedSensor = Uri.encodeComponent(sensorType);
       final response = await http.get(
-        Uri.parse('$baseUrl/participante/$participantId/sensor/$sensorType/existe?investigador=$username'),
+        Uri.parse('$baseUrl/participante/$encodedId/sensor/$encodedSensor/existe?investigador=$username'),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -112,8 +116,9 @@ class ApiService {
   }
 
   Future<void> deleteParticipant(String participantId, String username) async {
+    final encodedId = Uri.encodeComponent(participantId);
     final response = await http.delete(
-      Uri.parse('$baseUrl/participante/$participantId?investigador=$username'),
+      Uri.parse('$baseUrl/participante/$encodedId?investigador=$username'),
     );
 
     if (response.statusCode != 200) {
@@ -122,8 +127,10 @@ class ApiService {
   }
 
   Future<void> renameParticipant(String oldId, String newId, String username) async {
+    final encodedOldId = Uri.encodeComponent(oldId);
+    final encodedNewId = Uri.encodeComponent(newId);
     final response = await http.put(
-      Uri.parse('$baseUrl/participante/$oldId/renombrar?nuevo_id=$newId&investigador=$username'),
+      Uri.parse('$baseUrl/participante/$encodedOldId/renombrar?nuevo_id=$encodedNewId&investigador=$username'),
     );
 
     if (response.statusCode != 200) {
@@ -133,8 +140,9 @@ class ApiService {
 
   Future<Map<String, dynamic>> getParticipantMetadata(String participantId, String username) async {
     try {
+      final encodedId = Uri.encodeComponent(participantId);
       final response = await http.get(
-        Uri.parse('$baseUrl/participante/$participantId/metadata?investigador=$username'),
+        Uri.parse('$baseUrl/participante/$encodedId/metadata?investigador=$username'),
       );
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -147,7 +155,8 @@ class ApiService {
   }
 
   Future<List<int>> exportParticipantCsv(String participantId, String username, {String bucketSize = '1 minute'}) async {
-    final url = '$baseUrl/participante/$participantId/exportar?investigador=$username&bucket_size=${Uri.encodeComponent(bucketSize)}';
+    final encodedId = Uri.encodeComponent(participantId);
+    final url = '$baseUrl/participante/$encodedId/exportar?investigador=$username&bucket_size=${Uri.encodeComponent(bucketSize)}';
     try {
       final response = await http.get(Uri.parse(url))
           .timeout(const Duration(seconds: 30));

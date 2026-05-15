@@ -76,8 +76,7 @@ async def get_lista_participantes_db(username: str):
         db_ids = [row[0] for row in cur.fetchall()]
         cur.close()
         conn.close()
-        
-        # Unir con la lista en memoria (evitando duplicados)
+
         default_ids = INVESTIGADORES.get(username, {}).get("participantes", [])
         return sorted(list(set(default_ids + db_ids)))
     except Exception:
@@ -193,19 +192,24 @@ async def resumen_participantes(username: str):
 @app.post("/participante/{id}/cargar")
 async def cargar_archivo_automatico(id: str, investigador: str = None, reemplazar: bool = False, file: UploadFile = File(...)):
     """
-    Endpoint para la subida de archivos CSV. 
+    Endpoint para la subida de archivos CSV.
     Realiza la validación del sensor y delega la ingesta al motor ETL.
     """
-    if investigador and investigador in INVESTIGADORES:
+    investigador = investigador or 'ines'
+    if investigador in INVESTIGADORES:
         if id not in INVESTIGADORES[investigador]["participantes"]:
             try:
                 conn = psycopg2.connect(**DB_CONFIG)
                 cur = conn.cursor()
-                cur.execute("SELECT 1 FROM biomarcadores WHERE participant_id = %s LIMIT 1", (id,))
+                # Verifica que el participant_id no esté en uso por OTRO investigador
+                cur.execute(
+                    "SELECT 1 FROM biomarcadores WHERE participant_id = %s AND investigador != %s LIMIT 1",
+                    (id, investigador)
+                )
                 if cur.fetchone() is not None:
                     raise HTTPException(
-                        status_code=409, 
-                        detail=f"El identificador '{id}' ya está en uso por otro participante."
+                        status_code=409,
+                        detail=f"El identificador '{id}' ya está en uso por otro investigador."
                     )
             except psycopg2.Error:
                 pass
@@ -225,10 +229,16 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
         try:
             conn = psycopg2.connect(**DB_CONFIG)
             cur = conn.cursor()
-            cur.execute(
-                "DELETE FROM biomarcadores WHERE participant_id = %s AND sensor_type = %s AND investigador = %s",
-                (id, sensor_detectado, investigador)
+            sensores_a_borrar = (
+                ('acticounts_total', 'acticounts_x', 'acticounts_y', 'acticounts_z')
+                if sensor_detectado == 'acticounts_total'
+                else (sensor_detectado,)
             )
+            for st in sensores_a_borrar:
+                cur.execute(
+                    "DELETE FROM biomarcadores WHERE participant_id = %s AND sensor_type = %s AND investigador = %s",
+                    (id, st, investigador)
+                )
             conn.commit()
             cur.close()
             conn.close()
@@ -257,8 +267,11 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
             os.remove(ruta_temp)
 
         total_filas = len(df)
-        df_invalidas = df[df['missing_value_reason'].notnull() & (df['missing_value_reason'] != '')]
-        porcentaje_perdida = (len(df_invalidas) / total_filas * 100) if total_filas > 0 else 0
+        if 'missing_value_reason' in df.columns:
+            df_invalidas = df[df['missing_value_reason'].notnull() & (df['missing_value_reason'] != '')]
+            porcentaje_perdida = (len(df_invalidas) / total_filas * 100) if total_filas > 0 else 0
+        else:
+            porcentaje_perdida = 0.0
         alerta_integridad = porcentaje_perdida > 5.0
 
         mensaje = "Carga completada"
