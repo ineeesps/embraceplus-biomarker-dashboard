@@ -37,6 +37,8 @@ const Color _axisX = Color(0xFFFDBA74);
 const Color _axisY = Color(0xFF5EEAD4);
 const Color _axisZ = Color(0xFFCBD5E1);
 
+const Color _tooltipBg = Color(0xFF0F172A);
+
 class MovimientoScreen extends StatefulWidget {
   final String participantId;
   final String username;
@@ -700,6 +702,18 @@ class _CargaCinetica extends StatelessWidget {
         getDrawingHorizontalLine: (_) => FlLine(color: _border.withValues(alpha: 0.4), strokeWidth: 1),
       ),
       borderData: FlBorderData(show: false),
+      lineTouchData: LineTouchData(
+        touchTooltipData: LineTouchTooltipData(
+          getTooltipColor: (_) => _tooltipBg,
+          getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
+            final label = spot.bar.color == _kMagnitude ? 'Magnitud' : 'Inestabilidad';
+            return LineTooltipItem(
+              '$label: ${spot.y.toStringAsFixed(0)}',
+              GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 }
@@ -733,6 +747,15 @@ class _EficienciaMarcha extends StatelessWidget {
             child: hours.isEmpty
                 ? Center(child: Text('Dispositivo desconectado', style: GoogleFonts.inter(color: _muted, fontSize: 13)))
                 : BarChart(BarChartData(
+                    barTouchData: BarTouchData(
+                      touchTooltipData: BarTouchTooltipData(
+                        getTooltipColor: (_) => _tooltipBg,
+                        getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+                          '${group.x}h: ${rod.toY.toInt()} pasos',
+                          GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                        ),
+                      ),
+                    ),
                     barGroups: hours.map((h) {
                       final val = stepsPerHour[h]!.toDouble();
                       final isAbove = val >= target;
@@ -862,6 +885,21 @@ class _AnalisisBiomecanicoState extends State<_AnalisisBiomecanico> {
       titlesData: const FlTitlesData(show: false),
       gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (_) => FlLine(color: _border.withValues(alpha: 0.4), strokeWidth: 1)),
       borderData: FlBorderData(show: false),
+      lineTouchData: LineTouchData(
+        touchTooltipData: LineTouchTooltipData(
+          getTooltipColor: (_) => _tooltipBg,
+          getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
+            final String label;
+            if (spot.bar.color == _axisX) label = 'X';
+            else if (spot.bar.color == _axisY) label = 'Y';
+            else label = 'Z';
+            return LineTooltipItem(
+              '$label: ${spot.y.toStringAsFixed(0)}',
+              GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 }
