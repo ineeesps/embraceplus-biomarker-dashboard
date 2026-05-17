@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/login_screen.dart';
@@ -26,6 +27,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'EmbracePlus Dashboard',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('es'), Locale('en')],
+      locale: const Locale('es'),
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,

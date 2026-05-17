@@ -721,7 +721,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
               const SizedBox(height: 12),
               _buildDataRow(LucideIcons.calendarRange, data.dateRange),
               const SizedBox(height: 4),
-              _buildDataRow(LucideIcons.timer, '${data.totalHours} horas registradas'),
+              _buildDataRow(LucideIcons.timer, '${data.totalHours} h de cobertura temporal'),
               const SizedBox(height: 4),
               _buildDataRow(LucideIcons.pieChart, 'Tasa de Uso: ${data.compliance.toStringAsFixed(2)}%'),
               const Spacer(),

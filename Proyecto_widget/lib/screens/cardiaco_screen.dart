@@ -66,10 +66,10 @@ class _CardiacoScreenState extends State<CardiacoScreen> {
                 child: Text('Sin datos cardíacos en el tramo seleccionado', style: GoogleFonts.inter(color: _muted)),
               ),
             )
-          else ...[
+          else if (provider.cardiacoStart != null && provider.cardiacoEnd != null) ...[
             _KPIsLayer(hrData: hrData, rrData: rrData, provider: provider),
             const SizedBox(height: 24),
-            _CouplingGraphLayer(hrData: hrData, rrData: rrData),
+            _CouplingGraphLayer(hrData: hrData, rrData: rrData, startTime: provider.cardiacoStart!, endTime: provider.cardiacoEnd!),
             const SizedBox(height: 24),
             _ScatterPlotLayer(hrData: hrData, rrData: rrData),
           ]
@@ -229,6 +229,36 @@ class _TimeRangeSelector extends StatelessWidget {
     final initialDate = isStart ? provider.cardiacoStart : provider.cardiacoEnd;
     if (initialDate == null) return;
 
+    final dataSpansDays = provider.dataRangeStart != null
+        && provider.dataRangeEnd != null
+        && !DateUtils.isSameDay(provider.dataRangeStart!, provider.dataRangeEnd!);
+
+    DateTime pickedDate = initialDate;
+    if (dataSpansDays) {
+      final date = await showDatePicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: provider.dataRangeStart!,
+        lastDate: provider.dataRangeEnd!,
+        builder: (context, child) => Localizations.override(
+          context: context,
+          locale: const Locale('es'),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: _accent,
+                onPrimary: Colors.white,
+                onSurface: _text,
+              ),
+            ),
+            child: child!,
+          ),
+        ),
+      );
+      if (date == null || !context.mounted) return;
+      pickedDate = date;
+    }
+
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initialDate),
@@ -248,7 +278,7 @@ class _TimeRangeSelector extends StatelessWidget {
 
     if (time != null && context.mounted) {
       final newDate = DateTime(
-        initialDate.year, initialDate.month, initialDate.day,
+        pickedDate.year, pickedDate.month, pickedDate.day,
         time.hour, time.minute,
       );
 
@@ -271,9 +301,19 @@ class _TimeRangeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     if (provider.cardiacoStart == null || provider.cardiacoEnd == null) return const SizedBox();
 
-    final startStr = DateFormat('HH:mm').format(provider.cardiacoStart!);
-    final endStr = DateFormat('HH:mm').format(provider.cardiacoEnd!);
-    final dateStr = DateFormat('dd MMM yyyy').format(provider.cardiacoStart!);
+    final dataSpansDays = provider.dataRangeStart != null
+        && provider.dataRangeEnd != null
+        && !DateUtils.isSameDay(provider.dataRangeStart!, provider.dataRangeEnd!);
+    final startStr = dataSpansDays
+        ? '${DateFormat('dd MMM').format(provider.cardiacoStart!)}\n${DateFormat('HH:mm').format(provider.cardiacoStart!)}'
+        : DateFormat('HH:mm').format(provider.cardiacoStart!);
+    final endStr = dataSpansDays
+        ? '${DateFormat('dd MMM').format(provider.cardiacoEnd!)}\n${DateFormat('HH:mm').format(provider.cardiacoEnd!)}'
+        : DateFormat('HH:mm').format(provider.cardiacoEnd!);
+    final spansDays = !DateUtils.isSameDay(provider.cardiacoStart!, provider.cardiacoEnd!);
+    final dateStr = spansDays
+        ? '${DateFormat('dd MMM').format(provider.cardiacoStart!)} → ${DateFormat('dd MMM').format(provider.cardiacoEnd!)}'
+        : DateFormat('dd MMM yyyy').format(provider.cardiacoStart!);
 
     final isMobile = MediaQuery.of(context).size.width < 600;
     return Wrap(
@@ -326,6 +366,7 @@ class _TimeButton extends StatelessWidget {
         ),
         child: Text(
           time,
+          textAlign: TextAlign.center,
           style: GoogleFonts.jetBrainsMono(
             fontSize: 13,
             fontWeight: FontWeight.bold,
@@ -526,8 +567,10 @@ class _KPICard extends StatelessWidget {
 class _CouplingGraphLayer extends StatelessWidget {
   final List<Biomarker> hrData;
   final List<Biomarker> rrData;
+  final DateTime startTime;
+  final DateTime endTime;
 
-  const _CouplingGraphLayer({required this.hrData, required this.rrData});
+  const _CouplingGraphLayer({required this.hrData, required this.rrData, required this.startTime, required this.endTime});
 
   @override
   Widget build(BuildContext context) {
@@ -591,6 +634,7 @@ class _CouplingGraphLayer extends StatelessWidget {
 
   LineChartData _buildChartData(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
+    // RR (12–20 BrPM) × 4 → ~48–80, alineado con HR (60–100 BPM) en el mismo eje
     const double rrScale = 4.0;
 
     final List<LineChartBarData> bars = [];
@@ -653,15 +697,43 @@ class _CouplingGraphLayer extends StatelessWidget {
       }
     }
 
-    double minX = 0;
-    double maxX = 0;
+    final double fallbackMinX = startTime.toUtc().millisecondsSinceEpoch.toDouble();
+    final double fallbackMaxX = endTime.toUtc().millisecondsSinceEpoch.toDouble();
+    double minX = fallbackMinX;
+    double maxX = fallbackMaxX;
     final allT = [...hrData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble()), ...rrData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble())];
     if (allT.isNotEmpty) {
       minX = allT.reduce(math.min);
       maxX = allT.reduce(math.max);
     }
-    double xInterval = (maxX - minX) / 6;
+    double xInterval = (maxX - minX) / 5;
     if (xInterval <= 0) xInterval = 3600000;
+    final bool axisSpansDays = !DateUtils.isSameDay(
+        DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true),
+        DateTime.fromMillisecondsSinceEpoch(maxX.toInt(), isUtc: true));
+
+    final List<VerticalLine> dayLines = [];
+    if (axisSpansDays) {
+      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true);
+      DateTime midnight = DateTime.utc(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
+      while (midnight.millisecondsSinceEpoch.toDouble() <= maxX) {
+        final dayLabel = DateFormat('dd MMM').format(midnight);
+        dayLines.add(VerticalLine(
+          x: midnight.millisecondsSinceEpoch.toDouble(),
+          color: _muted.withValues(alpha: 0.25),
+          strokeWidth: 1,
+          dashArray: [4, 4],
+          label: VerticalLineLabel(
+            show: true,
+            alignment: Alignment.topLeft,
+            padding: const EdgeInsets.only(left: 4, bottom: 4),
+            style: GoogleFonts.inter(color: _muted, fontSize: 9),
+            labelResolver: (_) => dayLabel,
+          ),
+        ));
+        midnight = midnight.add(const Duration(days: 1));
+      }
+    }
 
     return LineChartData(
       minX: minX,
@@ -669,7 +741,10 @@ class _CouplingGraphLayer extends StatelessWidget {
       minY: 0,
       maxY: 160,
       lineBarsData: bars,
-      extraLinesData: extraLines,
+      extraLinesData: ExtraLinesData(
+        horizontalLines: extraLines.horizontalLines,
+        verticalLines: dayLines,
+      ),
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
@@ -683,14 +758,13 @@ class _CouplingGraphLayer extends StatelessWidget {
           sideTitles: SideTitles(
             showTitles: true,
             interval: xInterval,
-            reservedSize: 30,
+            reservedSize: 28,
             getTitlesWidget: (v, meta) {
-              if (v < minX || v > maxX) return const SizedBox();
+              if (v < minX + (xInterval * 0.5) || v > maxX - (xInterval * 0.25)) return const SizedBox();
               final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true);
-              final format = (maxX - minX) > 86400000 ? 'dd/MM HH:mm' : 'HH:mm';
               return SideTitleWidget(
                 axisSide: meta.axisSide,
-                child: Text(DateFormat(format).format(dt), style: GoogleFonts.inter(color: _muted, fontSize: 10))
+                child: Text(DateFormat('HH:mm').format(dt), style: GoogleFonts.inter(color: _muted, fontSize: isMobile ? 8 : 10))
               );
             }
           )

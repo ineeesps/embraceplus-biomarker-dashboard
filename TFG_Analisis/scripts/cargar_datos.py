@@ -62,11 +62,10 @@ class SleepAdapter(SensorAdapter):
             stage = getattr(row, 'sleep_detection_stage', None)
             if pd.notnull(stage):
                 v = int(stage)
-                if v == 100: res = 0
-                elif v == 200: res = 1
-                elif v == 300: res = 2
-                elif v == 400: res = 3
-                else: res = None
+                if 0 <= v <= 99:      res = 0   # wake
+                elif 100 <= v <= 299: res = 1   # rest/sleep
+                elif 300 <= v <= 399: res = 2   # rest interruption
+                else:                 res = None  # reservado (400+)
                 return [('sleep_detection', res)]
         except Exception:
             pass

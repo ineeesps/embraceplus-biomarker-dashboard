@@ -259,6 +259,36 @@ class _TimeRangeSelector extends StatelessWidget {
     final initialDate = isStart ? provider.suenoStart : provider.suenoEnd;
     if (initialDate == null) return;
 
+    final dataSpansDays = provider.dataRangeStart != null
+        && provider.dataRangeEnd != null
+        && !DateUtils.isSameDay(provider.dataRangeStart!, provider.dataRangeEnd!);
+
+    DateTime pickedDate = initialDate;
+    if (dataSpansDays) {
+      final date = await showDatePicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: provider.dataRangeStart!,
+        lastDate: provider.dataRangeEnd!,
+        builder: (context, child) => Localizations.override(
+          context: context,
+          locale: const Locale('es'),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: _accentIndigo,
+                onPrimary: Colors.white,
+                onSurface: _text,
+              ),
+            ),
+            child: child!,
+          ),
+        ),
+      );
+      if (date == null || !context.mounted) return;
+      pickedDate = date;
+    }
+
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initialDate),
@@ -278,7 +308,7 @@ class _TimeRangeSelector extends StatelessWidget {
 
     if (time != null && context.mounted) {
       final newDate = DateTime(
-        initialDate.year, initialDate.month, initialDate.day,
+        pickedDate.year, pickedDate.month, pickedDate.day,
         time.hour, time.minute,
       );
 
@@ -301,9 +331,19 @@ class _TimeRangeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     if (provider.suenoStart == null || provider.suenoEnd == null) return const SizedBox();
 
-    final startStr = DateFormat('HH:mm').format(provider.suenoStart!);
-    final endStr = DateFormat('HH:mm').format(provider.suenoEnd!);
-    final dateStr = DateFormat('dd MMM yyyy').format(provider.suenoStart!);
+    final dataSpansDays = provider.dataRangeStart != null
+        && provider.dataRangeEnd != null
+        && !DateUtils.isSameDay(provider.dataRangeStart!, provider.dataRangeEnd!);
+    final startStr = dataSpansDays
+        ? '${DateFormat('dd MMM').format(provider.suenoStart!)}\n${DateFormat('HH:mm').format(provider.suenoStart!)}'
+        : DateFormat('HH:mm').format(provider.suenoStart!);
+    final endStr = dataSpansDays
+        ? '${DateFormat('dd MMM').format(provider.suenoEnd!)}\n${DateFormat('HH:mm').format(provider.suenoEnd!)}'
+        : DateFormat('HH:mm').format(provider.suenoEnd!);
+    final spansDays = !DateUtils.isSameDay(provider.suenoStart!, provider.suenoEnd!);
+    final dateStr = spansDays
+        ? '${DateFormat('dd MMM').format(provider.suenoStart!)} → ${DateFormat('dd MMM').format(provider.suenoEnd!)}'
+        : DateFormat('dd MMM yyyy').format(provider.suenoStart!);
 
     final isMobile = MediaQuery.of(context).size.width < 600;
     return Wrap(
@@ -356,6 +396,7 @@ class _TimeButton extends StatelessWidget {
         ),
         child: Text(
           time,
+          textAlign: TextAlign.center,
           style: GoogleFonts.jetBrainsMono(
             fontSize: 13,
             fontWeight: FontWeight.bold,
@@ -416,23 +457,23 @@ class _KPIsLayer extends StatelessWidget {
         final kpis = [
           _KPICard(
             title: 'Eficiencia del Sueño',
-            value: totalPoints == 0 ? '--' : '${efficiency.toStringAsFixed(1)}%',
-            subtitle: 'Higiene Circadiana',
+            value: asleepPoints == 0 ? '--' : '${efficiency.toStringAsFixed(1)}%',
+            subtitle: asleepPoints == 0 ? 'Sin sueño detectado' : 'Higiene Circadiana',
             icon: LucideIcons.activitySquare,
             color: _accentIndigo,
             tooltip: "Porcentaje de tiempo efectivo de sueño en relación al tiempo total en cama.",
           ),
           _KPICard(
             title: 'Tiempo Total (TST)',
-            value: totalPoints == 0 ? '--' : '${tstHours}h ${tstRemMins}m',
-            subtitle: 'Arquitectura Real',
+            value: asleepPoints == 0 ? '--' : '${tstHours}h ${tstRemMins}m',
+            subtitle: asleepPoints == 0 ? 'Ajuste el rango horario' : 'Arquitectura Real',
             icon: LucideIcons.clock,
             color: _lightSleep,
             tooltip: "Suma neta de minutos detectados en fases de sueño (Ligero/Profundo).",
           ),
           _KPICard(
             title: 'Índice WASO',
-            value: totalPoints == 0 ? '--' : '$wasoMinutes min',
+            value: !sleepOnsetReached ? '--' : '$wasoMinutes min',
             subtitle: 'Despertares Pos-Onset',
             icon: LucideIcons.bellRing,
             color: _accentAmber,
@@ -582,7 +623,32 @@ class _HipnogramaLayer extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
             child: SizedBox(
               height: 250,
-              child: LineChart(_buildChartData(context)),
+              child: (() {
+                final asleepPoints = sleepData.where((d) => d.value != null && d.value! > 0).length;
+                if (asleepPoints == 0) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.moonStar, size: 32, color: _muted.withValues(alpha: 0.4)),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Sin fases de sueño detectadas en este tramo.',
+                          style: GoogleFonts.inter(color: _muted, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Ajuste el rango temporal para incluir las horas nocturnas.',
+                          style: GoogleFonts.inter(color: _muted.withValues(alpha: 0.7), fontSize: 11),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return LineChart(_buildChartData(context));
+              })(),
             ),
           ),
           Padding(
@@ -623,10 +689,36 @@ class _HipnogramaLayer extends StatelessWidget {
     }
     double xInterval = (maxX - minX) / 5;
     if (xInterval <= 0) xInterval = 3600000;
+    final bool axisSpansDays = spots.isNotEmpty && !DateUtils.isSameDay(
+        DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true),
+        DateTime.fromMillisecondsSinceEpoch(maxX.toInt(), isUtc: true));
+
+    final List<VerticalLine> dayLines = [];
+    if (axisSpansDays) {
+      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true);
+      DateTime midnight = DateTime.utc(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
+      while (midnight.millisecondsSinceEpoch.toDouble() <= maxX) {
+        final dayLabel = DateFormat('dd MMM').format(midnight);
+        dayLines.add(VerticalLine(
+          x: midnight.millisecondsSinceEpoch.toDouble(),
+          color: _muted.withValues(alpha: 0.25),
+          strokeWidth: 1,
+          dashArray: [4, 4],
+          label: VerticalLineLabel(
+            show: true,
+            alignment: Alignment.topLeft,
+            padding: const EdgeInsets.only(left: 4, bottom: 4),
+            style: GoogleFonts.inter(color: _muted, fontSize: 9),
+            labelResolver: (_) => dayLabel,
+          ),
+        ));
+        midnight = midnight.add(const Duration(days: 1));
+      }
+    }
 
     return LineChartData(
       minX: minX, maxX: maxX, minY: 0.5, maxY: 3.5,
-      extraLinesData: ExtraLinesData(verticalLines: redMarkers),
+      extraLinesData: ExtraLinesData(verticalLines: [...redMarkers, ...dayLines]),
       lineBarsData: [
         LineChartBarData(
           spots: spots, isCurved: false, isStepLineChart: true, color: _accentIndigo, barWidth: 3,
@@ -646,9 +738,9 @@ class _HipnogramaLayer extends StatelessWidget {
         rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
-            showTitles: true, interval: xInterval, reservedSize: 24,
+            showTitles: true, interval: xInterval, reservedSize: 28,
             getTitlesWidget: (v, meta) {
-              if (v < minX || v > maxX - (xInterval/4)) return const SizedBox();
+              if (v < minX + (xInterval * 0.5) || v > maxX - (xInterval * 0.25)) return const SizedBox();
               final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true);
               return Text(DateFormat('HH:mm').format(dt), style: GoogleFonts.jetBrainsMono(color: _muted, fontSize: 9));
             },
@@ -789,6 +881,9 @@ class _PosturalSummary extends StatelessWidget {
         final v = d.value!.toInt();
         counts[v] = (counts[v] ?? 0) + 1;
       }
+    }
+    if (counts.isEmpty) {
+      return Text('Sin datos de postura en el tramo', style: GoogleFonts.inter(color: _muted, fontSize: 12));
     }
     final total = data.length;
 

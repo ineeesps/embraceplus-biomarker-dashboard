@@ -70,9 +70,9 @@ class _EstresScreenState extends State<EstresScreen> {
           else ...[
             _KPIsLayer(edaData: edaData, prvData: prvData, metsData: metsData, tempData: tempData),
             const SizedBox(height: 24),
-            _ReactividadGraphLayer(edaData: edaData, prvData: prvData),
+            _ReactividadGraphLayer(edaData: edaData, prvData: prvData, startTime: provider.estresStart!, endTime: provider.estresEnd!),
             const SizedBox(height: 24),
-            _ContextoGraphLayer(metsData: metsData, tempData: tempData),
+            _ContextoGraphLayer(metsData: metsData, tempData: tempData, startTime: provider.estresStart!, endTime: provider.estresEnd!),
           ]
         ];
 
@@ -209,6 +209,36 @@ class _TimeRangeSelector extends StatelessWidget {
     final initialDate = isStart ? provider.estresStart : provider.estresEnd;
     if (initialDate == null) return;
 
+    final dataSpansDays = provider.dataRangeStart != null
+        && provider.dataRangeEnd != null
+        && !DateUtils.isSameDay(provider.dataRangeStart!, provider.dataRangeEnd!);
+
+    DateTime pickedDate = initialDate;
+    if (dataSpansDays) {
+      final date = await showDatePicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: provider.dataRangeStart!,
+        lastDate: provider.dataRangeEnd!,
+        builder: (context, child) => Localizations.override(
+          context: context,
+          locale: const Locale('es'),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: _edaColor,
+                onPrimary: Colors.white,
+                onSurface: _text,
+              ),
+            ),
+            child: child!,
+          ),
+        ),
+      );
+      if (date == null || !context.mounted) return;
+      pickedDate = date;
+    }
+
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initialDate),
@@ -228,7 +258,7 @@ class _TimeRangeSelector extends StatelessWidget {
 
     if (time != null && context.mounted) {
       final newDate = DateTime(
-        initialDate.year, initialDate.month, initialDate.day,
+        pickedDate.year, pickedDate.month, pickedDate.day,
         time.hour, time.minute,
       );
 
@@ -251,9 +281,19 @@ class _TimeRangeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     if (provider.estresStart == null || provider.estresEnd == null) return const SizedBox();
 
-    final startStr = DateFormat('HH:mm').format(provider.estresStart!);
-    final endStr = DateFormat('HH:mm').format(provider.estresEnd!);
-    final dateStr = DateFormat('dd MMM yyyy').format(provider.estresStart!);
+    final dataSpansDays = provider.dataRangeStart != null
+        && provider.dataRangeEnd != null
+        && !DateUtils.isSameDay(provider.dataRangeStart!, provider.dataRangeEnd!);
+    final startStr = dataSpansDays
+        ? '${DateFormat('dd MMM').format(provider.estresStart!)}\n${DateFormat('HH:mm').format(provider.estresStart!)}'
+        : DateFormat('HH:mm').format(provider.estresStart!);
+    final endStr = dataSpansDays
+        ? '${DateFormat('dd MMM').format(provider.estresEnd!)}\n${DateFormat('HH:mm').format(provider.estresEnd!)}'
+        : DateFormat('HH:mm').format(provider.estresEnd!);
+    final spansDays = !DateUtils.isSameDay(provider.estresStart!, provider.estresEnd!);
+    final dateStr = spansDays
+        ? '${DateFormat('dd MMM').format(provider.estresStart!)} → ${DateFormat('dd MMM').format(provider.estresEnd!)}'
+        : DateFormat('dd MMM yyyy').format(provider.estresStart!);
 
     final isMobile = MediaQuery.of(context).size.width < 600;
     return Wrap(
@@ -306,6 +346,7 @@ class _TimeButton extends StatelessWidget {
         ),
         child: Text(
           time,
+          textAlign: TextAlign.center,
           style: GoogleFonts.jetBrainsMono(
             fontSize: 13,
             fontWeight: FontWeight.bold,
@@ -505,8 +546,10 @@ class _KPICard extends StatelessWidget {
 class _ReactividadGraphLayer extends StatelessWidget {
   final List<Biomarker> edaData;
   final List<Biomarker> prvData;
+  final DateTime startTime;
+  final DateTime endTime;
 
-  const _ReactividadGraphLayer({required this.edaData, required this.prvData});
+  const _ReactividadGraphLayer({required this.edaData, required this.prvData, required this.startTime, required this.endTime});
 
   @override
   Widget build(BuildContext context) {
@@ -654,14 +697,19 @@ class _ReactividadGraphLayer extends StatelessWidget {
       }
     }
 
-    double minX = 0, maxX = 0;
+    final double fallbackMinX = startTime.toUtc().millisecondsSinceEpoch.toDouble();
+    final double fallbackMaxX = endTime.toUtc().millisecondsSinceEpoch.toDouble();
+    double minX = fallbackMinX, maxX = fallbackMaxX;
     double maxVal = 5;
-    
+
     final allT = [...edaData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble()), ...prvData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble())];
     if (allT.isNotEmpty) {
       minX = allT.reduce(math.min);
       maxX = allT.reduce(math.max);
     }
+    final bool axisSpansDays = !DateUtils.isSameDay(
+        DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true),
+        DateTime.fromMillisecondsSinceEpoch(maxX.toInt(), isUtc: true));
 
     final allV = [
       ...edaData.where((e) => e.value != null).map((e) => e.value!),
@@ -676,12 +724,36 @@ class _ReactividadGraphLayer extends StatelessWidget {
     if (xInterval <= 0) xInterval = 3600000;
     double yInterval = maxVal / 5;
 
+    final List<VerticalLine> dayLines = [];
+    if (axisSpansDays) {
+      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true);
+      DateTime midnight = DateTime.utc(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
+      while (midnight.millisecondsSinceEpoch.toDouble() <= maxX) {
+        final dayLabel = DateFormat('dd MMM').format(midnight);
+        dayLines.add(VerticalLine(
+          x: midnight.millisecondsSinceEpoch.toDouble(),
+          color: _muted.withValues(alpha: 0.25),
+          strokeWidth: 1,
+          dashArray: [4, 4],
+          label: VerticalLineLabel(
+            show: true,
+            alignment: Alignment.topLeft,
+            padding: const EdgeInsets.only(left: 4, bottom: 4),
+            style: GoogleFonts.inter(color: _muted, fontSize: 9),
+            labelResolver: (_) => dayLabel,
+          ),
+        ));
+        midnight = midnight.add(const Duration(days: 1));
+      }
+    }
+
     return LineChartData(
       minX: minX,
       maxX: maxX,
       minY: 0,
       maxY: maxVal,
       lineBarsData: bars,
+      extraLinesData: ExtraLinesData(verticalLines: dayLines),
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
@@ -695,9 +767,9 @@ class _ReactividadGraphLayer extends StatelessWidget {
           sideTitles: SideTitles(
             showTitles: true,
             interval: xInterval,
-            reservedSize: 30,
+            reservedSize: 28,
             getTitlesWidget: (v, meta) {
-              if (v < minX || v > maxX - (xInterval/2)) return const SizedBox();
+              if (v < minX + (xInterval * 0.5) || v > maxX - (xInterval * 0.25)) return const SizedBox();
               final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true);
               return SideTitleWidget(
                 axisSide: meta.axisSide,
@@ -751,8 +823,10 @@ class _ReactividadGraphLayer extends StatelessWidget {
 class _ContextoGraphLayer extends StatelessWidget {
   final List<Biomarker> metsData;
   final List<Biomarker> tempData;
+  final DateTime startTime;
+  final DateTime endTime;
 
-  const _ContextoGraphLayer({required this.metsData, required this.tempData});
+  const _ContextoGraphLayer({required this.metsData, required this.tempData, required this.startTime, required this.endTime});
 
   @override
   Widget build(BuildContext context) {
@@ -857,6 +931,7 @@ class _ContextoGraphLayer extends StatelessWidget {
 
   LineChartData _buildChartData(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
+    // METs (1–10) × 5 → 5–50, convive con temperatura (30–40 °C) en el mismo eje
     const double metScale = 5.0;
 
     final List<LineChartBarData> bars = [];
@@ -898,7 +973,9 @@ class _ContextoGraphLayer extends StatelessWidget {
       }
     }
 
-    double minX = 0, maxX = 0;
+    final double fallbackMinX = startTime.toUtc().millisecondsSinceEpoch.toDouble();
+    final double fallbackMaxX = endTime.toUtc().millisecondsSinceEpoch.toDouble();
+    double minX = fallbackMinX, maxX = fallbackMaxX;
     double minVal = 25, maxVal = 40;
 
     final allT = [...metsData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble()), ...tempData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble())];
@@ -906,6 +983,9 @@ class _ContextoGraphLayer extends StatelessWidget {
       minX = allT.reduce(math.min);
       maxX = allT.reduce(math.max);
     }
+    final bool axisSpansDays = !DateUtils.isSameDay(
+        DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true),
+        DateTime.fromMillisecondsSinceEpoch(maxX.toInt(), isUtc: true));
 
     final allV = [
       ...metsData.where((e) => e.value != null).map((e) => e.value! * metScale),
@@ -921,6 +1001,29 @@ class _ContextoGraphLayer extends StatelessWidget {
     double xInterval = (maxX - minX) / 5;
     if (xInterval <= 0) xInterval = 3600000;
     double yInterval = (maxVal - minVal) / 5;
+
+    final List<VerticalLine> dayLines = [];
+    if (axisSpansDays) {
+      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true);
+      DateTime midnight = DateTime.utc(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
+      while (midnight.millisecondsSinceEpoch.toDouble() <= maxX) {
+        final dayLabel = DateFormat('dd MMM').format(midnight);
+        dayLines.add(VerticalLine(
+          x: midnight.millisecondsSinceEpoch.toDouble(),
+          color: _muted.withValues(alpha: 0.25),
+          strokeWidth: 1,
+          dashArray: [4, 4],
+          label: VerticalLineLabel(
+            show: true,
+            alignment: Alignment.topLeft,
+            padding: const EdgeInsets.only(left: 4, bottom: 4),
+            style: GoogleFonts.inter(color: _muted, fontSize: 9),
+            labelResolver: (_) => dayLabel,
+          ),
+        ));
+        midnight = midnight.add(const Duration(days: 1));
+      }
+    }
 
     return LineChartData(
       minX: minX,
@@ -943,6 +1046,7 @@ class _ContextoGraphLayer extends StatelessWidget {
             ),
           ),
         ],
+        verticalLines: dayLines,
         extraLinesOnTop: false,
       ),
       gridData: FlGridData(
@@ -963,9 +1067,9 @@ class _ContextoGraphLayer extends StatelessWidget {
           sideTitles: SideTitles(
             showTitles: true,
             interval: xInterval,
-            reservedSize: 30,
+            reservedSize: 28,
             getTitlesWidget: (v, meta) {
-              if (v < minX || v > maxX - (xInterval/2)) return const SizedBox();
+              if (v < minX + (xInterval * 0.5) || v > maxX - (xInterval * 0.25)) return const SizedBox();
               final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true);
               return SideTitleWidget(
                 axisSide: meta.axisSide,

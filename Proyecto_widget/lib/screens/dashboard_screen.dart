@@ -315,8 +315,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       childAspectRatio: isMobile ? 0.95 : (isTablet ? 1.1 : 1.0),
       children: [
         _buildKPICard('Pasos Totales', provider.totalSteps?.toString() ?? '--', LucideIcons.footprints, Colors.orange, isMobile),
-        _buildKPICard('Frecuencia Cardíaca', provider.avgBpm?.toString() ?? '--', LucideIcons.heartPulse, const Color(0xFFE11D48), isMobile),
-        _buildKPICard('Horas de Sueño', provider.sleepHours?.toStringAsFixed(1) ?? '--', LucideIcons.moon, const Color(0xFF6366F1), isMobile),
+        _buildKPICard('FC Media Global', provider.avgBpm != null ? '${provider.avgBpm} BPM' : '--', LucideIcons.heartPulse, const Color(0xFFE11D48), isMobile),
+        _buildKPICard('Horas de Sueño', provider.sleepHours == null ? '--' : provider.sleepHours! == 0.0 ? '0h' : '${provider.sleepHours!.toStringAsFixed(1)}h', LucideIcons.moon, const Color(0xFF6366F1), isMobile),
         _buildKPICard('Nivel de Estrés', provider.avgStress?.toStringAsFixed(2) ?? '--', LucideIcons.zap, const Color(0xFF10B981), isMobile),
       ],
     );

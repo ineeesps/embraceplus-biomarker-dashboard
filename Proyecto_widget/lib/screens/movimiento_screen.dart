@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -253,6 +254,36 @@ class _TimeRangeSelector extends StatelessWidget {
     final initialDate = isStart ? provider.movimientoStart : provider.movimientoEnd;
     if (initialDate == null) return;
 
+    final dataSpansDays = provider.dataRangeStart != null
+        && provider.dataRangeEnd != null
+        && !DateUtils.isSameDay(provider.dataRangeStart!, provider.dataRangeEnd!);
+
+    DateTime pickedDate = initialDate;
+    if (dataSpansDays) {
+      final date = await showDatePicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: provider.dataRangeStart!,
+        lastDate: provider.dataRangeEnd!,
+        builder: (context, child) => Localizations.override(
+          context: context,
+          locale: const Locale('es'),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: _identidad,
+                onPrimary: Colors.white,
+                onSurface: _text,
+              ),
+            ),
+            child: child!,
+          ),
+        ),
+      );
+      if (date == null || !context.mounted) return;
+      pickedDate = date;
+    }
+
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initialDate),
@@ -272,7 +303,7 @@ class _TimeRangeSelector extends StatelessWidget {
 
     if (time != null && context.mounted) {
       final newDate = DateTime(
-        initialDate.year, initialDate.month, initialDate.day,
+        pickedDate.year, pickedDate.month, pickedDate.day,
         time.hour, time.minute,
       );
 
@@ -295,9 +326,19 @@ class _TimeRangeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     if (provider.movimientoStart == null || provider.movimientoEnd == null) return const SizedBox();
 
-    final startStr = DateFormat('HH:mm').format(provider.movimientoStart!);
-    final endStr = DateFormat('HH:mm').format(provider.movimientoEnd!);
-    final dateStr = DateFormat('dd MMM yyyy').format(provider.movimientoStart!);
+    final dataSpansDays = provider.dataRangeStart != null
+        && provider.dataRangeEnd != null
+        && !DateUtils.isSameDay(provider.dataRangeStart!, provider.dataRangeEnd!);
+    final startStr = dataSpansDays
+        ? '${DateFormat('dd MMM').format(provider.movimientoStart!)}\n${DateFormat('HH:mm').format(provider.movimientoStart!)}'
+        : DateFormat('HH:mm').format(provider.movimientoStart!);
+    final endStr = dataSpansDays
+        ? '${DateFormat('dd MMM').format(provider.movimientoEnd!)}\n${DateFormat('HH:mm').format(provider.movimientoEnd!)}'
+        : DateFormat('HH:mm').format(provider.movimientoEnd!);
+    final spansDays = !DateUtils.isSameDay(provider.movimientoStart!, provider.movimientoEnd!);
+    final dateStr = spansDays
+        ? '${DateFormat('dd MMM').format(provider.movimientoStart!)} → ${DateFormat('dd MMM').format(provider.movimientoEnd!)}'
+        : DateFormat('dd MMM yyyy').format(provider.movimientoStart!);
 
     final isMobile = MediaQuery.of(context).size.width < 600;
     return Wrap(
@@ -521,6 +562,7 @@ class _TimeButton extends StatelessWidget {
         ),
         child: Text(
           time,
+          textAlign: TextAlign.center,
           style: GoogleFonts.jetBrainsMono(
             fontSize: 13,
             fontWeight: FontWeight.bold,
@@ -725,14 +767,21 @@ class _EficienciaMarcha extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stepsPerHour = <int, int>{};
+    final stepsPerEpochHour = <int, int>{};
+    final epochHourDataCount = <int, int>{};
     for (var m in stepData) {
+      final key = m.time.millisecondsSinceEpoch ~/ 3600000;
+      epochHourDataCount[key] = (epochHourDataCount[key] ?? 0) + 1;
       if (m.value != null) {
-        stepsPerHour[m.time.hour] = (stepsPerHour[m.time.hour] ?? 0) + m.value!.toInt();
+        stepsPerEpochHour[key] = (stepsPerEpochHour[key] ?? 0) + m.value!.toInt();
       }
     }
-
-    final hours = stepsPerHour.keys.toList()..sort();
+    final allKeys = stepsPerEpochHour.keys.toList()..sort();
+    final sortedKeys = allKeys.where((k) => (epochHourDataCount[k] ?? 0) >= 2).toList();
+    final stepSpansDays = sortedKeys.length > 1 &&
+        DateTime.fromMillisecondsSinceEpoch(sortedKeys.first * 3600000, isUtc: true).day !=
+        DateTime.fromMillisecondsSinceEpoch(sortedKeys.last * 3600000, isUtc: true).day;
+    final int labelStep = math.max(1, (sortedKeys.length / 6).ceil());
     const double target = 250.0;
 
     return _SectionCard(
@@ -744,23 +793,29 @@ class _EficienciaMarcha extends StatelessWidget {
         children: [
           SizedBox(
             height: 200,
-            child: hours.isEmpty
+            child: sortedKeys.isEmpty
                 ? Center(child: Text('Dispositivo desconectado', style: GoogleFonts.inter(color: _muted, fontSize: 13)))
                 : BarChart(BarChartData(
                     barTouchData: BarTouchData(
                       touchTooltipData: BarTouchTooltipData(
                         getTooltipColor: (_) => _tooltipBg,
-                        getTooltipItem: (group, _, rod, __) => BarTooltipItem(
-                          '${group.x}h: ${rod.toY.toInt()} pasos',
-                          GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
-                        ),
+                        getTooltipItem: (group, _, rod, __) {
+                          final epochHour = sortedKeys[group.x.toInt()];
+                          final dt = DateTime.fromMillisecondsSinceEpoch(epochHour * 3600000, isUtc: true);
+                          final label = stepSpansDays ? DateFormat('dd/MM HH:mm').format(dt) : DateFormat('HH:mm').format(dt);
+                          return BarTooltipItem(
+                            '$label: ${rod.toY.toInt()} pasos',
+                            GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                          );
+                        },
                       ),
                     ),
-                    barGroups: hours.map((h) {
-                      final val = stepsPerHour[h]!.toDouble();
+                    barGroups: sortedKeys.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final val = stepsPerEpochHour[entry.value]!.toDouble();
                       final isAbove = val >= target;
                       return BarChartGroupData(
-                        x: h,
+                        x: index,
                         barRods: [
                           BarChartRodData(
                             toY: val,
@@ -791,10 +846,20 @@ class _EficienciaMarcha extends StatelessWidget {
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          getTitlesWidget: (v, _) => Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text('${v.toInt()}h', style: GoogleFonts.jetBrainsMono(fontSize: 10, color: _muted, fontWeight: FontWeight.bold)),
-                          ),
+                          reservedSize: stepSpansDays ? 40 : 28,
+                          interval: labelStep.toDouble(),
+                          getTitlesWidget: (v, _) {
+                            final idx = v.toInt();
+                            if (idx < 0 || idx >= sortedKeys.length) return const SizedBox();
+                            final dt = DateTime.fromMillisecondsSinceEpoch(sortedKeys[idx] * 3600000, isUtc: true);
+                            final label = stepSpansDays
+                                ? '${DateFormat('dd/MM').format(dt)}\n${DateFormat('HH:mm').format(dt)}'
+                                : DateFormat('HH:mm').format(dt);
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(label, textAlign: TextAlign.center, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: _muted, fontWeight: FontWeight.bold)),
+                            );
+                          },
                         ),
                       ),
                       leftTitles:  const AxisTitles(sideTitles: SideTitles(showTitles: false)),

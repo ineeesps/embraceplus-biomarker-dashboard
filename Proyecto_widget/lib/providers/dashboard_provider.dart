@@ -195,7 +195,8 @@ class DashboardProvider with ChangeNotifier {
         final norm = m.sensorType.toLowerCase().replaceAll('-', '_');
         return kMovimientoSensores.contains(norm);
       }).toList();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[DashboardProvider] fetchMovimientoMetrics error: $e');
       _movimientoMetrics = [];
     } finally {
       _isMovimientoLoading = false;
@@ -220,7 +221,8 @@ class DashboardProvider with ChangeNotifier {
         final norm = m.sensorType.toLowerCase().replaceAll('-', '_');
         return kCardiacoSensores.contains(norm);
       }).toList();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[DashboardProvider] fetchCardiacoMetrics error: $e');
       _cardiacoMetrics = [];
     } finally {
       _isCardiacoLoading = false;
@@ -245,7 +247,8 @@ class DashboardProvider with ChangeNotifier {
         final norm = m.sensorType.toLowerCase().replaceAll('-', '_');
         return kEstresSensores.contains(norm);
       }).toList();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[DashboardProvider] fetchEstresMetrics error: $e');
       _estresMetrics = [];
     } finally {
       _isEstresLoading = false;
@@ -270,7 +273,8 @@ class DashboardProvider with ChangeNotifier {
         final norm = m.sensorType.toLowerCase().replaceAll('-', '_');
         return kSuenoSensores.contains(norm);
       }).toList();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[DashboardProvider] fetchSuenoMetrics error: $e');
       _suenoMetrics = [];
     } finally {
       _isSuenoLoading = false;
@@ -394,10 +398,11 @@ class DashboardProvider with ChangeNotifier {
   }
 
   double? get sleepHours {
+    if (_metrics.isEmpty) return null;
     final sleep = _metrics.where((m) => m.sensorType == 'sleep_detection' && m.value != null);
-    if (sleep.isEmpty) return null;
+    if (sleep.isEmpty) return 0.0;
     final sleepPoints = sleep.where((m) => m.value! > 0).length;
-    return (sleepPoints * 30) / 3600;
+    return (sleepPoints * 30) / 3600; // 30 s por punto de datos raw → horas
   }
 
   double? get avgStress {

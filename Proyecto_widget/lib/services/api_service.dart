@@ -31,7 +31,8 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getParticipantsSummary(String username) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/investigador/$username/resumen_participantes'));
+      final response = await http.get(Uri.parse('$baseUrl/investigador/$username/resumen_participantes'))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['participantes']);
@@ -59,7 +60,8 @@ class ApiService {
       ];
       final encodedId = Uri.encodeComponent(participantId);
       final url = '$baseUrl/participante/$encodedId/metricas?${params.join('&')}';
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url))
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -88,7 +90,7 @@ class ApiService {
       ),
     );
 
-    final response = await request.send();
+    final response = await request.send().timeout(const Duration(seconds: 60));
     final responseData = await response.stream.bytesToString();
     
     if (response.statusCode == 200) {
@@ -104,7 +106,7 @@ class ApiService {
       final encodedSensor = Uri.encodeComponent(sensorType);
       final response = await http.get(
         Uri.parse('$baseUrl/participante/$encodedId/sensor/$encodedSensor/existe?investigador=$username'),
-      );
+      ).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['existe'] ?? false;
@@ -119,7 +121,7 @@ class ApiService {
     final encodedId = Uri.encodeComponent(participantId);
     final response = await http.delete(
       Uri.parse('$baseUrl/participante/$encodedId?investigador=$username'),
-    );
+    ).timeout(const Duration(seconds: 10));
 
     if (response.statusCode != 200) {
       throw Exception('Error al eliminar participante: ${response.body}');
@@ -131,7 +133,7 @@ class ApiService {
     final encodedNewId = Uri.encodeComponent(newId);
     final response = await http.put(
       Uri.parse('$baseUrl/participante/$encodedOldId/renombrar?nuevo_id=$encodedNewId&investigador=$username'),
-    );
+    ).timeout(const Duration(seconds: 10));
 
     if (response.statusCode != 200) {
       throw Exception('Error al renombrar: ${response.body}');
@@ -143,7 +145,7 @@ class ApiService {
       final encodedId = Uri.encodeComponent(participantId);
       final response = await http.get(
         Uri.parse('$baseUrl/participante/$encodedId/metadata?investigador=$username'),
-      );
+      ).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {

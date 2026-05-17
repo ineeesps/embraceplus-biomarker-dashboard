@@ -47,7 +47,7 @@ def procesar_carpeta(ruta_base, id_participante, investigador='ines'):
 
     print(f"[{id_participante}] Finalizado: {conteo} archivos cargados, {errores} errores.")
     if alertas_clinicas:
-        print(f"  ⚠️ ALERTAS DE INTEGRIDAD (>5% pérdida de datos detectada):")
+        print(f"  [!] ALERTAS DE INTEGRIDAD (>5% pérdida de datos detectada):")
         for sensor, loss in alertas_clinicas:
             print(f"     - {sensor}: {loss:.2f}% de datos perdidos o corruptos.")
 

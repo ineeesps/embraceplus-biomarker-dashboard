@@ -1,4 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import StreamingResponse, JSONResponse
+from typing import Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from pydantic import BaseModel
@@ -7,7 +9,6 @@ import io
 import os
 import sys
 import math
-import traceback
 
 dir_actual = os.path.dirname(os.path.abspath(__file__))
 ruta_scripts = os.path.join(dir_actual, '..', 'scripts')
@@ -47,6 +48,11 @@ PATRONES_SENSORES = {
     'acticounts': 'acticounts_total', 
     'sleep-detection': 'sleep_detection', 'sleep_detection': 'sleep_detection',
     'acticounts_x': 'acticounts_x', 'acticounts_y': 'acticounts_y', 'acticounts_z': 'acticounts_z'
+}
+
+BUCKET_SIZES_PERMITIDOS = {
+    '30 seconds', '1 minute', '2 minutes', '5 minutes',
+    '10 minutes', '15 minutes', '30 minutes', '1 hour'
 }
 
 class LoginRequest(BaseModel):
@@ -103,7 +109,7 @@ async def health():
         conn.close()
         return {"status": "ok", "db": "connected"}
     except Exception:
-        return {"status": "error", "db": "disconnected"}
+        return JSONResponse(status_code=503, content={"status": "error", "db": "disconnected"})
 
 @app.get("/investigador/{username}/resumen_participantes")
 async def resumen_participantes(username: str):
@@ -167,7 +173,7 @@ async def resumen_participantes(username: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/participante/{id}/cargar")
-async def cargar_archivo_automatico(id: str, investigador: str = None, reemplazar: bool = False, file: UploadFile = File(...)):
+async def cargar_archivo_automatico(id: str, investigador: Optional[str] = None, reemplazar: bool = False, file: UploadFile = File(...)):
     """
     Endpoint para la subida de archivos CSV.
     Realiza la validación del sensor y delega la ingesta al motor ETL.
@@ -175,6 +181,7 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
     if not investigador:
         raise HTTPException(status_code=400, detail="El parámetro 'investigador' es obligatorio.")
     if investigador in INVESTIGADORES:
+        conn = None
         try:
             conn = psycopg2.connect(**DB_CONFIG)
             cur = conn.cursor()
@@ -190,7 +197,7 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
         except psycopg2.Error:
             pass
         finally:
-            if 'conn' in locals() and conn:
+            if conn:
                 conn.close()
 
     nombre_archivo = file.filename.lower()
@@ -200,6 +207,7 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
         raise HTTPException(status_code=400, detail="Tipo de sensor no reconocido")
 
     if reemplazar:
+        conn = None
         try:
             conn = psycopg2.connect(**DB_CONFIG)
             cur = conn.cursor()
@@ -215,17 +223,18 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
                 )
             conn.commit()
             cur.close()
-            conn.close()
-        except Exception as e:
-            if 'conn' in locals() and conn:
+        except Exception:
+            if conn:
                 conn.rollback()
+        finally:
+            if conn:
                 conn.close()
 
     try:
         contenido = await file.read()
         df = pd.read_csv(io.BytesIO(contenido), low_memory=False)
         
-        if len(df) <= 751:
+        if len(df) < 750:
             raise HTTPException(status_code=400, detail="Fichero insuficiente o sin datos")
 
         ruta_data = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
@@ -234,11 +243,11 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
         ruta_temp = os.path.join(ruta_data, file.filename)
         with open(ruta_temp, "wb") as f:
             f.write(contenido)
-        
-        cargar_csv_a_timescale(file.filename, sensor_detectado, id, investigador=investigador)
-        
-        if os.path.exists(ruta_temp):
-            os.remove(ruta_temp)
+        try:
+            cargar_csv_a_timescale(file.filename, sensor_detectado, id, investigador=investigador)
+        finally:
+            if os.path.exists(ruta_temp):
+                os.remove(ruta_temp)
 
         total_filas = len(df)
         if 'missing_value_reason' in df.columns:
@@ -265,8 +274,6 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
     except HTTPException as http_e:
         raise http_e
     except Exception as e:
-        error_info = traceback.format_exc()
-        print(error_info)
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 @app.get("/participante/{id}/sensor/{sensor_type}/existe")
@@ -299,6 +306,8 @@ async def consultar_datos(id: str, investigador: str, start: str = None, end: st
     """
     Consulta de series temporales de biomarcadores con agregación dinámica (Downsampling).
     """
+    if bucket_size not in BUCKET_SIZES_PERMITIDOS:
+        raise HTTPException(status_code=400, detail=f"bucket_size inválido. Valores permitidos: {sorted(BUCKET_SIZES_PERMITIDOS)}")
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -444,7 +453,11 @@ async def obtener_metadata_participante(id: str, investigador: str):
 
 @app.get("/participante/{id}/exportar")
 async def exportar_datos(id: str, investigador: str, bucket_size: str = '1 minute'):
-    from fastapi.responses import StreamingResponse
+    if bucket_size not in BUCKET_SIZES_PERMITIDOS:
+        raise HTTPException(status_code=400, detail=f"bucket_size inválido. Valores permitidos: {sorted(BUCKET_SIZES_PERMITIDOS)}")
+
+    conn = None
+    df = None
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         query = """
@@ -464,20 +477,22 @@ async def exportar_datos(id: str, investigador: str, bucket_size: str = '1 minut
             ORDER BY timestamp ASC
         """
         df = pd.read_sql_query(query, conn, params=[bucket_size, id, investigador])
-        conn.close()
-
-        if df.empty:
-            raise HTTPException(status_code=404, detail="Sin datos")
-
-        df_pivot = df.pivot(index='timestamp', columns='sensor_type', values='value').reset_index()
-        output = io.StringIO()
-        df_pivot.to_csv(output, index=False)
-        output.seek(0)
-
-        return StreamingResponse(
-            output,
-            media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename=export_{id}.csv"}
-        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en el módulo de exportación: {str(e)}")
+    finally:
+        if conn:
+            conn.close()
+
+    if df is None or df.empty:
+        raise HTTPException(status_code=404, detail="Sin datos")
+
+    df_pivot = df.pivot(index='timestamp', columns='sensor_type', values='value').reset_index()
+    output = io.StringIO()
+    df_pivot.to_csv(output, index=False)
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename=export_{id}.csv"}
+    )
