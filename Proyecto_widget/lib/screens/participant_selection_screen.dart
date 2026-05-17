@@ -285,7 +285,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                                     type: errorCount == 0 ? ToastType.success : ToastType.error,
                                   );
                                   setState(() { _isLoading = true; });
-                                  _loadData();
+                                  await _loadData();
                                 }
                               }
                             }
@@ -350,7 +350,8 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     if (confirmed == true) {
       try {
         await ApiService().deleteParticipant(id, widget.username);
-        _loadData();
+        if (mounted) setState(() => _isLoading = true);
+        await _loadData();
         if (mounted) AppToast.show(context, 'Participante eliminado correctamente', type: ToastType.success);
       } catch (e) {
         if (mounted) AppToast.show(context, 'Error al eliminar: $e', type: ToastType.error);
@@ -415,7 +416,8 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     if (newId != null && newId.isNotEmpty && newId != oldId) {
       try {
         await ApiService().renameParticipant(oldId, newId, widget.username);
-        _loadData();
+        if (mounted) setState(() => _isLoading = true);
+        await _loadData();
         if (mounted) AppToast.show(context, 'Participante renombrado correctamente', type: ToastType.success);
       } catch (e) {
         if (mounted) AppToast.show(context, 'Error al renombrar: $e', type: ToastType.error);

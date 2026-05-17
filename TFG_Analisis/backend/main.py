@@ -54,20 +54,14 @@ class LoginRequest(BaseModel):
     password: str
 
 INVESTIGADORES = {
-    "alberto": {
-        "password": "123",
-        "participantes": ["PRUEBA 1", "PRUEBA 2"]
-    },
-    "ines": {
-        "password": "123",
-        "participantes": ["PRUEBA_SUEÑO"] + [f"user{i}" for i in range(1, 21)]
-    }
+    "alberto": {"password": "123"},
+    "ines":    {"password": "123"},
 }
 
 async def get_lista_participantes_db(username: str):
     """
-    Obtiene la lista de participantes de la base de datos para un investigador,
-    fusionándola con la lista por defecto.
+    Obtiene la lista de participantes de la base de datos para un investigador.
+    La DB es la única fuente de verdad.
     """
     try:
         conn = psycopg2.connect(**DB_CONFIG)
@@ -76,11 +70,9 @@ async def get_lista_participantes_db(username: str):
         db_ids = [row[0] for row in cur.fetchall()]
         cur.close()
         conn.close()
-
-        default_ids = INVESTIGADORES.get(username, {}).get("participantes", [])
-        return sorted(list(set(default_ids + db_ids)))
+        return sorted(db_ids)
     except Exception:
-        return INVESTIGADORES.get(username, {}).get("participantes", [])
+        return []
 
 @app.post("/login")
 async def login(req: LoginRequest):
@@ -169,17 +161,6 @@ async def resumen_participantes(username: str):
                 "totalHours": max(total_hours, 1)
             })
 
-        ids_con_datos = {p["id"] for p in participantes_data}
-        for p_id in INVESTIGADORES[username]["participantes"]:
-            if p_id not in ids_con_datos:
-                participantes_data.append({
-                    "id": p_id,
-                    "compliance": 0,
-                    "status": "SIN DATOS",
-                    "dateRange": "N/A",
-                    "totalHours": 0
-                })
-        
         participantes_data.sort(key=lambda x: x["id"])
         
         cur.close()
@@ -195,29 +176,26 @@ async def cargar_archivo_automatico(id: str, investigador: str = None, reemplaza
     Endpoint para la subida de archivos CSV.
     Realiza la validación del sensor y delega la ingesta al motor ETL.
     """
-    investigador = investigador or 'ines'
+    if not investigador:
+        raise HTTPException(status_code=400, detail="El parámetro 'investigador' es obligatorio.")
     if investigador in INVESTIGADORES:
-        if id not in INVESTIGADORES[investigador]["participantes"]:
-            try:
-                conn = psycopg2.connect(**DB_CONFIG)
-                cur = conn.cursor()
-                # Verifica que el participant_id no esté en uso por OTRO investigador
-                cur.execute(
-                    "SELECT 1 FROM biomarcadores WHERE participant_id = %s AND investigador != %s LIMIT 1",
-                    (id, investigador)
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT 1 FROM biomarcadores WHERE participant_id = %s AND investigador != %s LIMIT 1",
+                (id, investigador)
+            )
+            if cur.fetchone() is not None:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"El identificador '{id}' ya está en uso por otro investigador."
                 )
-                if cur.fetchone() is not None:
-                    raise HTTPException(
-                        status_code=409,
-                        detail=f"El identificador '{id}' ya está en uso por otro investigador."
-                    )
-            except psycopg2.Error:
-                pass
-            finally:
-                if 'conn' in locals() and conn:
-                    conn.close()
-
-            INVESTIGADORES[investigador]["participantes"].append(id)
+        except psycopg2.Error:
+            pass
+        finally:
+            if 'conn' in locals() and conn:
+                conn.close()
 
     nombre_archivo = file.filename.lower()
     sensor_detectado = next((v for k, v in PATRONES_SENSORES.items() if k in nombre_archivo), None)
@@ -390,10 +368,7 @@ async def eliminar_participante(id: str, investigador: str):
         
         cur.execute("DELETE FROM biomarcadores WHERE participant_id = %s AND investigador = %s", (id, investigador))
         conn.commit()
-        
-        if investigador in INVESTIGADORES and id in INVESTIGADORES[investigador]["participantes"]:
-            INVESTIGADORES[investigador]["participantes"].remove(id)
-            
+
         cur.close()
         conn.close()
         return {"status": "success", "message": f"Participante {id} eliminado correctamente"}
@@ -408,25 +383,25 @@ async def renombrar_participante(id: str, nuevo_id: str, investigador: str):
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
-        
+
         cur.execute("SELECT 1 FROM biomarcadores WHERE participant_id = %s AND investigador = %s LIMIT 1", (nuevo_id, investigador))
         if cur.fetchone() is not None:
+            cur.close()
+            conn.close()
             raise HTTPException(status_code=409, detail=f"El ID '{nuevo_id}' ya está en uso por otro participante.")
 
         cur.execute("""
-            UPDATE biomarcadores 
-            SET participant_id = %s 
+            UPDATE biomarcadores
+            SET participant_id = %s
             WHERE participant_id = %s AND investigador = %s
         """, (nuevo_id, id, investigador))
         conn.commit()
-        
-        if investigador in INVESTIGADORES and id in INVESTIGADORES[investigador]["participantes"]:
-            idx = INVESTIGADORES[investigador]["participantes"].index(id)
-            INVESTIGADORES[investigador]["participantes"][idx] = nuevo_id
-            
+
         cur.close()
         conn.close()
         return {"status": "success", "new_id": nuevo_id}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
