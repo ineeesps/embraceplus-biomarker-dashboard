@@ -120,7 +120,7 @@ class ApiService {
   Future<void> deleteParticipant(String participantId, String username) async {
     final encodedId = Uri.encodeComponent(participantId);
     final response = await http.delete(
-      Uri.parse('$baseUrl/participante/$encodedId?investigador=$username'),
+      Uri.parse('$baseUrl/participante/$encodedId?investigador=$username&confirmar=true'),
     ).timeout(const Duration(seconds: 10));
 
     if (response.statusCode != 200) {

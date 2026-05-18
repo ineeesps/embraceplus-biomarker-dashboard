@@ -650,7 +650,9 @@ class _ReactividadGraphLayer extends StatelessWidget {
 
   LineChartData _buildChartData(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    const double prvScale = 0.1; // Escalar PRV para convivir con EDA (EDA suele ser 0-20, PRV 0-200)
+    final edaMax = edaData.where((e) => e.value != null).fold(0.0, (acc, e) => math.max(acc, e.value!));
+    final prvMax = prvData.where((e) => e.value != null).fold(0.0, (acc, e) => math.max(acc, e.value!));
+    final double prvScale = (prvMax > 0 && edaMax > 0) ? edaMax / prvMax : 0.1;
 
     final List<LineChartBarData> bars = [];
 
@@ -931,8 +933,12 @@ class _ContextoGraphLayer extends StatelessWidget {
 
   LineChartData _buildChartData(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    // METs (1–10) × 5 → 5–50, convive con temperatura (30–40 °C) en el mismo eje
-    const double metScale = 5.0;
+    final metsMax = metsData.where((e) => e.value != null).fold(0.0, (acc, e) => math.max(acc, e.value!));
+    final tempValidValues = tempData.where((e) => e.value != null).map((e) => e.value!).toList();
+    final tempMid = tempValidValues.isNotEmpty
+        ? tempValidValues.reduce((a, b) => a + b) / tempValidValues.length
+        : 35.0;
+    final double metScale = metsMax > 0 ? tempMid / metsMax : 5.0;
 
     final List<LineChartBarData> bars = [];
 

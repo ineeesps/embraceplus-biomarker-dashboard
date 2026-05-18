@@ -36,13 +36,13 @@ class ActicountsAdapter(SensorAdapter):
             if pd.notnull(y): res.append(('acticounts_y', float(y)))
             if pd.notnull(z): res.append(('acticounts_z', float(z)))
             
-            if pd.notnull(x) and pd.notnull(y) and pd.notnull(z):
-                mag = math.sqrt(float(x)**2 + float(y)**2 + float(z)**2)
-                res.append(('acticounts_total', mag))
+            x_val = float(x) if pd.notnull(x) else 0.0
+            y_val = float(y) if pd.notnull(y) else 0.0
+            z_val = float(z) if pd.notnull(z) else 0.0
+            res.append(('acticounts_total', math.sqrt(x_val**2 + y_val**2 + z_val**2)))
             return res
         except Exception:
-            pass
-        return []
+            return res
 
 class CategoricalAdapter(SensorAdapter):
     def __init__(self, target_column, category_map):
@@ -171,6 +171,7 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigad
             try:
                 tiempo = timestamps[i] if timestamps else None
                 if pd.isnull(tiempo):
+                    invalid_rows += 1
                     continue
 
                 resultados = adapter.map_row(r, df)
@@ -189,7 +190,11 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigad
                             break
 
                 calidad_final = _parse_hardware_state(calidad_base, missing_reason, valor_original=str(valor_crudo) if valor_crudo else None)
-                is_bad_signal = any(f in str(calidad_final) for f in ['device_not_recording', 'device_not_worn_correctly'])
+                is_bad_signal = bool(
+                    missing_reason
+                    and str(missing_reason).strip()
+                    and str(missing_reason).strip() != 'good'
+                )
                 if is_bad_signal:
                     invalid_rows += 1
 
@@ -201,12 +206,21 @@ def cargar_csv_a_timescale(archivo_nombre, tipo_sensor, participante, investigad
                 continue
 
         if datos_finales:
+            seen = set()
+            deduped = []
+            for rec in datos_finales:
+                key = (rec[0], rec[1], rec[2])
+                if key not in seen:
+                    seen.add(key)
+                    deduped.append(rec)
             sql = "INSERT INTO biomarcadores (time, participant_id, sensor_type, value, quality_flag, investigador) VALUES %s"
-            extras.execute_values(cur, sql, datos_finales, page_size=1000)
+            extras.execute_values(cur, sql, deduped, page_size=1000)
             conn.commit()
+        else:
+            deduped = []
 
         return {
-            'inserted': len(datos_finales),
+            'inserted': len(deduped),
             'loss_percentage': (invalid_rows / total_rows * 100) if total_rows > 0 else 0,
             'clinical_warning': (invalid_rows / total_rows) > 0.05 if total_rows > 0 else False
         }

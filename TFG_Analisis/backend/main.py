@@ -223,9 +223,10 @@ async def cargar_archivo_automatico(id: str, investigador: Optional[str] = None,
                 )
             conn.commit()
             cur.close()
-        except Exception:
+        except Exception as e:
             if conn:
                 conn.rollback()
+            raise HTTPException(status_code=500, detail=f"Error al eliminar datos previos: {e}")
         finally:
             if conn:
                 conn.close()
@@ -234,17 +235,17 @@ async def cargar_archivo_automatico(id: str, investigador: Optional[str] = None,
         contenido = await file.read()
         df = pd.read_csv(io.BytesIO(contenido), low_memory=False)
         
-        if len(df) < 750:
+        if len(df) < 100:
             raise HTTPException(status_code=400, detail="Fichero insuficiente o sin datos")
 
         ruta_data = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
-        os.makedirs(ruta_data, exist_ok=True) 
-        
+        os.makedirs(ruta_data, exist_ok=True)
+
         ruta_temp = os.path.join(ruta_data, file.filename)
         with open(ruta_temp, "wb") as f:
             f.write(contenido)
         try:
-            cargar_csv_a_timescale(file.filename, sensor_detectado, id, investigador=investigador)
+            resultado = cargar_csv_a_timescale(file.filename, sensor_detectado, id, investigador=investigador)
         finally:
             if os.path.exists(ruta_temp):
                 os.remove(ruta_temp)
@@ -265,7 +266,7 @@ async def cargar_archivo_automatico(id: str, investigador: Optional[str] = None,
             "status": "success",
             "participante": id,
             "sensor": sensor_detectado,
-            "filas_insertadas": total_filas,
+            "filas_insertadas": resultado.get('inserted', total_filas),
             "porcentaje_perdida_datos": round(porcentaje_perdida, 2),
             "alerta_integridad_comprometida": alerta_integridad,
             "mensaje": mensaje
@@ -363,10 +364,16 @@ async def consultar_datos(id: str, investigador: str, start: str = None, end: st
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/participante/{id}")
-async def eliminar_participante(id: str, investigador: str):
+async def eliminar_participante(id: str, investigador: str, confirmar: bool = False):
     """
     Eliminación completa de un participante y sus registros clínicos.
+    Requiere confirmar=true para ejecutar el borrado permanente.
     """
+    if not confirmar:
+        raise HTTPException(
+            status_code=400,
+            detail="Se requiere el parámetro confirmar=true para eliminar permanentemente los datos del participante."
+        )
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()

@@ -683,6 +683,7 @@ class _CargaCinetica extends StatelessWidget {
   Widget build(BuildContext context) {
     final vec = byType['actigraphy_vector'] ?? byType['acticounts_total'] ?? [];
     final std = byType['accelerometer_std'] ?? [];
+    final sensoresAusentes = !byType.containsKey('actigraphy_vector') && !byType.containsKey('acticounts_total');
 
     return _SectionCard(
       icon: LucideIcons.trendingUp,
@@ -691,7 +692,12 @@ class _CargaCinetica extends StatelessWidget {
       tooltip: 'Una magnitud vectorial alta con baja desviación indica movimientos rítmicos y controlados (ej. marcha estable). Una desviación típica desproporcionada puede ser indicativa de movimientos erráticos, inestabilidad o temblores.',
       child: Column(
         children: [
-          SizedBox(height: 200, child: vec.isEmpty ? _emptyChart() : LineChart(_buildChart(vec, std))),
+          SizedBox(
+            height: 200,
+            child: vec.isEmpty
+                ? _emptyChart(sinSensores: sensoresAusentes)
+                : LineChart(_buildChart(vec, std)),
+          ),
           const SizedBox(height: 24),
           Wrap(spacing: 28, runSpacing: 12, children: [
             _LegendItem('Magnitud del Movimiento', _kMagnitude),
@@ -702,8 +708,14 @@ class _CargaCinetica extends StatelessWidget {
     );
   }
 
-  Widget _emptyChart() => Center(
-    child: Text('Datos insuficientes por baja calidad de señal (Compliance < 80%)', style: GoogleFonts.inter(color: _muted, fontSize: 13), textAlign: TextAlign.center),
+  Widget _emptyChart({bool sinSensores = false}) => Center(
+    child: Text(
+      sinSensores
+          ? 'Sin datos de movimiento vectorial.\nSube el sensor actigraphy-counts o acticounts para ver este gráfico.'
+          : 'Datos insuficientes por baja calidad de señal (Compliance < 80%)',
+      style: GoogleFonts.inter(color: _muted, fontSize: 13),
+      textAlign: TextAlign.center,
+    ),
   );
 
   LineChartData _buildChart(List<Biomarker> vec, List<Biomarker> std) {

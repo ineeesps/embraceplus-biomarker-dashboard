@@ -163,7 +163,7 @@ class DashboardProvider with ChangeNotifier {
     try {
       final metadata = await _apiService.getParticipantMetadata(participantId, username);
 
-      if (metadata['start_time'] != null) {
+      if (metadata['start_time'] != null && metadata['end_time'] != null) {
         _dataRangeStart = DateTime.parse(metadata['start_time']);
         _dataRangeEnd   = DateTime.parse(metadata['end_time']);
         _applyHourFilter();
