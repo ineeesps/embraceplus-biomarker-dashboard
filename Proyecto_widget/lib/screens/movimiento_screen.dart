@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../models/biomarker.dart';
 import '../providers/dashboard_provider.dart';
 import '../utils/app_colors.dart';
+import '../widgets/analisis_exportacion_tab.dart';
 
 const Color _bg      = AppColors.bgScreen;
 const Color _surface = AppColors.bgCard;
@@ -49,14 +50,24 @@ class MovimientoScreen extends StatefulWidget {
   State<MovimientoScreen> createState() => _MovimientoScreenState();
 }
 
-class _MovimientoScreenState extends State<MovimientoScreen> {
+class _MovimientoScreenState extends State<MovimientoScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardProvider>().fetchMovimientoMetrics(
             widget.participantId, widget.username);
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -69,12 +80,38 @@ class _MovimientoScreenState extends State<MovimientoScreen> {
             participantId: widget.participantId,
             username: widget.username,
           ),
+          Container(
+            color: AppColors.bgCard,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: _identidad,
+              unselectedLabelColor: _muted,
+              indicatorColor: _identidad,
+              dividerColor: _border,
+              tabs: const [
+                Tab(icon: Icon(LucideIcons.layoutDashboard, size: 16), text: 'Dashboard'),
+                Tab(icon: Icon(LucideIcons.barChart2, size: 16), text: 'Análisis y Exportación'),
+              ],
+            ),
+          ),
           Expanded(
-            child: Container(
-              color: _bg,
-              child: provider.isMovimientoLoading
-                  ? const Center(child: CircularProgressIndicator(color: _identidad))
-                  : _buildDashboard(provider),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                Container(
+                  color: _bg,
+                  child: provider.isMovimientoLoading
+                      ? const Center(child: CircularProgressIndicator(color: _identidad))
+                      : _buildDashboard(provider),
+                ),
+                AnalisisExportacionTab(
+                  participantId: widget.participantId,
+                  username: widget.username,
+                  metrics: provider.movimientoMetrics,
+                  availableSensors: kMovimientoSensores,
+                  accentColor: _identidad,
+                ),
+              ],
             ),
           ),
         ],

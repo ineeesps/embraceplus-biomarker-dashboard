@@ -9,6 +9,7 @@ import 'dart:math' as math;
 import '../providers/dashboard_provider.dart';
 import '../models/biomarker.dart';
 import '../utils/app_colors.dart';
+import '../widgets/analisis_exportacion_tab.dart';
 
 const Color _bg      = AppColors.bgScreen;
 const Color _surface = AppColors.bgCard;
@@ -31,23 +32,29 @@ class EstresScreen extends StatefulWidget {
   State<EstresScreen> createState() => _EstresScreenState();
 }
 
-class _EstresScreenState extends State<EstresScreen> {
+class _EstresScreenState extends State<EstresScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardProvider>().fetchEstresMetrics(widget.participantId, widget.username);
     });
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<DashboardProvider>(
       builder: (context, provider, child) {
-        if (provider.isEstresLoading) {
-          return const Center(child: CircularProgressIndicator(color: _edaColor));
-        }
-
         final byType = <String, List<Biomarker>>{};
         for (var m in provider.estresMetrics) {
           final type = m.sensorType.toLowerCase().replaceAll('-', '_');
@@ -59,37 +66,65 @@ class _EstresScreenState extends State<EstresScreen> {
         final metsData = byType['met'] ?? [];
         final tempData = byType['temperature'] ?? [];
 
-        final listSections = [
-          if (edaData.isEmpty && prvData.isEmpty && tempData.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 100),
-              child: Center(
-                child: Text('Sin datos fisiológicos en el tramo seleccionado', style: GoogleFonts.inter(color: _muted)),
-              ),
-            )
-          else ...[
-            _KPIsLayer(edaData: edaData, prvData: prvData, metsData: metsData, tempData: tempData),
-            const SizedBox(height: 24),
-            _ReactividadGraphLayer(edaData: edaData, prvData: prvData, startTime: provider.estresStart!, endTime: provider.estresEnd!),
-            const SizedBox(height: 24),
-            _ContextoGraphLayer(metsData: metsData, tempData: tempData, startTime: provider.estresStart!, endTime: provider.estresEnd!),
-          ]
-        ];
+        Widget tab0;
+        if (provider.isEstresLoading) {
+          tab0 = const Center(child: CircularProgressIndicator(color: _edaColor));
+        } else {
+          final listSections = [
+            if (edaData.isEmpty && prvData.isEmpty && tempData.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 100),
+                child: Center(
+                  child: Text('Sin datos fisiológicos en el tramo seleccionado', style: GoogleFonts.inter(color: _muted)),
+                ),
+              )
+            else ...[
+              _KPIsLayer(edaData: edaData, prvData: prvData, metsData: metsData, tempData: tempData),
+              const SizedBox(height: 24),
+              _ReactividadGraphLayer(edaData: edaData, prvData: prvData, startTime: provider.estresStart!, endTime: provider.estresEnd!),
+              const SizedBox(height: 24),
+              _ContextoGraphLayer(metsData: metsData, tempData: tempData, startTime: provider.estresStart!, endTime: provider.estresEnd!),
+            ]
+          ];
+          tab0 = LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 600;
+              final padding  = isMobile ? 12.0 : (constraints.maxWidth > 720 ? 24.0 : 16.0);
+              return ListView(padding: EdgeInsets.all(padding), children: listSections);
+            },
+          );
+        }
 
         return Column(
           children: [
             _ControlPanel(provider: provider, participantId: widget.participantId, username: widget.username),
+            Container(
+              color: AppColors.bgCard,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: _edaColor,
+                unselectedLabelColor: _muted,
+                indicatorColor: _edaColor,
+                dividerColor: _border,
+                tabs: const [
+                  Tab(icon: Icon(LucideIcons.layoutDashboard, size: 16), text: 'Dashboard'),
+                  Tab(icon: Icon(LucideIcons.barChart2, size: 16), text: 'Análisis y Exportación'),
+                ],
+              ),
+            ),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isMobile = constraints.maxWidth < 600;
-                  final padding  = isMobile ? 12.0 : (constraints.maxWidth > 720 ? 24.0 : 16.0);
-
-                  return ListView(
-                    padding: EdgeInsets.all(padding),
-                    children: listSections,
-                  );
-                },
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  tab0,
+                  AnalisisExportacionTab(
+                    participantId: widget.participantId,
+                    username: widget.username,
+                    metrics: provider.estresMetrics,
+                    availableSensors: kEstresSensores,
+                    accentColor: _edaColor,
+                  ),
+                ],
               ),
             ),
           ],

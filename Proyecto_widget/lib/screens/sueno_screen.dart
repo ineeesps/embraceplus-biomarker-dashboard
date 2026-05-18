@@ -9,6 +9,7 @@ import 'dart:math' as math;
 import '../providers/dashboard_provider.dart';
 import '../models/biomarker.dart';
 import '../utils/app_colors.dart';
+import '../widgets/analisis_exportacion_tab.dart';
 
 const Color _bg          = AppColors.bgScreen;
 const Color _surface     = AppColors.bgCard;
@@ -41,23 +42,29 @@ class SuenoScreen extends StatefulWidget {
   State<SuenoScreen> createState() => _SuenoScreenState();
 }
 
-class _SuenoScreenState extends State<SuenoScreen> {
+class _SuenoScreenState extends State<SuenoScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardProvider>().fetchSuenoMetrics(widget.participantId, widget.username);
     });
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<DashboardProvider>(
       builder: (context, provider, child) {
-        if (provider.isSuenoLoading) {
-          return const Center(child: CircularProgressIndicator(color: _accentIndigo));
-        }
-
         final byType = <String, List<Biomarker>>{};
         for (var m in provider.suenoMetrics) {
           final type = m.sensorType.toLowerCase().replaceAll('-', '_');
@@ -74,42 +81,70 @@ class _SuenoScreenState extends State<SuenoScreen> {
           if ((sleepMins / sleepDetData.length) * 100 > 85) hasGoodHygiene = true;
         }
 
-        final listSections = [
-          if (sleepDetData.isEmpty && posData.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 100),
-              child: Center(
-                child: Text('Sin datos fisiológicos en el tramo seleccionado', style: GoogleFonts.inter(color: _muted)),
-              ),
-            )
-          else ...[
-            _KPIsLayer(sleepData: sleepDetData, posData: posData, provider: provider),
-            const SizedBox(height: 24),
-            _HipnogramaLayer(sleepData: sleepDetData, activity: activity),
-            const SizedBox(height: 24),
-            _GanttPosturalLayer(posData: posData, sleepData: sleepDetData),
-          ]
-        ];
+        Widget tab0;
+        if (provider.isSuenoLoading) {
+          tab0 = const Center(child: CircularProgressIndicator(color: _accentIndigo));
+        } else {
+          final listSections = [
+            if (sleepDetData.isEmpty && posData.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 100),
+                child: Center(
+                  child: Text('Sin datos fisiológicos en el tramo seleccionado', style: GoogleFonts.inter(color: _muted)),
+                ),
+              )
+            else ...[
+              _KPIsLayer(sleepData: sleepDetData, posData: posData, provider: provider),
+              const SizedBox(height: 24),
+              _HipnogramaLayer(sleepData: sleepDetData, activity: activity),
+              const SizedBox(height: 24),
+              _GanttPosturalLayer(posData: posData, sleepData: sleepDetData),
+            ]
+          ];
+          tab0 = LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 600;
+              final padding  = isMobile ? 12.0 : (constraints.maxWidth > 720 ? 24.0 : 16.0);
+              return ListView(padding: EdgeInsets.all(padding), children: listSections);
+            },
+          );
+        }
 
         return Column(
           children: [
             _ControlPanel(
-              provider: provider, 
-              participantId: widget.participantId, 
+              provider: provider,
+              participantId: widget.participantId,
               username: widget.username,
               hasGoodHygiene: hasGoodHygiene,
             ),
+            Container(
+              color: AppColors.bgCard,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: _accentIndigo,
+                unselectedLabelColor: _muted,
+                indicatorColor: _accentIndigo,
+                dividerColor: _border,
+                tabs: const [
+                  Tab(icon: Icon(LucideIcons.layoutDashboard, size: 16), text: 'Dashboard'),
+                  Tab(icon: Icon(LucideIcons.barChart2, size: 16), text: 'Análisis y Exportación'),
+                ],
+              ),
+            ),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isMobile = constraints.maxWidth < 600;
-                  final padding  = isMobile ? 12.0 : (constraints.maxWidth > 720 ? 24.0 : 16.0);
-
-                  return ListView(
-                    padding: EdgeInsets.all(padding),
-                    children: listSections,
-                  );
-                },
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  tab0,
+                  AnalisisExportacionTab(
+                    participantId: widget.participantId,
+                    username: widget.username,
+                    metrics: provider.suenoMetrics,
+                    availableSensors: kSuenoSensores,
+                    accentColor: _accentIndigo,
+                  ),
+                ],
               ),
             ),
           ],

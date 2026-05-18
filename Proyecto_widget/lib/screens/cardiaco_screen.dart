@@ -9,6 +9,7 @@ import 'dart:math' as math;
 import '../providers/dashboard_provider.dart';
 import '../models/biomarker.dart';
 import '../utils/app_colors.dart';
+import '../widgets/analisis_exportacion_tab.dart';
 
 const Color _bg      = AppColors.bgScreen;
 const Color _surface = AppColors.bgCard;
@@ -32,23 +33,29 @@ class CardiacoScreen extends StatefulWidget {
   State<CardiacoScreen> createState() => _CardiacoScreenState();
 }
 
-class _CardiacoScreenState extends State<CardiacoScreen> {
+class _CardiacoScreenState extends State<CardiacoScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardProvider>().fetchCardiacoMetrics(widget.participantId, widget.username);
     });
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<DashboardProvider>(
       builder: (context, provider, child) {
-        if (provider.isCardiacoLoading) {
-          return const Center(child: CircularProgressIndicator(color: _accent));
-        }
-
         final byType = <String, List<Biomarker>>{};
         for (var m in provider.cardiacoMetrics) {
           final type = m.sensorType.toLowerCase().replaceAll('-', '_');
@@ -58,58 +65,86 @@ class _CardiacoScreenState extends State<CardiacoScreen> {
         final hrData = byType['pulse_rate'] ?? [];
         final rrData = byType['respiratory_rate'] ?? [];
 
-        final listSections = [
-          if (hrData.isEmpty && rrData.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 100),
-              child: Center(
-                child: Text('Sin datos cardíacos en el tramo seleccionado', style: GoogleFonts.inter(color: _muted)),
-              ),
-            )
-          else if (provider.cardiacoStart != null && provider.cardiacoEnd != null) ...[
-            _KPIsLayer(hrData: hrData, rrData: rrData, provider: provider),
-            const SizedBox(height: 24),
-            _CouplingGraphLayer(hrData: hrData, rrData: rrData, startTime: provider.cardiacoStart!, endTime: provider.cardiacoEnd!),
-            const SizedBox(height: 24),
-            _ScatterPlotLayer(hrData: hrData, rrData: rrData),
-          ]
-        ];
+        Widget tab0;
+        if (provider.isCardiacoLoading) {
+          tab0 = const Center(child: CircularProgressIndicator(color: _accent));
+        } else {
+          final listSections = [
+            if (hrData.isEmpty && rrData.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 100),
+                child: Center(
+                  child: Text('Sin datos cardíacos en el tramo seleccionado', style: GoogleFonts.inter(color: _muted)),
+                ),
+              )
+            else if (provider.cardiacoStart != null && provider.cardiacoEnd != null) ...[
+              _KPIsLayer(hrData: hrData, rrData: rrData, provider: provider),
+              const SizedBox(height: 24),
+              _CouplingGraphLayer(hrData: hrData, rrData: rrData, startTime: provider.cardiacoStart!, endTime: provider.cardiacoEnd!),
+              const SizedBox(height: 24),
+              _ScatterPlotLayer(hrData: hrData, rrData: rrData),
+            ]
+          ];
+          tab0 = LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 600;
+              final isLaptop = constraints.maxWidth > 1100;
+              final padding  = isMobile ? 12.0 : (constraints.maxWidth > 720 ? 24.0 : 16.0);
+
+              if (isLaptop && listSections.length >= 5) {
+                return ListView(
+                  padding: EdgeInsets.all(padding),
+                  children: [
+                    listSections[0],
+                    const SizedBox(height: 24),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(child: listSections[2]),
+                          const SizedBox(width: 20),
+                          Expanded(child: listSections[4]),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return ListView(padding: EdgeInsets.all(padding), children: listSections);
+            },
+          );
+        }
 
         return Column(
           children: [
             _ControlPanel(provider: provider, participantId: widget.participantId, username: widget.username),
+            Container(
+              color: AppColors.bgCard,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: _accent,
+                unselectedLabelColor: _muted,
+                indicatorColor: _accent,
+                dividerColor: _border,
+                tabs: const [
+                  Tab(icon: Icon(LucideIcons.layoutDashboard, size: 16), text: 'Dashboard'),
+                  Tab(icon: Icon(LucideIcons.barChart2, size: 16), text: 'Análisis y Exportación'),
+                ],
+              ),
+            ),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isMobile = constraints.maxWidth < 600;
-                  final isLaptop = constraints.maxWidth > 1100;
-                  final padding  = isMobile ? 12.0 : (constraints.maxWidth > 720 ? 24.0 : 16.0);
-
-                  if (isLaptop && listSections.length >= 5) {
-                    return ListView(
-                      padding: EdgeInsets.all(padding),
-                      children: [
-                        listSections[0],
-                        const SizedBox(height: 24),
-                        IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(child: listSections[2]),
-                              const SizedBox(width: 20),
-                              Expanded(child: listSections[4]),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-
-                  return ListView(
-                    padding: EdgeInsets.all(padding),
-                    children: listSections,
-                  );
-                },
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  tab0,
+                  AnalisisExportacionTab(
+                    participantId: widget.participantId,
+                    username: widget.username,
+                    metrics: provider.cardiacoMetrics,
+                    availableSensors: kCardiacoSensores,
+                    accentColor: _accent,
+                  ),
+                ],
               ),
             ),
           ],

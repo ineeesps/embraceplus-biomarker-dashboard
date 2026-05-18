@@ -28,7 +28,7 @@ DB_CONFIG = {
     "user": os.getenv("DB_USER", "ines"),
     "password": os.getenv("DB_PASSWORD", "tfg_password"),
     "port": os.getenv("DB_PORT", "5433"),
-    "connect_timeout": 5,
+    "connect_timeout": 10,
 }
 
 PATRONES_SENSORES = {
@@ -456,10 +456,14 @@ async def obtener_metadata_participante(id: str, investigador: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+METHODS_PERMITIDOS = {'linear', 'spline', 'ffill'}
+
 @app.get("/participante/{id}/exportar")
-async def exportar_datos(id: str, investigador: str, bucket_size: str = '1 minute'):
+async def exportar_datos(id: str, investigador: str, bucket_size: str = '1 minute', method: str = 'linear'):
     if bucket_size not in BUCKET_SIZES_PERMITIDOS:
         raise HTTPException(status_code=400, detail=f"bucket_size inválido. Valores permitidos: {sorted(BUCKET_SIZES_PERMITIDOS)}")
+    if method not in METHODS_PERMITIDOS:
+        raise HTTPException(status_code=400, detail=f"method inválido. Valores permitidos: {sorted(METHODS_PERMITIDOS)}")
 
     conn = None
     df = None
@@ -492,6 +496,15 @@ async def exportar_datos(id: str, investigador: str, bucket_size: str = '1 minut
         raise HTTPException(status_code=404, detail="Sin datos")
 
     df_pivot = df.pivot(index='timestamp', columns='sensor_type', values='value').reset_index()
+
+    numeric_cols = df_pivot.select_dtypes(include='number').columns
+    if method in ('linear', 'spline'):
+        df_pivot[numeric_cols] = df_pivot[numeric_cols].interpolate(
+            method=method, limit_direction='both'
+        )
+    elif method == 'ffill':
+        df_pivot[numeric_cols] = df_pivot[numeric_cols].ffill().bfill()
+
     output = io.StringIO()
     df_pivot.to_csv(output, index=False)
     output.seek(0)
