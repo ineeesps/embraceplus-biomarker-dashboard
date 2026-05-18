@@ -34,6 +34,11 @@ const List<String> kSuenoSensores = [
   'pulse_rate',
 ];
 
+const List<String> kSuenoExportSensores = [
+  'sleep_detection',
+  'body_position',
+];
+
 const List<int> kHourOptions = [1, 3, 6, 12, 24];
 
 class DashboardProvider with ChangeNotifier {

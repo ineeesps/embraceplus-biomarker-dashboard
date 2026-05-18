@@ -110,6 +110,8 @@ class _MovimientoScreenState extends State<MovimientoScreen>
                   metrics: provider.movimientoMetrics,
                   availableSensors: kMovimientoSensores,
                   accentColor: _identidad,
+                  startTime: provider.movimientoStart,
+                  endTime: provider.movimientoEnd,
                 ),
               ],
             ),

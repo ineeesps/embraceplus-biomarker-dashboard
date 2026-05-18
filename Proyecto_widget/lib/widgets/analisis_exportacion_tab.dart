@@ -1,5 +1,9 @@
-import 'dart:io';
+import 'dart:convert';
+import 'dart:io' show File;
 import 'dart:math' as math;
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -38,6 +42,8 @@ class AnalisisExportacionTab extends StatefulWidget {
   final List<Biomarker> metrics;
   final List<String> availableSensors;
   final Color accentColor;
+  final DateTime? startTime;
+  final DateTime? endTime;
 
   const AnalisisExportacionTab({
     super.key,
@@ -46,6 +52,8 @@ class AnalisisExportacionTab extends StatefulWidget {
     required this.metrics,
     required this.availableSensors,
     required this.accentColor,
+    this.startTime,
+    this.endTime,
   });
 
   @override
@@ -212,7 +220,7 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
         .map((m) => m.value!)
         .toList();
 
-    double? mean, stdDev, modeVal;
+    double? mean, stdDev, modeVal, minVal, maxVal;
     double noisePercent = 0;
 
     if (data.isNotEmpty) {
@@ -223,6 +231,8 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
     if (valid.isNotEmpty) {
       final m = valid.reduce((a, b) => a + b) / valid.length;
       mean = m;
+      minVal = valid.reduce((a, b) => a < b ? a : b);
+      maxVal = valid.reduce((a, b) => a > b ? a : b);
       if (valid.length >= 2) {
         final variance = valid.fold(0.0, (s, v) => s + (v - m) * (v - m)) / valid.length;
         stdDev = math.sqrt(variance);
@@ -244,6 +254,8 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
           final cards = [
             _MetricCard(label: 'Media', value: mean?.toStringAsFixed(2) ?? '--'),
             _MetricCard(label: 'σ Desv. Típica', value: stdDev?.toStringAsFixed(2) ?? '--'),
+            _MetricCard(label: 'Valor Mínimo', value: minVal?.toStringAsFixed(2) ?? '--'),
+            _MetricCard(label: 'Valor Máximo', value: maxVal?.toStringAsFixed(2) ?? '--'),
             _MetricCard(
               label: 'Moda',
               value: modeVal?.toStringAsFixed(0) ?? (valid.isEmpty ? '--' : 'N/A'),
@@ -253,18 +265,36 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
               value: data.isEmpty ? '--' : '${noisePercent.toStringAsFixed(1)}%',
             ),
           ];
-          if (constraints.maxWidth < 500) {
+          if (constraints.maxWidth < 600) {
             return Column(children: [
               Row(children: [Expanded(child: cards[0]), const SizedBox(width: 12), Expanded(child: cards[1])]),
               const SizedBox(height: 12),
               Row(children: [Expanded(child: cards[2]), const SizedBox(width: 12), Expanded(child: cards[3])]),
+              const SizedBox(height: 12),
+              Row(children: [Expanded(child: cards[4]), const SizedBox(width: 12), Expanded(child: cards[5])]),
+            ]);
+          } else if (constraints.maxWidth < 900) {
+            return Column(children: [
+              Row(children: [
+                Expanded(child: cards[0]), const SizedBox(width: 12),
+                Expanded(child: cards[1]), const SizedBox(width: 12),
+                Expanded(child: cards[2]),
+              ]),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: cards[3]), const SizedBox(width: 12),
+                Expanded(child: cards[4]), const SizedBox(width: 12),
+                Expanded(child: cards[5]),
+              ]),
             ]);
           }
           return Row(children: [
             Expanded(child: cards[0]), const SizedBox(width: 12),
             Expanded(child: cards[1]), const SizedBox(width: 12),
             Expanded(child: cards[2]), const SizedBox(width: 12),
-            Expanded(child: cards[3]),
+            Expanded(child: cards[3]), const SizedBox(width: 12),
+            Expanded(child: cards[4]), const SizedBox(width: 12),
+            Expanded(child: cards[5]),
           ]);
         },
       ),
@@ -356,13 +386,64 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
         widget.username,
         bucketSize: _selectedBucket,
         method: _selectedMethod,
+        startTime: widget.startTime?.toUtc().toIso8601String(),
+        endTime: widget.endTime?.toUtc().toIso8601String(),
       );
-      final home = Platform.environment['HOME'] ?? '/tmp';
-      final ts   = DateTime.now().millisecondsSinceEpoch;
-      final path = '$home/Downloads/export_${widget.participantId}_$ts.csv';
-      await File(path).writeAsBytes(bytes);
-      if (mounted) {
-        AppToast.show(context, 'CSV guardado en ~/Downloads/', type: ToastType.success);
+
+      // Filtrado local de columnas (Brecha 1)
+      String csvString = utf8.decode(bytes);
+      List<String> lines = csvString.split('\n');
+      if (lines.isNotEmpty) {
+        List<String> headers = lines.first.split(',');
+        
+        List<int> keepIndices = [0]; // Siempre mantenemos la columna 'timestamp' (índice 0)
+        for (int i = 1; i < headers.length; i++) {
+          final colName = headers[i].trim().replaceAll('\r', '');
+          if (_sensorEnabled[colName] ?? false) {
+            keepIndices.add(i);
+          }
+        }
+
+        List<String> filteredLines = [];
+        for (var line in lines) {
+          if (line.trim().isEmpty) continue;
+          List<String> cols = line.split(',');
+          List<String> filteredCols = [];
+          for (int idx in keepIndices) {
+            if (idx < cols.length) {
+              filteredCols.add(cols[idx]);
+            }
+          }
+          filteredLines.add(filteredCols.join(','));
+        }
+        csvString = filteredLines.join('\n');
+      }
+
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'export_${widget.participantId}_$ts.csv';
+
+      final outputPath = await FilePicker.saveFile(
+        dialogTitle: 'Seleccione dónde guardar el archivo CSV:',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        bytes: Uint8List.fromList(utf8.encode(csvString)),
+      );
+
+      if (outputPath != null && !kIsWeb) {
+        final file = File(outputPath);
+        await file.writeAsString(csvString);
+        if (mounted) {
+          AppToast.show(context, 'CSV guardado con éxito en: $outputPath', type: ToastType.success);
+        }
+      } else if (kIsWeb) {
+        if (mounted) {
+          AppToast.show(context, 'CSV descargado con éxito', type: ToastType.success);
+        }
+      } else {
+        if (mounted) {
+          AppToast.show(context, 'Exportación cancelada', type: ToastType.info);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -614,7 +695,32 @@ class _PreviewChart extends StatelessWidget {
               FlLine(color: _border.withValues(alpha: 0.4), strokeWidth: 1),
         ),
         borderData: FlBorderData(show: false),
-        lineTouchData: const LineTouchData(enabled: false),
+        lineTouchData: LineTouchData(
+          enabled: true,
+          handleBuiltInTouches: true,
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (spot) => const Color(0xFF0F172A),
+            tooltipRoundedRadius: 8,
+            tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            tooltipMargin: 8,
+            fitInsideHorizontally: true,
+            fitInsideVertically: true,
+            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+              return touchedBarSpots.map((barSpot) {
+                final isOriginal = barSpot.barIndex == (interpolatedSpots.isNotEmpty ? 1 : 0);
+                final label = isOriginal ? 'Real' : 'Interpolado';
+                return LineTooltipItem(
+                  '$label: ${barSpot.y.toStringAsFixed(2)}',
+                  GoogleFonts.inter(
+                    color: isOriginal ? accentColor : Colors.white70,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ),
       ),
     );
   }

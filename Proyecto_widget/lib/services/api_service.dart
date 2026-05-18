@@ -15,7 +15,7 @@ class ApiService {
         Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'username': username, 'password': password}),
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(const Duration(seconds: 15));
     } on TimeoutException {
       throw Exception('El servidor no responde. Verifica que la API y la base de datos están activas.');
     } catch (e) {
@@ -169,15 +169,21 @@ class ApiService {
     String username, {
     String bucketSize = '1 minute',
     String method = 'linear',
+    String? startTime,
+    String? endTime,
   }) async {
     final encodedId = Uri.encodeComponent(participantId);
-    final url = '$baseUrl/participante/$encodedId/exportar'
-        '?investigador=$username'
-        '&bucket_size=${Uri.encodeComponent(bucketSize)}'
-        '&method=$method';
+    final params = [
+      'investigador=$username',
+      'bucket_size=${Uri.encodeComponent(bucketSize)}',
+      'method=$method',
+      if (startTime != null) 'start=${Uri.encodeComponent(startTime)}',
+      if (endTime != null)   'end=${Uri.encodeComponent(endTime)}',
+    ];
+    final url = '$baseUrl/participante/$encodedId/exportar?${params.join('&')}';
     try {
       final response = await http.get(Uri.parse(url))
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 45));
       if (response.statusCode == 200) {
         return response.bodyBytes;
       } else {

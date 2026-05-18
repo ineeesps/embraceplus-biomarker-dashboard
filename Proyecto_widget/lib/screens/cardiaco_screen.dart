@@ -143,6 +143,8 @@ class _CardiacoScreenState extends State<CardiacoScreen>
                     metrics: provider.cardiacoMetrics,
                     availableSensors: kCardiacoSensores,
                     accentColor: _accent,
+                    startTime: provider.cardiacoStart,
+                    endTime: provider.cardiacoEnd,
                   ),
                 ],
               ),

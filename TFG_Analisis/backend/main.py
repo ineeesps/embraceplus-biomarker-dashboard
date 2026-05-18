@@ -5,6 +5,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from pydantic import BaseModel
 import pandas as pd
+import asyncio
 import io
 import os
 import sys
@@ -66,13 +67,32 @@ INVESTIGADORES = {
 }
 
 async def get_lista_participantes_db(username: str):
-    conn = psycopg2.connect(**DB_CONFIG)
-    cur = conn.cursor()
-    cur.execute("SELECT DISTINCT participant_id FROM biomarcadores WHERE investigador = %s", (username,))
-    db_ids = [row[0] for row in cur.fetchall()]
-    cur.close()
-    conn.close()
-    return sorted(db_ids)
+    last_err = None
+    for attempt in range(3):
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            cur = conn.cursor()
+            query = """
+            WITH RECURSIVE t AS (
+               (SELECT participant_id FROM biomarcadores WHERE investigador = %s ORDER BY participant_id LIMIT 1)
+               UNION ALL
+               SELECT (SELECT participant_id FROM biomarcadores WHERE investigador = %s AND participant_id > t.participant_id ORDER BY participant_id LIMIT 1)
+               FROM t
+               WHERE t.participant_id IS NOT NULL
+            )
+            SELECT participant_id FROM t WHERE participant_id IS NOT NULL;
+            """
+            cur.execute(query, (username, username))
+            db_ids = [row[0] for row in cur.fetchall()]
+            cur.close()
+            conn.close()
+            return sorted(db_ids)
+        except psycopg2.OperationalError as e:
+            last_err = e
+            if attempt < 2:
+                await asyncio.sleep(1)
+    raise last_err
+
 
 @app.post("/login")
 async def login(req: LoginRequest):
@@ -459,7 +479,14 @@ async def obtener_metadata_participante(id: str, investigador: str):
 METHODS_PERMITIDOS = {'linear', 'spline', 'ffill'}
 
 @app.get("/participante/{id}/exportar")
-async def exportar_datos(id: str, investigador: str, bucket_size: str = '1 minute', method: str = 'linear'):
+async def exportar_datos(
+    id: str,
+    investigador: str,
+    bucket_size: str = '1 minute',
+    method: str = 'linear',
+    start: Optional[str] = None,
+    end: Optional[str] = None
+):
     if bucket_size not in BUCKET_SIZES_PERMITIDOS:
         raise HTTPException(status_code=400, detail=f"bucket_size inválido. Valores permitidos: {sorted(BUCKET_SIZES_PERMITIDOS)}")
     if method not in METHODS_PERMITIDOS:
@@ -482,10 +509,20 @@ async def exportar_datos(id: str, investigador: str, bucket_size: str = '1 minut
                 END as value
             FROM biomarcadores
             WHERE participant_id = %s AND investigador = %s
+        """
+        params = [bucket_size, id, investigador]
+        if start:
+            query += " AND time >= %s"
+            params.append(start)
+        if end:
+            query += " AND time <= %s"
+            params.append(end)
+
+        query += """
             GROUP BY timestamp, sensor_type
             ORDER BY timestamp ASC
         """
-        df = pd.read_sql_query(query, conn, params=[bucket_size, id, investigador])
+        df = pd.read_sql_query(query, conn, params=params)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en el módulo de exportación: {str(e)}")
     finally:
@@ -497,13 +534,24 @@ async def exportar_datos(id: str, investigador: str, bucket_size: str = '1 minut
 
     df_pivot = df.pivot(index='timestamp', columns='sensor_type', values='value').reset_index()
 
-    numeric_cols = df_pivot.select_dtypes(include='number').columns
-    if method in ('linear', 'spline'):
-        df_pivot[numeric_cols] = df_pivot[numeric_cols].interpolate(
-            method=method, limit_direction='both'
+    VARS_CATEGORICAS = ['activity_class', 'activity_intensity', 'body_position', 'sleep_detection']
+    cols_categoricas = [c for c in df_pivot.columns if c in VARS_CATEGORICAS]
+    cols_continuas   = [c for c in df_pivot.columns
+                        if c not in VARS_CATEGORICAS and pd.api.types.is_numeric_dtype(df_pivot[c])]
+
+    if method == 'spline':
+        df_pivot[cols_continuas] = df_pivot[cols_continuas].interpolate(
+            method='spline', order=3, limit_direction='both'
+        )
+    elif method == 'linear':
+        df_pivot[cols_continuas] = df_pivot[cols_continuas].interpolate(
+            method='linear', limit_direction='both'
         )
     elif method == 'ffill':
-        df_pivot[numeric_cols] = df_pivot[numeric_cols].ffill().bfill()
+        df_pivot[cols_continuas] = df_pivot[cols_continuas].ffill().bfill()
+
+    if cols_categoricas:
+        df_pivot[cols_categoricas] = df_pivot[cols_categoricas].ffill().bfill()
 
     output = io.StringIO()
     df_pivot.to_csv(output, index=False)

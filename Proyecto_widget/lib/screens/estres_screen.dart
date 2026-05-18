@@ -123,6 +123,8 @@ class _EstresScreenState extends State<EstresScreen>
                     metrics: provider.estresMetrics,
                     availableSensors: kEstresSensores,
                     accentColor: _edaColor,
+                    startTime: provider.estresStart,
+                    endTime: provider.estresEnd,
                   ),
                 ],
               ),
