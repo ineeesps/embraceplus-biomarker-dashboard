@@ -110,6 +110,7 @@ class AdapterFactory:
                 'step_count': 'step_counts',
                 'wearing_detection': 'wearing_detection_percentage',
                 'met': 'met',
+                'spo2': 'spo2_percentage',
                 'activity_counts': 'activity_counts',
                 'actigraphy_vector': 'vector_magnitude'
             }

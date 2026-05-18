@@ -41,6 +41,7 @@ PATRONES_SENSORES = {
     'prv': 'prv', 
     'step-counts': 'step_count', 'step_count': 'step_count',
     'met': 'met',
+    'spo2': 'spo2',
     'activity-intensity': 'activity_intensity', 'activity_intensity': 'activity_intensity',
     'wearing-detection': 'wearing_detection', 'wearing_detection': 'wearing_detection',
     'activity-classification': 'activity_class', 'activity_class': 'activity_class',
