@@ -32,7 +32,7 @@ class ParticipantData {
       compliance: (json['compliance'] as num).toDouble(),
       status: json['status'],
       dateRange: json['dateRange'],
-      totalHours: json['totalHours'],
+      totalHours: (json['totalHours'] as num).toInt(),
     );
   }
 }

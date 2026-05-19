@@ -24,6 +24,10 @@ void main() {
       expect(provider.cardiacoMetrics, isEmpty);
       expect(provider.estresMetrics, isEmpty);
       expect(provider.suenoMetrics, isEmpty);
+
+      // Los KPIs globales deben ser null inicialmente
+      expect(provider.globalKpis, isNull);
+      expect(provider.totalSteps, isNull);
     });
 
     test('Las resoluciones adaptativas están vacías por defecto si no hay rango cargado', () {

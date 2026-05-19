@@ -44,6 +44,7 @@ const List<int> kHourOptions = [1, 3, 6, 12, 24];
 class DashboardProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
 
+  Map<String, dynamic>? _globalKpis;
   List<Biomarker> _metrics = [];
   List<Biomarker> _movimientoMetrics = [];
   List<Biomarker> _cardiacoMetrics = [];
@@ -71,6 +72,7 @@ class DashboardProvider with ChangeNotifier {
   int _selectedEstresHours = 24;
   int _selectedSuenoHours = 24;
 
+  Map<String, dynamic>? get globalKpis          => _globalKpis;
   List<Biomarker> get metrics           => _metrics;
   List<Biomarker> get movimientoMetrics => _movimientoMetrics;
   List<Biomarker> get cardiacoMetrics   => _cardiacoMetrics;
@@ -173,6 +175,8 @@ class DashboardProvider with ChangeNotifier {
         _dataRangeEnd   = DateTime.parse(metadata['end_time']);
         _applyHourFilter();
       }
+
+      _globalKpis = await _apiService.getGlobalKpis(participantId, username);
 
       await Future.wait([
         fetchMovimientoMetrics(participantId, username),
@@ -380,15 +384,17 @@ class DashboardProvider with ChangeNotifier {
   }
 
   int? get totalSteps {
-    final steps = _movimientoMetrics.where((m) => m.sensorType == 'step_count' && m.value != null);
-    if (steps.isEmpty) return null;
-    return steps.fold<double>(0.0, (sum, m) => sum + m.value!).toInt();
+    final val = _globalKpis?['total_steps'];
+    if (val == null) return null;
+    if (val is num) return val.toInt();
+    return double.tryParse(val.toString())?.toInt();
   }
 
   int? get avgBpm {
-    final bpm = _cardiacoMetrics.where((m) => m.sensorType == 'pulse_rate' && m.value != null);
-    if (bpm.isEmpty) return null;
-    return (bpm.fold<double>(0.0, (sum, m) => sum + m.value!) / bpm.length).toInt();
+    final val = _globalKpis?['avg_bpm'];
+    if (val == null) return null;
+    if (val is num) return val.toInt();
+    return double.tryParse(val.toString())?.toInt();
   }
 
   double? get totalMets {
@@ -404,42 +410,31 @@ class DashboardProvider with ChangeNotifier {
   }
 
   double? get compliancePercentage {
-    final wearing = _movimientoMetrics.where((m) => m.sensorType == 'wearing_detection');
-    if (wearing.isEmpty) return null;
-    int valid = 0;
-    for (var m in wearing) {
-      if (m.qualityFlag != 'device_not_worn_correctly' && m.qualityFlag != 'device_not_recording') {
-        valid++;
-      }
-    }
-    return (valid / wearing.length) * 100;
+    final val = _globalKpis?['compliance_percentage'];
+    if (val == null) return null;
+    if (val is num) return val.toDouble();
+    return double.tryParse(val.toString());
   }
 
   double? get sleepHours {
-    final sleep = _suenoMetrics.where((m) => m.sensorType == 'sleep_detection' && m.value != null);
-    if (sleep.isEmpty) return null;
-    final bucket = _bucketForHours(_selectedSuenoHours);
-    final segundosPorPunto = bucket.contains('30 seconds') ? 30 :
-                             bucket.contains('1 minute')   ? 60 :
-                             bucket.contains('2 minutes')  ? 120 :
-                             bucket.contains('5 minutes')  ? 300 : 600;
-    final sleepPoints = sleep.where((m) => m.value! > 0).length;
-    return (sleepPoints * segundosPorPunto) / 3600;
+    final val = _globalKpis?['sleep_hours'];
+    if (val == null) return null;
+    if (val is num) return val.toDouble();
+    return double.tryParse(val.toString());
   }
 
   double? get avgStress {
-    final eda = _estresMetrics.where((m) => m.sensorType == 'eda' && m.value != null);
-    if (eda.isEmpty) return null;
-    return eda.fold<double>(0.0, (sum, m) => sum + m.value!) / eda.length;
+    final val = _globalKpis?['avg_stress'];
+    if (val == null) return null;
+    if (val is num) return val.toDouble();
+    return double.tryParse(val.toString());
   }
 
   String get lastActivity {
-    final act = _movimientoMetrics.where((m) {
-      final type = m.sensorType.toLowerCase().replaceAll('-', '_');
-      return (type == 'activity_class' || type == 'activity_classification') && m.value != null;
-    }).toList();
-    if (act.isEmpty) return 'Desconocido';
-    switch (act.last.value!.toInt()) {
+    final actRaw = _globalKpis?['last_activity'];
+    if (actRaw == null) return 'Desconocido';
+    final intVal = actRaw is num ? actRaw.toInt() : (double.tryParse(actRaw.toString())?.toInt() ?? -1);
+    switch (intVal) {
       case 0: return 'Sedentario';
       case 1: return 'Caminando';
       case 2: return 'Corriendo';
@@ -449,12 +444,10 @@ class DashboardProvider with ChangeNotifier {
   }
 
   String get lastPosition {
-    final pos = _movimientoMetrics.where((m) {
-      final type = m.sensorType.toLowerCase().replaceAll('-', '_');
-      return (type == 'body_position' || type == 'body_position_left') && m.value != null;
-    }).toList();
-    if (pos.isEmpty) return 'Desconocido';
-    switch (pos.last.value!.toInt()) {
+    final posRaw = _globalKpis?['last_position'];
+    if (posRaw == null) return 'Desconocido';
+    final intVal = posRaw is num ? posRaw.toInt() : (double.tryParse(posRaw.toString())?.toInt() ?? -1);
+    switch (intVal) {
       case 0: return 'Sentado / Reclinado';
       case 1: return 'De pie';
       case 2: return 'Izquierda';

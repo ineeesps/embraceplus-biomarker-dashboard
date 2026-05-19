@@ -216,5 +216,40 @@ void main() {
       expect(find.text('Eficiencia del Sueño'), findsOneWidget);
       expect(find.text('Tiempo Total (TST)'), findsOneWidget);
     });
+
+    testWidgets('6. El filtro de tiempo (horas) no afecta a la pantalla Resumen General', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final provider = MockDashboardProvider();
+      await tester.pumpWidget(
+        ChangeNotifierProvider<DashboardProvider>.value(
+          value: provider,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: DashboardScreen(participantId: 'HN', username: 'alberto'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verificamos KPIs iniciales del Resumen General
+      expect(find.text('3400'), findsOneWidget);
+      expect(find.text('72 BPM'), findsOneWidget);
+
+      // Cambiamos el filtro de horas de movimiento/cardiaco en el provider
+      await provider.setHourFilter(3, 'HN', 'alberto');
+      await tester.pumpAndSettle();
+
+      // Los KPIs del Resumen General siguen idénticos e inalterados
+      expect(find.text('3400'), findsOneWidget);
+      expect(find.text('72 BPM'), findsOneWidget);
+    });
   });
 }
+

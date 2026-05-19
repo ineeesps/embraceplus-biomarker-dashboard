@@ -82,6 +82,23 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getGlobalKpis(String participantId, String username) async {
+    try {
+      final encodedId = Uri.encodeComponent(participantId);
+      final response = await http.get(
+        Uri.parse('$baseUrl/participante/$encodedId/kpis_globales?investigador=$username'),
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Error al cargar KPIs globales: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error al conectar con el servidor: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> uploadCsv(String participantId, String username, List<int> bytes, String fileName, {bool replace = false}) async {
     final encodedId = Uri.encodeComponent(participantId);
     final request = http.MultipartRequest(

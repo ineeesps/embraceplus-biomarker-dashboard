@@ -276,5 +276,32 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
         self.assertEqual(user1["totalHours"], 23)
         self.assertEqual(user1["status"], "CRÍTICO")
 
+    def test_kpis_globales_independent_of_time(self):
+        """Verifica la obtención de KPIs globales que no dependen de bucket_size ni de start/end"""
+        response = self.client.get("/participante/HN/kpis_globales", params={"investigador": "alberto"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["participante"], "HN")
+        self.assertIn("total_steps", data)
+        self.assertIn("avg_bpm", data)
+        self.assertIn("sleep_hours", data)
+        self.assertIn("compliance_percentage", data)
+
+    def test_kpis_globales_user1(self):
+        """Verifica que los KPIs globales del participante user1 coinciden exactamente con los calculados a partir de sus CSVs"""
+        response = self.client.get("/participante/user1/kpis_globales", params={"investigador": "ines"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["participante"], "user1")
+        self.assertEqual(data["total_steps"], 366.0)
+        self.assertEqual(data["avg_bpm"], 73)
+        self.assertAlmostEqual(data["avg_stress"], 0.3805, places=4)
+        self.assertEqual(data["sleep_hours"], 0.0)
+        self.assertAlmostEqual(data["compliance_percentage"], 16.11, places=2)
+        self.assertEqual(data["last_activity"], 0.0)
+        self.assertEqual(data["last_position"], 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()
+

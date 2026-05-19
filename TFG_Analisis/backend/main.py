@@ -448,6 +448,75 @@ async def verificar_existencia_sensor(id: str, sensor_type: str, investigador: s
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/participante/{id}/kpis_globales")
+async def kpis_globales(id: str, investigador: str):
+    """
+    Obtiene los KPIs globales históricos (sin filtros temporales) para un participante.
+    """
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Pasos totales
+        cur.execute("SELECT SUM(value) as val FROM biomarcadores WHERE participant_id = %s AND investigador = %s AND sensor_type = 'step_count'", (id, investigador))
+        pasos = cur.fetchone()['val']
+
+        # FC Media
+        cur.execute("SELECT AVG(value) as val FROM biomarcadores WHERE participant_id = %s AND investigador = %s AND sensor_type = 'pulse_rate'", (id, investigador))
+        fc = cur.fetchone()['val']
+
+        # Estrés Medio
+        cur.execute("SELECT AVG(value) as val FROM biomarcadores WHERE participant_id = %s AND investigador = %s AND sensor_type = 'eda'", (id, investigador))
+        estres = cur.fetchone()['val']
+
+        # Horas de Sueño
+        cur.execute("""
+            SELECT COUNT(*) as val FROM (
+                SELECT time_bucket('1 minute', time) as b, mode() WITHIN GROUP (ORDER BY value) as v 
+                FROM biomarcadores 
+                WHERE participant_id = %s AND investigador = %s AND sensor_type = 'sleep_detection' 
+                GROUP BY b
+            ) sub WHERE v > 0
+        """, (id, investigador))
+        sleep_minutes = cur.fetchone()['val'] or 0
+        horas_sueno = sleep_minutes / 60.0
+
+        # Compliance
+        cur.execute("""
+            SELECT 
+                SUM(CASE WHEN quality_flag NOT LIKE '%%device_not%%' THEN 1 ELSE 0 END)::float / 
+                GREATEST(COUNT(*), 1) * 100 as compliance
+            FROM biomarcadores
+            WHERE participant_id = %s AND investigador = %s AND sensor_type = 'wearing_detection'
+        """, (id, investigador))
+        compliance_val = cur.fetchone()['compliance']
+
+        # Last Activity
+        cur.execute("SELECT value FROM biomarcadores WHERE participant_id = %s AND investigador = %s AND sensor_type IN ('activity_class', 'activity_classification') AND value IS NOT NULL ORDER BY time DESC LIMIT 1", (id, investigador))
+        row = cur.fetchone()
+        last_activity = row['value'] if row else None
+
+        # Last Position
+        cur.execute("SELECT value FROM biomarcadores WHERE participant_id = %s AND investigador = %s AND sensor_type IN ('body_position', 'body_position_left') AND value IS NOT NULL ORDER BY time DESC LIMIT 1", (id, investigador))
+        row = cur.fetchone()
+        last_position = row['value'] if row else None
+        
+        cur.close()
+        conn.close()
+
+        return {
+            "participante": id,
+            "total_steps": pasos if pasos is not None else None,
+            "avg_bpm": int(fc) if fc is not None else None,
+            "avg_stress": float(estres) if estres is not None else None,
+            "sleep_hours": horas_sueno,
+            "compliance_percentage": float(compliance_val) if compliance_val is not None else None,
+            "last_activity": last_activity,
+            "last_position": last_position
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/participante/{id}/metricas")
 async def consultar_datos(id: str, investigador: str, start: str = None, end: str = None, bucket_size: str = '30 seconds'):
     """
