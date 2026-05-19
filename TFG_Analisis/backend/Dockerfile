@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y gcc libpq-dev
 WORKDIR /app
 
 # 4. Instalamos las librerías
-RUN pip install fastapi uvicorn pandas scipy psycopg2-binary python-multipart
+RUN pip install fastapi uvicorn pandas scipy psycopg2-binary python-multipart bcrypt
 
 # 5. Comando para arrancar la API
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

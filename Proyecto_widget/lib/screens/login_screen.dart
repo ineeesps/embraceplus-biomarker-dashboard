@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/api_service.dart';
 import 'participant_selection_screen.dart';
+import 'admin_dashboard_screen.dart';
 import '../utils/app_colors.dart';
 
 
@@ -35,24 +36,37 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
 
     try {
-      await api.login(username, password);
+      final loginData = await api.login(username, password);
       if (!mounted) return;
 
-      final summaryRaw = await api.getParticipantsSummary(username);
-      if (!mounted) return;
+      final role = loginData['role'] ?? 'investigador';
 
-      final preloaded = summaryRaw.map((j) => ParticipantData.fromJson(j)).toList();
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ParticipantSelectionScreen(
-            username: username,
-            assignedParticipants: const [],
-            preloadedData: preloaded,
+      if (role == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AdminDashboardScreen(
+              username: username,
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        final summaryRaw = await api.getParticipantsSummary(username);
+        if (!mounted) return;
+
+        final preloaded = summaryRaw.map((j) => ParticipantData.fromJson(j)).toList();
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ParticipantSelectionScreen(
+              username: username,
+              assignedParticipants: List<String>.from(loginData['participantes_asignados'] ?? []),
+              preloadedData: preloaded,
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) setState(() { _isLoading = false; _errorMessage = e.toString().replaceAll('Exception: ', ''); });
     }

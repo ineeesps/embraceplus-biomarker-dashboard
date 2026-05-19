@@ -8,7 +8,7 @@ class ApiService {
 
   ApiService({this.baseUrl = 'http://localhost:8000'});
 
-  Future<List<String>> login(String username, String password) async {
+  Future<Map<String, dynamic>> login(String username, String password) async {
     final http.Response response;
     try {
       response = await http.post(
@@ -23,8 +23,7 @@ class ApiService {
     }
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return List<String>.from(data['participantes_asignados']);
+      return json.decode(response.body) as Map<String, dynamic>;
     } else if (response.statusCode == 401) {
       throw Exception('Usuario o contraseña incorrectos');
     } else if (response.statusCode == 500) {
@@ -191,6 +190,100 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Error al exportar: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAdminInvestigators() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/admin/investigadores'))
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return List<Map<String, dynamic>>.from(data);
+      } else {
+        throw Exception('Error al obtener investigadores (${response.statusCode})');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  Future<void> createAdminInvestigator(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/admin/investigadores'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data),
+      ).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        final err = json.decode(response.body);
+        throw Exception(err['detail'] ?? 'Error al crear investigador');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  Future<void> toggleInvestigatorStatus(int id, bool isActive) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/admin/investigadores/$id/estado'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'is_active': isActive}),
+      ).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        throw Exception('Error al cambiar estado del investigador (${response.statusCode})');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  Future<List<String>> getAdminAllParticipants() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/admin/participantes'))
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return List<String>.from(data);
+      } else {
+        throw Exception('Error al obtener participantes (${response.statusCode})');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  Future<void> updateInvestigatorDetails(int id, String nombreCompleto, String username) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/admin/investigadores/$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'nombre_completo': nombreCompleto,
+          'username': username,
+        }),
+      ).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        final err = json.decode(response.body);
+        throw Exception(err['detail'] ?? 'Error al actualizar investigador');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  Future<void> deleteInvestigator(int id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/admin/investigadores/$id'),
+      ).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        final err = json.decode(response.body);
+        throw Exception(err['detail'] ?? 'Error al eliminar investigador');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
     }
   }
 }

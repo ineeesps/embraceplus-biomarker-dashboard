@@ -53,6 +53,8 @@ PATRONES_SENSORES = {
     'acticounts_x': 'acticounts_x', 'acticounts_y': 'acticounts_y', 'acticounts_z': 'acticounts_z'
 }
 
+import bcrypt
+
 BUCKET_SIZES_PERMITIDOS = {
     '30 seconds', '1 minute', '2 minutes', '5 minutes',
     '10 minutes', '15 minutes', '30 minutes', '1 hour'
@@ -67,32 +69,134 @@ INVESTIGADORES = {
     "ines":    {"password": "123"},
 }
 
+def seed_database():
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL CHECK (role IN ('admin', 'investigador')),
+                participantes_asignados TEXT[] NOT NULL DEFAULT '{}',
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                last_login TIMESTAMPTZ,
+                nombre_completo TEXT
+            );
+        """)
+        
+        alberto_parts = ["HN", "PRUEBA 1", "PRUEBA 2"]
+        ines_parts = [f"user{i}" for i in range(1, 21)]
+
+        default_users = [
+            ("admin", bcrypt.hashpw(b"admin123", bcrypt.gensalt()).decode('utf-8'), "admin", "Administrador del Sistema", []),
+            ("alberto", bcrypt.hashpw(b"123", bcrypt.gensalt()).decode('utf-8'), "investigador", "Alberto Durán", alberto_parts),
+            ("ines", bcrypt.hashpw(b"123", bcrypt.gensalt()).decode('utf-8'), "investigador", "Inés Pleguezuelos", ines_parts)
+        ]
+        
+        cur.execute("SELECT COUNT(*) FROM usuarios;")
+        count = cur.fetchone()[0]
+        if count == 0:
+            for username, pwd_hash, role, nombre, parts in default_users:
+                cur.execute("""
+                    INSERT INTO usuarios (username, password_hash, role, nombre_completo, participantes_asignados)
+                    VALUES (%s, %s, %s, %s, %s);
+                """, (username, pwd_hash, role, nombre, parts))
+        else:
+            cur.execute("UPDATE usuarios SET nombre_completo = 'Alberto Durán', participantes_asignados = %s WHERE username = 'alberto';", (alberto_parts,))
+            cur.execute("UPDATE usuarios SET nombre_completo = 'Inés Pleguezuelos', participantes_asignados = %s WHERE username = 'ines';", (ines_parts,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("Database schema 'usuarios' initialized and seeded successfully.")
+    except Exception as e:
+        print(f"Error seeding database: {e}")
+
+seed_database()
+
+@app.on_event("startup")
+async def startup_event():
+    seed_database()
+
+async def check_investigador_valido(username: str) -> bool:
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM usuarios WHERE username = %s AND is_active = TRUE;", (username,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        return row is not None
+    except Exception:
+        return False
+
 async def get_lista_participantes_db(username: str):
-    last_err = None
-    for attempt in range(3):
-        try:
-            conn = psycopg2.connect(**DB_CONFIG)
-            cur = conn.cursor()
-            query = """
-            WITH RECURSIVE t AS (
-               (SELECT participant_id FROM biomarcadores WHERE investigador = %s ORDER BY participant_id LIMIT 1)
-               UNION ALL
-               SELECT (SELECT participant_id FROM biomarcadores WHERE investigador = %s AND participant_id > t.participant_id ORDER BY participant_id LIMIT 1)
-               FROM t
-               WHERE t.participant_id IS NOT NULL
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("SELECT participantes_asignados FROM usuarios WHERE username = %s AND is_active = TRUE;", (username,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            return sorted(list(row[0]))
+        return []
+    except Exception as e:
+        print(f"Error fetching assigned participants: {e}")
+        return []
+
+def agregar_participante_asignado(username: str, participant_id: str):
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE usuarios 
+            SET participantes_asignados = ARRAY(
+                SELECT DISTINCT unnest(array_append(participantes_asignados, %s))
             )
-            SELECT participant_id FROM t WHERE participant_id IS NOT NULL;
-            """
-            cur.execute(query, (username, username))
-            db_ids = [row[0] for row in cur.fetchall()]
-            cur.close()
-            conn.close()
-            return sorted(db_ids)
-        except psycopg2.OperationalError as e:
-            last_err = e
-            if attempt < 2:
-                await asyncio.sleep(1)
-    raise last_err
+            WHERE username = %s;
+        """, (participant_id, username))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error updating assigned participants: {e}")
+
+def renombrar_participante_asignado(username: str, old_id: str, new_id: str):
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE usuarios 
+            SET participantes_asignados = ARRAY(
+                SELECT DISTINCT CASE WHEN val = %s THEN %s ELSE val END 
+                FROM unnest(participantes_asignados) AS val
+            )
+            WHERE username = %s;
+        """, (old_id, new_id, username))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error renaming assigned participant: {e}")
+
+def eliminar_participante_asignado(username: str, participant_id: str):
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE usuarios 
+            SET participantes_asignados = array_remove(participantes_asignados, %s)
+            WHERE username = %s;
+        """, (participant_id, username))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error removing assigned participant: {e}")
 
 
 @app.post("/login")
@@ -101,17 +205,37 @@ async def login(req: LoginRequest):
     Autenticación de investigadores y obtención de participantes asignados.
     """
     user = req.username
-    if user in INVESTIGADORES and INVESTIGADORES[user]["password"] == req.password:
-        return {
-            "status": "success",
-            "username": user,
-            "participantes_asignados": await get_lista_participantes_db(user)
-        }
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM usuarios WHERE username = %s AND is_active = TRUE;", (user,))
+        db_user = cur.fetchone()
+        if db_user:
+            hashed = db_user['password_hash']
+            if bcrypt.checkpw(req.password.encode('utf-8'), hashed.encode('utf-8')):
+                cur.execute("UPDATE usuarios SET last_login = NOW() WHERE id = %s;", (db_user['id'],))
+                conn.commit()
+                cur.close()
+                conn.close()
+                return {
+                    "status": "success",
+                    "username": db_user['username'],
+                    "role": db_user['role'],
+                    "participantes_asignados": list(db_user['participantes_asignados'])
+                }
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+    except Exception as e:
+        print(f"Login error: {e}")
+        pass
+
     raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
 @app.get("/participantes/{username}")
 async def get_participantes(username: str):
-    if username not in INVESTIGADORES:
+    if not await check_investigador_valido(username):
         raise HTTPException(status_code=404, detail="Investigador no encontrado")
     
     participantes = await get_lista_participantes_db(username)
@@ -135,7 +259,7 @@ async def resumen_participantes(username: str):
     """
     Calcula las estadísticas vitales de los participantes de un investigador.
     """
-    if username not in INVESTIGADORES:
+    if not await check_investigador_valido(username):
         raise HTTPException(status_code=404, detail="Investigador no autorizado")
         
     try:
@@ -199,7 +323,7 @@ async def cargar_archivo_automatico(id: str, investigador: Optional[str] = None,
     """
     if not investigador:
         raise HTTPException(status_code=400, detail="El parámetro 'investigador' es obligatorio.")
-    if investigador in INVESTIGADORES:
+    if await check_investigador_valido(investigador):
         conn = None
         try:
             conn = psycopg2.connect(**DB_CONFIG)
@@ -280,6 +404,9 @@ async def cargar_archivo_automatico(id: str, investigador: Optional[str] = None,
         mensaje = "Carga completada"
         if alerta_integridad:
             mensaje += f" (Pérdida de datos: {porcentaje_perdida:.2f}%)"
+
+        # Sincronización in base de datos
+        agregar_participante_asignado(investigador, id)
 
         return {
             "status": "success",
@@ -399,6 +526,9 @@ async def eliminar_participante(id: str, investigador: str, confirmar: bool = Fa
         
         cur.execute("DELETE FROM biomarcadores WHERE participant_id = %s AND investigador = %s", (id, investigador))
         conn.commit()
+        
+        # Sincronización in base de datos
+        eliminar_participante_asignado(investigador, id)
 
         cur.close()
         conn.close()
@@ -427,6 +557,9 @@ async def renombrar_participante(id: str, nuevo_id: str, investigador: str):
             WHERE participant_id = %s AND investigador = %s
         """, (nuevo_id, id, investigador))
         conn.commit()
+        
+        # Sincronización in base de datos
+        renombrar_participante_asignado(investigador, id, nuevo_id)
 
         cur.close()
         conn.close()
@@ -563,3 +696,210 @@ async def exportar_datos(
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename=export_{id}.csv"}
     )
+
+class CreateUserRequest(BaseModel):
+    username: str
+    password: str
+    nombre_completo: str
+    role: str = "investigador"
+    participantes_asignados: list[str] = []
+
+class ToggleActiveRequest(BaseModel):
+    is_active: bool
+
+class UpdateInvestigatorRequest(BaseModel):
+    nombre_completo: str
+    username: str
+
+@app.get("/admin/investigadores")
+async def get_investigadores():
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id, username, nombre_completo, role, is_active, last_login, participantes_asignados 
+            FROM usuarios 
+            ORDER BY id ASC;
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        res = []
+        for r in rows:
+            last_login_str = r['last_login'].isoformat() if r['last_login'] else None
+            res.append({
+                "id": r['id'],
+                "username": r['username'],
+                "nombre_completo": r['nombre_completo'],
+                "role": r['role'],
+                "is_active": r['is_active'],
+                "last_login": last_login_str,
+                "participantes_asignados": list(r['participantes_asignados']),
+                "pacientes_count": len(r['participantes_asignados'])
+            })
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/admin/investigadores")
+async def create_investigador(req: CreateUserRequest):
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        
+        cur.execute("SELECT 1 FROM usuarios WHERE username = %s LIMIT 1;", (req.username,))
+        if cur.fetchone() is not None:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=400, detail="El nombre de usuario ya está registrado.")
+        
+        hashed = bcrypt.hashpw(req.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        cur.execute("""
+            INSERT INTO usuarios (username, password_hash, role, nombre_completo, participantes_asignados)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id;
+        """, (req.username, hashed, req.role, req.nombre_completo, req.participantes_asignados))
+        
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"status": "success", "id": new_id, "message": "Investigador creado con éxito."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/admin/investigadores/{id}/estado")
+async def toggle_investigador_estado(id: int, req: ToggleActiveRequest):
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("UPDATE usuarios SET is_active = %s WHERE id = %s RETURNING username;", (req.is_active, id))
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"status": "success", "username": row[0], "is_active": req.is_active}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/admin/investigadores/{id}/pacientes")
+async def update_investigador_pacientes(id: int, req: list[str]):
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("UPDATE usuarios SET participantes_asignados = %s WHERE id = %s RETURNING username;", (req, id))
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"status": "success", "username": row[0], "participantes_asignados": req}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/admin/investigadores/{id}")
+async def update_investigador_details(id: int, req: UpdateInvestigatorRequest):
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        
+        # Check if username is taken by another user
+        cur.execute("SELECT id FROM usuarios WHERE username = %s AND id != %s;", (req.username, id))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=400, detail="El nombre de usuario ya está en uso")
+            
+        cur.execute("SELECT username FROM usuarios WHERE id = %s;", (id,))
+        old_user_row = cur.fetchone()
+        if not old_user_row:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        old_username = old_user_row[0]
+
+        cur.execute("""
+            UPDATE usuarios 
+            SET nombre_completo = %s, username = %s 
+            WHERE id = %s 
+            RETURNING id, username, nombre_completo;
+        """, (req.nombre_completo, req.username, id))
+        row = cur.fetchone()
+        
+        if old_username != req.username:
+            cur.execute("UPDATE biomarcadores SET investigador = %s WHERE investigador = %s;", (req.username, old_username))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"status": "success", "id": row[0], "username": row[1], "nombre_completo": row[2]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/admin/investigadores/{id}")
+async def delete_investigador(id: int):
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        
+        # Check if user exists and get username
+        cur.execute("SELECT username FROM usuarios WHERE id = %s;", (id,))
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        username = row[0]
+        
+        # Don't allow deleting the admin user
+        if username == "admin":
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=400, detail="No se puede eliminar el administrador del sistema")
+            
+        # Delete from usuarios
+        cur.execute("DELETE FROM usuarios WHERE id = %s;", (id,))
+        
+        # Update biomarcadores to disassociate
+        cur.execute("UPDATE biomarcadores SET investigador = NULL WHERE investigador = %s;", (username,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"status": "success", "message": f"Investigador {username} eliminado correctamente"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.get("/admin/participantes")
+async def get_all_participantes():
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT participant_id FROM biomarcadores ORDER BY participant_id;")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return [row[0] for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -117,5 +117,92 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "success")
 
+    def test_admin_flow(self):
+        """Verifica el flujo completo de administración (RBAC y gestión de investigadores)"""
+        # Limpiar usuario de prueba si ya existe
+        try:
+            import psycopg2
+            from backend.main import DB_CONFIG
+            conn = psycopg2.connect(**DB_CONFIG)
+            cur = conn.cursor()
+            cur.execute("DELETE FROM usuarios WHERE username LIKE 'test_admin_investigador%';")
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception:
+            pass
+
+        # 1. Login como administrador
+        response = self.client.post("/login", json={"username": "admin", "password": "admin123"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["role"], "admin")
+        self.assertEqual(data["username"], "admin")
+
+        # 2. Obtener lista de investigadores
+        response = self.client.get("/admin/investigadores")
+        self.assertEqual(response.status_code, 200)
+        users = response.json()
+        self.assertTrue(len(users) >= 3) # admin, alberto, ines
+
+        # 3. Crear nuevo investigador
+        new_user = {
+            "username": "test_admin_investigador",
+            "password": "secret_password",
+            "nombre_completo": "Test Admin Inv",
+            "role": "investigador",
+            "participantes_asignados": ["HN"]
+        }
+        response = self.client.post("/admin/investigadores", json=new_user)
+        self.assertEqual(response.status_code, 200)
+        res_data = response.json()
+        self.assertEqual(res_data["status"], "success")
+        new_db_id = res_data["id"]
+
+        # 4. Iniciar sesión con el nuevo investigador
+        response = self.client.post("/login", json={"username": "test_admin_investigador", "password": "secret_password"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["participantes_asignados"], ["HN"])
+
+        # 4b. Actualizar pacientes asignados
+        response = self.client.put(f"/admin/investigadores/{new_db_id}/pacientes", json=["HN", "PRUEBA 1"])
+        self.assertEqual(response.status_code, 200)
+        
+        response = self.client.post("/login", json={"username": "test_admin_investigador", "password": "secret_password"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(sorted(response.json()["participantes_asignados"]), ["HN", "PRUEBA 1"])
+
+        # 4c. Actualizar nombre completo y nombre de usuario
+        response = self.client.put(f"/admin/investigadores/{new_db_id}", json={
+            "nombre_completo": "Test Admin Inv Modificado",
+            "username": "test_admin_investigador_new"
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["nombre_completo"], "Test Admin Inv Modificado")
+        self.assertEqual(response.json()["username"], "test_admin_investigador_new")
+
+        # 5. Desactivar temporalmente al investigador
+        response = self.client.put(f"/admin/investigadores/{new_db_id}/estado", json={"is_active": False})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["is_active"], False)
+
+        # 6. Intentar iniciar sesión desactivado (debe fallar 401)
+        response = self.client.post("/login", json={"username": "test_admin_investigador_new", "password": "secret_password"})
+        self.assertEqual(response.status_code, 401)
+
+        # 7. Eliminar al investigador de prueba (debe tener éxito y limpiar la BD)
+        response = self.client.delete(f"/admin/investigadores/{new_db_id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "success")
+
+        # Intentar eliminar de nuevo (debe fallar con 404)
+        response = self.client.delete(f"/admin/investigadores/{new_db_id}")
+        self.assertEqual(response.status_code, 404)
+
+        # 8. Obtener listado global de participantes
+        response = self.client.get("/admin/participantes")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(isinstance(response.json(), list))
+
 if __name__ == "__main__":
     unittest.main()
