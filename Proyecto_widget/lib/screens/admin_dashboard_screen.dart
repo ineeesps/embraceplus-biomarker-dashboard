@@ -1162,13 +1162,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     nameCtrl.text.trim(),
                     userCtrl.text.trim(),
                   );
-                  if (mounted) {
+                  if (context.mounted) {
                     AppToast.show(context, 'Investigador actualizado', type: ToastType.success);
                     Navigator.pop(context);
                   }
                   _fetchInvestigators();
                 } catch (e) {
-                  if (mounted) {
+                  if (context.mounted) {
                     AppToast.show(context, 'Error: $e', type: ToastType.error);
                   }
                 }
