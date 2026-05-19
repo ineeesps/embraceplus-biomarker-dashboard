@@ -1006,9 +1006,13 @@ class _AnalisisBiomecanicoState extends State<_AnalisisBiomecanico> {
           getTooltipColor: (_) => _tooltipBg,
           getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
             final String label;
-            if (spot.bar.color == _axisX) label = 'X';
-            else if (spot.bar.color == _axisY) label = 'Y';
-            else label = 'Z';
+            if (spot.bar.color == _axisX) {
+              label = 'X';
+            } else if (spot.bar.color == _axisY) {
+              label = 'Y';
+            } else {
+              label = 'Z';
+            }
             return LineTooltipItem(
               '$label: ${spot.y.toStringAsFixed(0)}',
               GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),

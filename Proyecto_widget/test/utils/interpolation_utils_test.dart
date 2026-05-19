@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/utils/interpolation_utils.dart';
-import '../../lib/models/biomarker.dart';
+import 'package:proyecto_widget/utils/interpolation_utils.dart';
+import 'package:proyecto_widget/models/biomarker.dart';
 
 void main() {
   group('Pruebas de InterpolationUtils - Imputación Fisiológica', () {

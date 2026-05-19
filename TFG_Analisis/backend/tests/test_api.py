@@ -204,5 +204,38 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(isinstance(response.json(), list))
 
+    def test_get_participantes_by_investigador(self):
+        """Verifica la obtención de participantes asignados a un investigador"""
+        response = self.client.get("/participantes/alberto")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["investigador"], "alberto")
+        self.assertIn("HN", data["participantes"])
+
+    def test_verificar_existencia_sensor(self):
+        """Verifica si un sensor y participante específico existen en la base de datos"""
+        response = self.client.get(
+            "/participante/HN/sensor/temperature/existe",
+            params={"investigador": "alberto"}
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["id"], "HN")
+        self.assertEqual(data["sensor_type"], "temperature")
+        self.assertEqual(data["existe"], True)
+
+    def test_obtener_metadata_participante(self):
+        """Verifica la obtención del rango temporal y sensores de un participante"""
+        response = self.client.get(
+            "/participante/HN/metadata",
+            params={"investigador": "alberto"}
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["id"], "HN")
+        self.assertIn("start_time", data)
+        self.assertIn("end_time", data)
+        self.assertIn("temperature", data["sensors"])
+
 if __name__ == "__main__":
     unittest.main()

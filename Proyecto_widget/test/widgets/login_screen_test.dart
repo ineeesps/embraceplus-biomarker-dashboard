@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/screens/login_screen.dart';
+import 'package:proyecto_widget/screens/login_screen.dart';
 
 void main() {
   group('Pruebas de Interfaz - LoginScreen', () {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../lib/screens/admin_dashboard_screen.dart';
-import '../../lib/services/api_service.dart';
+import 'package:proyecto_widget/screens/admin_dashboard_screen.dart';
+import 'package:proyecto_widget/services/api_service.dart';
 
 class MockApiService extends ApiService {
   int createCallCount = 0;

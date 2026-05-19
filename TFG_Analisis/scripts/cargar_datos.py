@@ -14,15 +14,23 @@ class DefaultAdapter(SensorAdapter):
         self.tipo_sensor = tipo_sensor
 
     def map_row(self, row, dataframe):
+        val = None
         if self.target_column in dataframe.columns:
-            return [(self.tipo_sensor, getattr(row, self.target_column))]
-
-        alternativas = [self.tipo_sensor, self.tipo_sensor.replace('_', '-')]
-        for alt in alternativas:
-            if alt in dataframe.columns:
-                return [(self.tipo_sensor, getattr(row, alt))]
+            val = getattr(row, self.target_column)
+        else:
+            alternativas = [self.tipo_sensor, self.tipo_sensor.replace('_', '-')]
+            for alt in alternativas:
+                if alt in dataframe.columns:
+                    val = getattr(row, alt)
+                    break
         
-        return [(self.tipo_sensor, None)]
+        if pd.isnull(val):
+            return [(self.tipo_sensor, None)]
+        try:
+            return [(self.tipo_sensor, float(val))]
+        except (ValueError, TypeError):
+            return [(self.tipo_sensor, None)]
+
 
 class ActicountsAdapter(SensorAdapter):
     def map_row(self, row, dataframe):

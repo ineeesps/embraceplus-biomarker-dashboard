@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/providers/dashboard_provider.dart';
+import 'package:proyecto_widget/providers/dashboard_provider.dart';
 
 void main() {
   group('Pruebas de DashboardProvider - Gestión de Estado', () {

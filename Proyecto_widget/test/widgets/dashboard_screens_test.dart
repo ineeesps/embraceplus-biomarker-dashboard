@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import '../../lib/providers/dashboard_provider.dart';
-import '../../lib/models/biomarker.dart';
-import '../../lib/screens/dashboard_screen.dart';
-import '../../lib/screens/movimiento_screen.dart';
-import '../../lib/screens/cardiaco_screen.dart';
-import '../../lib/screens/estres_screen.dart';
-import '../../lib/screens/sueno_screen.dart';
+import 'package:proyecto_widget/providers/dashboard_provider.dart';
+import 'package:proyecto_widget/models/biomarker.dart';
+import 'package:proyecto_widget/screens/dashboard_screen.dart';
+import 'package:proyecto_widget/screens/movimiento_screen.dart';
+import 'package:proyecto_widget/screens/cardiaco_screen.dart';
+import 'package:proyecto_widget/screens/estres_screen.dart';
+import 'package:proyecto_widget/screens/sueno_screen.dart';
 
 // Definición del Mock robusto sobreescribiendo getters de carga y rangos temporales
 class MockDashboardProvider extends DashboardProvider {

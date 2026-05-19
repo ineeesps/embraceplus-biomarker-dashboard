@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/screens/participant_selection_screen.dart';
+import 'package:proyecto_widget/screens/participant_selection_screen.dart';
 
 void main() {
   group('Pruebas de Interfaz - ParticipantSelectionScreen', () {
