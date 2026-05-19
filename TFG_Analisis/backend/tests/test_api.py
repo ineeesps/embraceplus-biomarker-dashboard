@@ -237,5 +237,44 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
         self.assertIn("end_time", data)
         self.assertIn("temperature", data["sensors"])
 
+    def test_resumen_participantes_alberto_and_ines(self):
+        """Verifica que el resumen de participantes devuelva datos reales y exactos para alberto e ines"""
+        # Test alberto
+        response_alberto = self.client.get("/investigador/alberto/resumen_participantes")
+        self.assertEqual(response_alberto.status_code, 200)
+        data_alberto = response_alberto.json()
+        self.assertEqual(data_alberto["investigador"], "alberto")
+        participantes_alberto = data_alberto["participantes"]
+        self.assertEqual(len(participantes_alberto), 3)
+        
+        # Verificar HN
+        hn = next(p for p in participantes_alberto if p["id"] == "HN")
+        self.assertEqual(hn["compliance"], 51.11)
+        self.assertEqual(hn["dateRange"], "15 May - 16 May")
+        self.assertEqual(hn["totalHours"], 47)
+        self.assertEqual(hn["status"], "CRÍTICO")
+
+        # Verificar PRUEBA 1
+        prueba1 = next(p for p in participantes_alberto if p["id"] == "PRUEBA 1")
+        self.assertEqual(prueba1["compliance"], 1.88)
+        self.assertEqual(prueba1["dateRange"], "22 Feb - 22 Feb")
+        self.assertEqual(prueba1["totalHours"], 23)
+        self.assertEqual(prueba1["status"], "CRÍTICO")
+
+        # Test ines
+        response_ines = self.client.get("/investigador/ines/resumen_participantes")
+        self.assertEqual(response_ines.status_code, 200)
+        data_ines = response_ines.json()
+        self.assertEqual(data_ines["investigador"], "ines")
+        participantes_ines = data_ines["participantes"]
+        self.assertEqual(len(participantes_ines), 20)
+
+        # Verificar user1
+        user1 = next(p for p in participantes_ines if p["id"] == "user1")
+        self.assertEqual(user1["compliance"], 16.11)
+        self.assertEqual(user1["dateRange"], "14 Ene - 14 Ene")
+        self.assertEqual(user1["totalHours"], 23)
+        self.assertEqual(user1["status"], "CRÍTICO")
+
 if __name__ == "__main__":
     unittest.main()
