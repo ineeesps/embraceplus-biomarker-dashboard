@@ -222,7 +222,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildComplianceDonut(DashboardProvider provider, bool isMobile) {
     final double pct = provider.compliancePercentage ?? 0;
     final Color color = _getComplianceColor(pct);
-    final bool isCritical = pct < 50;
+    final bool isCritical = pct < 70;
     final double size = isMobile ? 220 : 300;
 
     return Column(
@@ -414,8 +414,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
   Color _getComplianceColor(double pct) {
-    if (pct >= 85) return const Color(0xFF10B981);
-    if (pct >= 60) return const Color(0xFFF59E0B);
+    if (pct >= 90) return const Color(0xFF10B981);
+    if (pct >= 70) return const Color(0xFFF59E0B);
     return const Color(0xFFEF4444);
   }
 }
