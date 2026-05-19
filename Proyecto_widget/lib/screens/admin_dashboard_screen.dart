@@ -799,8 +799,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Container(
                         width: 60,
                         alignment: Alignment.center,
-                        child: PopupMenuButton<String>(
-                          icon: const Icon(LucideIcons.moreHorizontal, color: kTextSecondary),
+                        child: r['role'] == 'admin' || r['username'] == 'admin'
+                            ? const SizedBox()
+                            : PopupMenuButton<String>(
+                                icon: const Icon(LucideIcons.moreHorizontal, color: kTextSecondary),
                           onSelected: (val) {
                             if (val == 'toggle_status') {
                               _toggleInvestigatorActive(r['id'], isActive);
@@ -833,6 +835,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 ],
                               ),
                             ),
+
                             PopupMenuItem(
                               value: 'toggle_status',
                               child: Row(

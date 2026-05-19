@@ -161,9 +161,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final popupMenuButtons = find.byType(PopupMenuButton<String>);
-      expect(popupMenuButtons, findsNWidgets(3));
+      expect(popupMenuButtons, findsNWidgets(2));
 
-      await tester.tap(popupMenuButtons.at(1));
+      await tester.tap(popupMenuButtons.at(0));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Editar Datos'));
@@ -190,7 +190,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final popupMenuButtons = find.byType(PopupMenuButton<String>);
-      await tester.tap(popupMenuButtons.at(1));
+      await tester.tap(popupMenuButtons.at(0));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Desactivar cuenta'));
