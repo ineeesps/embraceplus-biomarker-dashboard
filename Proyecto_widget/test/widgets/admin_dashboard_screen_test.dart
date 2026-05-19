@@ -102,19 +102,13 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Directorio de Investigadores y Accesos'), findsNWidgets(2));
-      expect(find.text('Admin Active'), findsOneWidget);
+      expect(find.text('Directorio de Investigadores y Accesos'), findsOneWidget);
+      expect(find.text('Admin activo'), findsOneWidget);
 
-      final tabGeneral = find.byIcon(LucideIcons.layoutTemplate).first;
-      await tester.tap(tabGeneral);
-      await tester.pumpAndSettle();
-
-      expect(find.text('1'), findsOneWidget);
+      expect(find.text('1'), findsNWidgets(2));
       expect(find.text('Investigadores Activos'), findsOneWidget);
-
-      final tabInvestigadores = find.byIcon(LucideIcons.users).first;
-      await tester.tap(tabInvestigadores);
-      await tester.pumpAndSettle();
+      expect(find.text('Total Participantes'), findsOneWidget);
+      expect(find.text('Investigadores Inactivos'), findsOneWidget);
 
       expect(find.text('Alberto Durán'), findsOneWidget);
       expect(find.text('Inés Pleguezuelos'), findsOneWidget);
@@ -138,7 +132,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      final btnNuevo = find.widgetWithText(ElevatedButton, 'Nuevo Investigador');
+      final btnNuevo = find.byIcon(LucideIcons.userPlus).first;
       await tester.tap(btnNuevo);
       await tester.pumpAndSettle();
 

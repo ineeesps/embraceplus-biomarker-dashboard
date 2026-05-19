@@ -25,7 +25,7 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  int _selectedTab = 1; // Default to Gestión de Investigadores (1)
+  int _selectedTab = 0; // Default to Gestión de Investigadores (0)
   bool _isExpanded = false;
   
   // State for Researchers List
@@ -249,6 +249,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  void _onNewInvestigatorTap(bool isDrawer) {
+    if (isDrawer) {
+      Navigator.pop(context);
+    }
+    _showNewInvestigatorDialog();
+  }
+
   Future<void> _logout() async {
     final confirmed = await showConfirmDialog(
       context,
@@ -331,11 +338,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         children: [
           if (!isMobile)
             Text(
-              _selectedTab == 0
-                  ? 'Panel de Control General'
-                  : _selectedTab == 1
-                      ? 'Directorio de Investigadores y Accesos'
-                      : 'Infraestructura de Datos',
+              'Directorio de Investigadores y Accesos',
               style: GoogleFonts.outfit(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -357,7 +360,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     const Icon(LucideIcons.shieldCheck, size: 14, color: kSystemBlue),
                     const SizedBox(width: 6),
                     Text(
-                      'Admin Active',
+                      'Admin activo',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: kSystemBlue,
@@ -401,7 +404,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 if (isExpanded) ...[
                   const SizedBox(width: 12),
                   Text(
-                    'SYSTEM CTRL',
+                    'PANEL ADMIN',
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
@@ -420,8 +423,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             physics: const BouncingScrollPhysics(),
             children: [
               _buildSidebarTile(0, LucideIcons.layoutTemplate, 'Panel General', isExpanded, isDrawer),
-              _buildSidebarTile(1, LucideIcons.users, 'Investigadores', isExpanded, isDrawer),
-              _buildSidebarTile(2, LucideIcons.database, 'Base de Datos', isExpanded, isDrawer),
+              _buildSidebarTile(2, LucideIcons.userPlus, 'Nuevo Investigador', isExpanded, isDrawer, onTap: () => _onNewInvestigatorTap(isDrawer)),
             ],
           ),
         ),
@@ -529,59 +531,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildSelectedTabContent() {
     switch (_selectedTab) {
       case 0:
-        return _buildOverviewTab();
-      case 1:
         return _buildInvestigatorsTab();
-      case 2:
-        return _buildDatabaseTab();
       default:
         return const SizedBox();
     }
-  }
-
-  // ── OVERVIEW TAB ─────────────────────────────────────────────────────────
-
-  Widget _buildOverviewTab() {
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Row(
-          children: [
-            Expanded(child: _buildStatCard('Investigadores Activos', '${_investigators.where((i) => i['is_active'] == true && i['role'] == 'investigador').length}', LucideIcons.users, kSystemBlue)),
-            const SizedBox(width: 16),
-            Expanded(child: _buildStatCard('Registros Clínicos (TimescaleDB)', '245,618', LucideIcons.database, Colors.teal)),
-            const SizedBox(width: 16),
-            Expanded(child: _buildStatCard('Chunks de Datos Activos', '5 chunks', LucideIcons.server, Colors.orange)),
-          ],
-        ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: kBgCard,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: kBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Estado de la Infraestructura',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: kTextPrimary),
-              ),
-              const SizedBox(height: 16),
-              _buildInfrastructureRow('Conexión TimescaleDB', 'Conectado (Puerto 5433)', true),
-              const Divider(height: 24),
-              _buildInfrastructureRow('Servicio API (FastAPI)', 'Activo (v2.1.0)', true),
-              const Divider(height: 24),
-              _buildInfrastructureRow('Políticas RBAC', 'Habilitadas (Admin/Investigador)', true),
-              const Divider(height: 24),
-              _buildInfrastructureRow('Consumo de Disco', '23.4 GB / 100 GB (Saludable)', true),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
@@ -623,39 +576,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildInfrastructureRow(String service, String details, bool isOnline) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(service, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: kTextPrimary)),
-            const SizedBox(height: 4),
-            Text(details, style: GoogleFonts.inter(fontSize: 12, color: kTextSecondary)),
-          ],
-        ),
-        Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: isOnline ? Colors.green : Colors.red,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              isOnline ? 'Online' : 'Offline',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: isOnline ? Colors.green : Colors.red),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   // ── INVESTIGATORS TAB ────────────────────────────────────────────────────
 
   Widget _buildInvestigatorsTab() {
@@ -671,37 +591,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Directorio de Investigadores y Accesos',
-                    style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: kTextPrimary),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Gestión de credenciales, roles y asignación de participantes de estudio (RBAC).',
-                    style: GoogleFonts.inter(fontSize: 13, color: kTextSecondary),
-                  ),
-                ],
-              ),
-              Tooltip(
-                message: 'Registra un nuevo perfil de investigación y define sus permisos de visualización de datos.',
-                child: ElevatedButton.icon(
-                  onPressed: _showNewInvestigatorDialog,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kSystemBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
-                  ),
-                  icon: const Icon(LucideIcons.userPlus, size: 16),
-                  label: Text('Nuevo Investigador', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-                ),
-              ),
+              Expanded(child: _buildStatCard('Investigadores Activos', '${_investigators.where((i) => i['is_active'] == true && i['role'] == 'investigador').length}', LucideIcons.users, kSystemBlue)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard('Total Participantes', '${_availablePatients.length}', LucideIcons.database, Colors.teal)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard('Investigadores Inactivos', '${_investigators.where((i) => i['is_active'] == false && i['role'] == 'investigador').length}', LucideIcons.userX, Colors.orange)),
             ],
           ),
           const SizedBox(height: 24),
@@ -1207,82 +1102,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  // ── DATABASE TAB ─────────────────────────────────────────────────────────
 
-  Widget _buildDatabaseTab() {
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text(
-          'Estado del Servidor de Base de Datos',
-          style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: kTextPrimary),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: kBgCard,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: kBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(LucideIcons.database, color: kSystemBlue, size: 32),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('TimescaleDB Cluster (v2.12.2)', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: kTextPrimary)),
-                      Text('Hypertable activa: biomarcadores', style: GoogleFonts.inter(color: kTextSecondary, fontSize: 13)),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text('Información de Particionamiento (Hypertables):', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: kTextPrimary)),
-              const SizedBox(height: 12),
-              _buildChunkRow('_timescaledb_internal._hyper_1_1_chunk', '7 días (15 May - 22 May)', '4.2 MB', '12,500 rows'),
-              _buildChunkRow('_timescaledb_internal._hyper_1_2_chunk', '7 días (22 May - 29 May)', '8.1 MB', '24,000 rows'),
-              _buildChunkRow('_timescaledb_internal._hyper_1_3_chunk', '7 días (29 May - 05 Jun)', '0.0 MB', '0 rows'),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildChunkRow(String chunkName, String range, String size, String rows) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: kBorder),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(chunkName, style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.bold, color: kTextPrimary)),
-              Text('Rango temporal: $range', style: GoogleFonts.inter(fontSize: 11, color: kTextSecondary)),
-            ],
-          ),
-          Row(
-            children: [
-              Text(size, style: GoogleFonts.jetBrainsMono(fontWeight: FontWeight.bold, fontSize: 13, color: kTextPrimary)),
-              const SizedBox(width: 16),
-              Text(rows, style: GoogleFonts.inter(fontSize: 12, color: kTextSecondary)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
