@@ -594,9 +594,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             children: [
               Expanded(child: _buildStatCard('Investigadores Activos', '${_investigators.where((i) => i['is_active'] == true && i['role'] == 'investigador').length}', LucideIcons.users, kSystemBlue)),
               const SizedBox(width: 16),
-              Expanded(child: _buildStatCard('Total Participantes', '${_availablePatients.length}', LucideIcons.database, Colors.teal)),
-              const SizedBox(width: 16),
               Expanded(child: _buildStatCard('Investigadores Inactivos', '${_investigators.where((i) => i['is_active'] == false && i['role'] == 'investigador').length}', LucideIcons.userX, Colors.orange)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard('Total Participantes', '${_availablePatients.length}', LucideIcons.database, Colors.teal)),
             ],
           ),
           const SizedBox(height: 24),

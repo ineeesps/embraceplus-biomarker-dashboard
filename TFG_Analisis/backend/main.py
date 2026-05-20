@@ -199,6 +199,27 @@ def eliminar_participante_asignado(username: str, participant_id: str):
         print(f"Error removing assigned participant: {e}")
 
 
+def sincronizar_participantes_investigador(cur, username: str, nuevos_participantes: list[str]):
+    # 1. Obtener la lista actual de participantes asignados a este investigador
+    cur.execute("SELECT participantes_asignados FROM usuarios WHERE username = %s;", (username,))
+    row = cur.fetchone()
+    viejos_participantes = list(row[0]) if (row and row[0]) else []
+
+    # 2. Desasignar los participantes que ya no están en la lista
+    for p in viejos_participantes:
+        if p not in nuevos_participantes:
+            cur.execute("UPDATE biomarcadores SET investigador = NULL WHERE participant_id = %s AND investigador = %s;", (p, username))
+
+    # 3. Asignar los nuevos participantes
+    for p in nuevos_participantes:
+        cur.execute("UPDATE biomarcadores SET investigador = %s WHERE participant_id = %s;", (username, p))
+        cur.execute("""
+            UPDATE usuarios 
+            SET participantes_asignados = array_remove(participantes_asignados, %s) 
+            WHERE username != %s;
+        """, (p, username))
+
+
 @app.post("/login")
 async def login(req: LoginRequest):
     """
@@ -832,6 +853,7 @@ async def create_investigador(req: CreateUserRequest):
         """, (req.username, hashed, req.role, req.nombre_completo, req.participantes_asignados))
         
         new_id = cur.fetchone()[0]
+        sincronizar_participantes_investigador(cur, req.username, req.participantes_asignados)
         conn.commit()
         cur.close()
         conn.close()
@@ -866,16 +888,21 @@ async def update_investigador_pacientes(id: int, req: list[str]):
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
-        cur.execute("UPDATE usuarios SET participantes_asignados = %s WHERE id = %s RETURNING username;", (req, id))
-        row = cur.fetchone()
-        if not row:
+        cur.execute("SELECT username FROM usuarios WHERE id = %s;", (id,))
+        row_username = cur.fetchone()
+        if not row_username:
             cur.close()
             conn.close()
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        username = row_username[0]
+        
+        sincronizar_participantes_investigador(cur, username, req)
+        
+        cur.execute("UPDATE usuarios SET participantes_asignados = %s WHERE id = %s;", (req, id))
         conn.commit()
         cur.close()
         conn.close()
-        return {"status": "success", "username": row[0], "participantes_asignados": req}
+        return {"status": "success", "username": username, "participantes_asignados": req}
     except HTTPException:
         raise
     except Exception as e:

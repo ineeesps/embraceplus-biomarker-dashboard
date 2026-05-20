@@ -13,6 +13,24 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
     def setUpClass(cls):
         cls.client = TestClient(app)
 
+    def setUp(self):
+        import psycopg2
+        from backend.main import DB_CONFIG
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            cur = conn.cursor()
+            alberto_parts = ["HN", "PRUEBA 1", "PRUEBA 2"]
+            ines_parts = [f"user{i}" for i in range(1, 21)]
+            cur.execute("UPDATE usuarios SET participantes_asignados = %s WHERE username = 'alberto';", (alberto_parts,))
+            cur.execute("UPDATE usuarios SET participantes_asignados = %s WHERE username = 'ines';", (ines_parts,))
+            for p in alberto_parts:
+                cur.execute("UPDATE biomarcadores SET investigador = 'alberto' WHERE participant_id = %s;", (p,))
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception:
+            pass
+
     def test_login_success(self):
         """Verifica que el inicio de sesión del investigador alberto retorne sus pacientes asignados"""
         response = self.client.post("/login", json={"username": "alberto", "password": "123"})
