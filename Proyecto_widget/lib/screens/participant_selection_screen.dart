@@ -174,7 +174,9 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                 ],
               ),
               content: SizedBox(
-                width: 440,
+                width: MediaQuery.of(context).size.width < 500
+                    ? MediaQuery.of(context).size.width * 0.85
+                    : 440,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -652,49 +654,53 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
           ],
         ),
         content: SizedBox(
-          width: 400,
+          width: MediaQuery.of(context).size.width < 500
+              ? MediaQuery.of(context).size.width * 0.85
+              : 400,
           child: Form(
             key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Divider(color: AppColors.border, height: 1),
-                const SizedBox(height: 20),
-                Text(
-                  'Nuevo ID del Participante:',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: controller,
-                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Ej: HN',
-                    hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(color: AppColors.border, height: 1),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Nuevo ID del Participante:',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'El ID es requerido' : null,
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: controller,
+                    style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Ej: HN',
+                      hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                      ),
+                    ),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'El ID es requerido' : null,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

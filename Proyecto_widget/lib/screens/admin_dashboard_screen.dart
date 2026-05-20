@@ -159,7 +159,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ],
               ),
               content: SizedBox(
-                width: 440,
+                width: MediaQuery.of(context).size.width < 500
+                    ? MediaQuery.of(context).size.width * 0.85
+                    : 440,
                 child: Form(
                   key: formKey,
                   child: SingleChildScrollView(
@@ -440,14 +442,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     
     return Scaffold(
       backgroundColor: kBgScreen,
-      drawer: isMobile ? Drawer(child: _buildSidebarContent(isDrawer: true)) : null,
+      drawer: isMobile
+          ? Drawer(
+              backgroundColor: AppColors.sidebarBg,
+              child: _buildSidebarContent(isDrawer: true),
+            )
+          : null,
       appBar: isMobile
           ? AppBar(
-              backgroundColor: AppColors.sidebarBg,
-              iconTheme: const IconThemeData(color: Colors.white),
-              title: Text(
-                'EmbracePlus Admin',
-                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
+              backgroundColor: Colors.white,
+              elevation: 0,
+              iconTheme: const IconThemeData(color: kTextPrimary),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'EmbracePlus Admin',
+                    style: GoogleFonts.outfit(color: kTextPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(LucideIcons.shieldCheck, size: 10, color: kSystemBlue),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Administrador activo',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: kSystemBlue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             )
           : null,
@@ -469,7 +498,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildHeader(isMobile),
+                if (!isMobile) _buildHeader(isMobile),
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
@@ -724,13 +753,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: GoogleFonts.inter(fontSize: 13, color: kTextSecondary)),
-              const SizedBox(height: 6),
-              Text(value, style: GoogleFonts.jetBrainsMono(fontSize: 22, fontWeight: FontWeight.bold, color: kTextPrimary)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(fontSize: 13, color: kTextSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Text(value, style: GoogleFonts.jetBrainsMono(fontSize: 22, fontWeight: FontWeight.bold, color: kTextPrimary)),
+              ],
+            ),
           ),
         ],
       ),
@@ -746,20 +782,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       return match;
     }).toList();
 
+    final bool useMobileLayout = MediaQuery.of(context).size.width < 750;
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: ListView(
         children: [
-          Row(
-            children: [
-              Expanded(child: _buildStatCard('Investigadores Activos', '${_investigators.where((i) => i['is_active'] == true && i['role'] == 'investigador').length}', LucideIcons.users, kSystemBlue)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStatCard('Investigadores Inactivos', '${_investigators.where((i) => i['is_active'] == false && i['role'] == 'investigador').length}', LucideIcons.userX, Colors.orange)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStatCard('Total Participantes', '${_availablePatients.length}', LucideIcons.database, Colors.teal)),
-            ],
-          ),
+          if (useMobileLayout)
+            Column(
+              children: [
+                _buildStatCard('Investigadores Activos', '${_investigators.where((i) => i['is_active'] == true && i['role'] == 'investigador').length}', LucideIcons.users, kSystemBlue),
+                const SizedBox(height: 12),
+                _buildStatCard('Investigadores Inactivos', '${_investigators.where((i) => i['is_active'] == false && i['role'] == 'investigador').length}', LucideIcons.userX, Colors.orange),
+                const SizedBox(height: 12),
+                _buildStatCard('Total Participantes', '${_availablePatients.length}', LucideIcons.database, Colors.teal),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(child: _buildStatCard('Investigadores Activos', '${_investigators.where((i) => i['is_active'] == true && i['role'] == 'investigador').length}', LucideIcons.users, kSystemBlue)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildStatCard('Investigadores Inactivos', '${_investigators.where((i) => i['is_active'] == false && i['role'] == 'investigador').length}', LucideIcons.userX, Colors.orange)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildStatCard('Total Participantes', '${_availablePatients.length}', LucideIcons.database, Colors.teal)),
+              ],
+            ),
           const SizedBox(height: 24),
           Row(
             children: [
@@ -792,13 +840,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          Expanded(
-            child: _isLoadingInvestigators
-                ? const Center(child: CircularProgressIndicator(color: kSystemBlue))
-                : filtered.isEmpty
-                    ? _buildEmptyState()
-                    : _buildSaaSTable(filtered),
-          ),
+          _isLoadingInvestigators
+              ? const Center(child: CircularProgressIndicator(color: kSystemBlue))
+              : filtered.isEmpty
+                  ? _buildEmptyState()
+                  : (useMobileLayout
+                      ? _buildMobileInvestigatorList(filtered)
+                      : _buildSaaSTable(filtered)),
         ],
       ),
     );
@@ -856,10 +904,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
           ),
           // Table Body
-          Expanded(
-            child: ListView.builder(
-              itemCount: list.length,
-              itemBuilder: (context, index) {
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: list.length,
+            itemBuilder: (context, index) {
                 final r = list[index];
                 final name = r['nombre_completo'] ?? r['username'];
                 final username = '@${r['username']}';
@@ -1030,9 +1079,193 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 );
               },
             ),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMobileInvestigatorList(List<Map<String, dynamic>> list) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: list.length,
+      itemBuilder: (context, index) {
+        final r = list[index];
+        final name = r['nombre_completo'] ?? r['username'];
+        final username = '@${r['username']}';
+        final isActive = r['is_active'] ?? true;
+        final lastAccess = r['last_login'] != null
+            ? _formatLastAccess(r['last_login'])
+            : 'Nunca';
+        final assignedCount = r['pacientes_count'] ?? 0;
+        
+        final words = name.split(' ');
+        final initials = words.length > 1
+            ? '${words[0][0]}${words[1][0]}'.toUpperCase()
+            : '${words[0][0]}${words[0][1]}'.toUpperCase();
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: kBorder),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.01),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: kSystemBlue.withValues(alpha: 0.1),
+                    child: Text(
+                      initials,
+                      style: GoogleFonts.outfit(color: kSystemBlue, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: kTextPrimary, fontSize: 14),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(username, style: GoogleFonts.inter(color: kTextSecondary, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  if (r['role'] != 'admin' && r['username'] != 'admin')
+                    PopupMenuButton<String>(
+                      icon: const Icon(LucideIcons.moreHorizontal, color: kTextSecondary),
+                      onSelected: (val) {
+                        if (val == 'toggle_status') {
+                          _toggleInvestigatorActive(r['id'], isActive);
+                        } else if (val == 'assign_patients') {
+                          _showAssignPatientsModal(r);
+                        } else if (val == 'edit_details') {
+                          _showEditInvestigatorDialog(r);
+                        } else if (val == 'delete_investigator') {
+                          _showDeleteConfirmation(r);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit_details',
+                          child: Row(
+                            children: [
+                              Icon(LucideIcons.edit, size: 16),
+                              SizedBox(width: 8),
+                              Expanded(child: Text('Editar Datos')),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'assign_patients',
+                          child: Row(
+                            children: [
+                              Icon(LucideIcons.userCheck, size: 16),
+                              SizedBox(width: 8),
+                              Expanded(child: Text('Asignar Participantes')),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'toggle_status',
+                          child: Row(
+                            children: [
+                              Icon(isActive ? LucideIcons.userX : LucideIcons.userCheck, size: 16, color: isActive ? kDangerRed : Colors.green),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  isActive ? 'Desactivar cuenta' : 'Activar cuenta',
+                                  style: TextStyle(color: isActive ? kDangerRed : Colors.green),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete_investigator',
+                          child: Row(
+                            children: [
+                              Icon(LucideIcons.trash2, size: 16, color: kDangerRed),
+                              SizedBox(width: 8),
+                              Expanded(child: Text('Eliminar Investigador', style: TextStyle(color: kDangerRed))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(color: kBorder, height: 1),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isActive ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      isActive ? 'Activo' : 'Revocado',
+                      style: GoogleFonts.inter(
+                        color: isActive ? const Color(0xFF166534) : const Color(0xFF475569),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.database, size: 14, color: kTextSecondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$assignedCount sujetos',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 12,
+                          color: kTextPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.clock, size: 14, color: kTextSecondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Acceso: $lastAccess',
+                        style: GoogleFonts.inter(fontSize: 12, color: kTextSecondary),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1110,53 +1343,57 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ],
               ),
               content: SizedBox(
-                width: 440,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Divider(color: AppColors.border, height: 1),
-                    const SizedBox(height: 20),
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 250),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.border),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey.shade50,
-                      ),
-                      child: ListView(
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        children: _availablePatients.map((pId) {
-                          final isChecked = tempAssigned.contains(pId);
-                          return CheckboxListTile(
-                            title: Text(
-                              pId,
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 13,
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w500,
+                width: MediaQuery.of(context).size.width < 500
+                    ? MediaQuery.of(context).size.width * 0.85
+                    : 440,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Divider(color: AppColors.border, height: 1),
+                      const SizedBox(height: 20),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 250),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.border),
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey.shade50,
+                        ),
+                        child: ListView(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          children: _availablePatients.map((pId) {
+                            final isChecked = tempAssigned.contains(pId);
+                            return CheckboxListTile(
+                              title: Text(
+                                pId,
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 13,
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
-                            value: isChecked,
-                            activeColor: kSystemBlue,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                            dense: true,
-                            controlAffinity: ListTileControlAffinity.trailing,
-                            onChanged: (v) {
-                              setDialogState(() {
-                                if (v == true) {
-                                  tempAssigned.add(pId);
-                                } else {
-                                  tempAssigned.remove(pId);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
+                              value: isChecked,
+                              activeColor: kSystemBlue,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                              dense: true,
+                              controlAffinity: ListTileControlAffinity.trailing,
+                              onChanged: (v) {
+                                setDialogState(() {
+                                  if (v == true) {
+                                    tempAssigned.add(pId);
+                                  } else {
+                                    tempAssigned.remove(pId);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -1274,69 +1511,73 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ],
           ),
           content: SizedBox(
-            width: 400,
+            width: MediaQuery.of(context).size.width < 500
+                ? MediaQuery.of(context).size.width * 0.85
+                : 400,
             child: Form(
               key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Divider(color: AppColors.border, height: 1),
-                  const SizedBox(height: 20),
-                  Text('Nombre Completo:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: nameCtrl,
-                    style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: 'Ej: Juan Pérez',
-                      hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.border),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(color: AppColors.border, height: 1),
+                    const SizedBox(height: 20),
+                    Text('Nombre Completo:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: nameCtrl,
+                      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Ej: Juan Pérez',
+                        hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: kSystemBlue, width: 1.5),
+                        ),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: kSystemBlue, width: 1.5),
-                      ),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'El nombre completo es requerido' : null,
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'El nombre completo es requerido' : null,
-                  ),
-                  const SizedBox(height: 20),
-                  Text('Nombre de Usuario:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: userCtrl,
-                    style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: 'Ej: juan_perez',
-                      hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.border),
+                    const SizedBox(height: 20),
+                    Text('Nombre de Usuario:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: userCtrl,
+                      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Ej: juan_perez',
+                        hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: kSystemBlue, width: 1.5),
+                        ),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: kSystemBlue, width: 1.5),
-                      ),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'El nombre de usuario es requerido' : null,
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'El nombre de usuario es requerido' : null,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
