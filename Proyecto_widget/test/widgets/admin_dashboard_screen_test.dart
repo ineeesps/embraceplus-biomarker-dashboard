@@ -142,7 +142,7 @@ void main() {
       await tester.enterText(find.widgetWithText(TextFormField, 'Ej: juan_perez'), 'nuevo_inv');
       await tester.enterText(find.widgetWithText(TextFormField, 'Mínimo 4 caracteres'), 'password123');
 
-      await tester.tap(find.text('CREAR'));
+      await tester.tap(find.text('Crear'));
       await tester.pumpAndSettle();
 
       expect(mockApi.createCallCount, 1);
@@ -171,7 +171,7 @@ void main() {
 
       expect(find.text('Editar Investigador'), findsOneWidget);
       
-      await tester.tap(find.text('GUARDAR'));
+      await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
 
       expect(mockApi.updateCallCount, 1);
