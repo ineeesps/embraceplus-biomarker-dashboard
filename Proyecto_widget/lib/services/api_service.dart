@@ -99,11 +99,11 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> uploadCsv(String participantId, String username, List<int> bytes, String fileName, {bool replace = false}) async {
+  Future<Map<String, dynamic>> uploadCsv(String participantId, String username, List<int> bytes, String fileName, {bool replace = false, String deviceType = "embrace_plus"}) async {
     final encodedId = Uri.encodeComponent(participantId);
     final request = http.MultipartRequest(
       'POST',
-      Uri.parse('$baseUrl/participante/$encodedId/cargar?investigador=$username&reemplazar=$replace'),
+      Uri.parse('$baseUrl/participante/$encodedId/cargar?investigador=$username&reemplazar=$replace&device_type=$deviceType'),
     );
     
     request.files.add(

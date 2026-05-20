@@ -16,6 +16,7 @@ ruta_scripts = os.path.join(dir_actual, '..', 'scripts')
 sys.path.append(ruta_scripts)
 
 from cargar_datos import cargar_csv_a_timescale  # type: ignore
+from backend.estrategias_dispositivos import FabricaProcesadores
 
 app = FastAPI(
     title="EmbracePlus API - Plataforma de Gestión de Biomarcadores",
@@ -337,10 +338,10 @@ async def resumen_participantes(username: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/participante/{id}/cargar")
-async def cargar_archivo_automatico(id: str, investigador: Optional[str] = None, reemplazar: bool = False, file: UploadFile = File(...)):
+async def cargar_archivo_automatico(id: str, investigador: Optional[str] = None, reemplazar: bool = False, device_type: str = "embrace_plus", file: UploadFile = File(...)):
     """
     Endpoint para la subida de archivos CSV.
-    Realiza la validación del sensor y delega la ingesta al motor ETL.
+    Realiza la validación del sensor y delega la ingesta al motor ETL usando el Patrón Estrategia.
     """
     if not investigador:
         raise HTTPException(status_code=400, detail="El parámetro 'investigador' es obligatorio.")
@@ -364,22 +365,20 @@ async def cargar_archivo_automatico(id: str, investigador: Optional[str] = None,
             if conn:
                 conn.close()
 
+    # Obtener estrategia según el dispositivo
+    procesador = FabricaProcesadores.obtener_estrategia(device_type)
     nombre_archivo = file.filename.lower()
-    sensor_detectado = next((v for k, v in PATRONES_SENSORES.items() if k in nombre_archivo), None)
+    sensor_detectado = procesador.detectar_sensor(file.filename)
     
     if not sensor_detectado:
-        raise HTTPException(status_code=400, detail="Tipo de sensor no reconocido")
+        raise HTTPException(status_code=400, detail="Tipo de sensor no reconocido para el dispositivo especificado.")
 
     if reemplazar:
         conn = None
         try:
             conn = psycopg2.connect(**DB_CONFIG)
             cur = conn.cursor()
-            sensores_a_borrar = (
-                ('acticounts_total', 'acticounts_x', 'acticounts_y', 'acticounts_z')
-                if sensor_detectado == 'acticounts_total'
-                else (sensor_detectado,)
-            )
+            sensores_a_borrar = procesador.obtener_sensores_a_borrar(sensor_detectado)
             for st in sensores_a_borrar:
                 cur.execute(
                     "DELETE FROM biomarcadores WHERE participant_id = %s AND sensor_type = %s AND investigador = %s",
@@ -415,11 +414,7 @@ async def cargar_archivo_automatico(id: str, investigador: Optional[str] = None,
                 os.remove(ruta_temp)
 
         total_filas = len(df)
-        if 'missing_value_reason' in df.columns:
-            df_invalidas = df[df['missing_value_reason'].notnull() & (df['missing_value_reason'] != '')]
-            porcentaje_perdida = (len(df_invalidas) / total_filas * 100) if total_filas > 0 else 0
-        else:
-            porcentaje_perdida = 0.0
+        porcentaje_perdida = procesador.calcular_integridad(df)
         alerta_integridad = porcentaje_perdida > 5.0
 
         mensaje = "Carga completada"

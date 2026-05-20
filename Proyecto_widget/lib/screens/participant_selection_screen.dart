@@ -118,6 +118,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
     bool isUploading = false;
     String statusMessage = '';
     String errorMessage = '';
+    String selectedDevice = 'embrace_plus';
 
     showDialog(
       context: context,
@@ -126,37 +127,179 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
         return StatefulBuilder(
           builder: (context, setModalState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              title: Text('Subir Nuevos Datos', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: primaryBlue)),
-              content: SizedBox(
-                width: 400,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('ID del Participante:', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: idController,
-                      enabled: !isUploading && prefilledId == null,
-                      decoration: InputDecoration(
-                        hintText: 'Ej: nuevo_participante_01',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.cyberBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(height: 24),
-                    if (isUploading) ...[
-                      const Center(child: CircularProgressIndicator(color: Color(0xFF0F766E))),
-                      const SizedBox(height: 16),
-                      Center(child: Text(statusMessage, style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 13), textAlign: TextAlign.center)),
-                    ] else ...[
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () async {
+                    child: const Icon(
+                      LucideIcons.uploadCloud,
+                      color: AppColors.cyberBlue,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Subir Nuevos Datos',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Asigna o actualiza registros de biomarcadores',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 440,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Divider(color: AppColors.border, height: 1),
+                      const SizedBox(height: 20),
+                      Text(
+                        '1. Selecciona el modelo del dispositivo:',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        key: const Key('device_type_dropdown'),
+                        value: selectedDevice,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'embrace_plus',
+                            child: Text(
+                              'Empatica EmbracePlus',
+                              style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                            ),
+                          ),
+                        ],
+                        onChanged: isUploading ? null : (val) {
+                          if (val != null) {
+                            setModalState(() => selectedDevice = val);
+                          }
+                        },
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.grey.shade50,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'ID del Participante:',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: idController,
+                        enabled: !isUploading && prefilledId == null,
+                        style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                        decoration: InputDecoration(
+                          hintText: 'Ej: nuevo_participante_01',
+                          hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                          filled: true,
+                          fillColor: Colors.grey.shade50,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      if (isUploading) ...[
+                        Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(height: 12),
+                              const CircularProgressIndicator(
+                                color: AppColors.cyberBlue,
+                                strokeWidth: 3,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                statusMessage,
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        Text(
+                          '2. Sube los archivos del dispositivo:',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () async {
                             final pId = idController.text.trim();
                             if (pId.isEmpty) {
-                              setModalState(() => errorMessage = 'Por favor, introduce un ID válido.');
+                              setModalState(() => errorMessage = 'Por favor, introduce un ID de participante.');
                               return;
                             }
                             setModalState(() => errorMessage = '');
@@ -179,14 +322,16 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                               int successCount = 0;
                               final List<String> errorDetails = [];
 
-                                for (int i = 0; i < result.files.length; i++) {
-                                  final file = result.files[i];
-                                  setModalState(() => statusMessage = 'Subiendo archivo ${i + 1} de ${result.files.length}...\n${file.name}');
+                              for (int i = 0; i < result.files.length; i++) {
+                                final file = result.files[i];
+                                setModalState(() => statusMessage = 'Subiendo archivo ${i + 1} de ${result.files.length}...\n${file.name}');
 
-                                  try {
-                                    String? sensorType;
-                                    final fileNameLower = file.name.toLowerCase();
-                                    final patrones = {
+                                try {
+                                  String? sensorType;
+                                  final fileNameLower = file.name.toLowerCase();
+                                  Map<String, String> patrones = {};
+                                  if (selectedDevice == 'embrace_plus') {
+                                    patrones = {
                                       'temperature': 'temperature', 'eda': 'eda', 'pulse-rate': 'pulse_rate',
                                       'respiratory-rate': 'respiratory_rate', 'accelerometers-std': 'accelerometer_std',
                                       'prv': 'prv', 'step-counts': 'step_count', 'met': 'met',
@@ -195,76 +340,77 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                                       'actigraphy-counts': 'actigraphy_vector', 'body-position': 'body_position',
                                       'acticounts': 'acticounts_total', 'sleep-detection': 'sleep_detection'
                                     };
+                                  }
 
-                                    for (var entry in patrones.entries) {
-                                      if (fileNameLower.contains(entry.key)) {
-                                        sensorType = entry.value;
-                                        break;
-                                      }
+                                  for (var entry in patrones.entries) {
+                                    if (fileNameLower.contains(entry.key)) {
+                                      sensorType = entry.value;
+                                      break;
                                     }
+                                  }
 
-                                    if (sensorType == null) {
-                                      errorDetails.add('${file.name}: tipo de sensor no reconocido');
-                                      continue;
-                                    }
+                                  if (sensorType == null) {
+                                    errorDetails.add('${file.name}: tipo de sensor no reconocido');
+                                    continue;
+                                  }
 
-                                    bool shouldReplace = false;
-                                    final exists = await api.checkSensorDataExists(pId, sensorType, widget.username);
-                                    if (exists) {
-                                      setModalState(() => isUploading = false);
-                                      final confirm = await showDialog<bool>(
-                                        context: nav.context, // ignore: use_build_context_synchronously
-                                        barrierDismissible: false,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text('Archivo ya existente'),
-                                          content: Text('El participante ya tiene datos de $sensorType. ¿Desea reemplazarlos?'),
-                                          actions: [
-                                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCELAR')),
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(context, true),
-                                              child: const Text('REEMPLAZAR', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-                                            ),
-                                          ],
-                                        ),
-                                      );
+                                  bool shouldReplace = false;
+                                  final exists = await api.checkSensorDataExists(pId, sensorType, widget.username);
+                                  if (exists) {
+                                    setModalState(() => isUploading = false);
+                                    final confirm = await showDialog<bool>(
+                                      context: nav.context,
+                                      barrierDismissible: false,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Archivo ya existente'),
+                                        content: Text('El participante ya tiene datos de $sensorType. ¿Desea reemplazarlos?'),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCELAR')),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, true),
+                                            child: const Text('REEMPLAZAR', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                                          ),
+                                        ],
+                                      ),
+                                    );
 
-                                      if (confirm != true) {
-                                        setModalState(() {
-                                          isUploading = true;
-                                          statusMessage = 'Saltando ${file.name}...';
-                                        });
-                                        continue;
-                                      }
-                                      shouldReplace = true;
+                                    if (confirm != true) {
                                       setModalState(() {
                                         isUploading = true;
-                                        statusMessage = 'Reemplazando datos de ${file.name}...';
+                                        statusMessage = 'Saltando ${file.name}...';
                                       });
-                                    }
-
-                                    List<int> bytes = file.bytes ?? [];
-                                    if (bytes.isEmpty && file.path != null) {
-                                      bytes = await File(file.path!).readAsBytes();
-                                    }
-
-                                    if (bytes.isEmpty) {
-                                      errorDetails.add('${file.name}: no se pudo leer el archivo');
                                       continue;
                                     }
-
-                                    await api.uploadCsv(pId, widget.username, bytes, file.name, replace: shouldReplace);
-                                    successCount++;
-                                  } catch (e) {
-                                    String msg = e.toString().replaceFirst('Exception: ', '');
-                                    if (msg.contains('"detail"')) {
-                                      try {
-                                        final match = RegExp(r'"detail"\s*:\s*"([^"]+)"').firstMatch(msg);
-                                        if (match != null) msg = match.group(1)!;
-                                      } catch (_) {}
-                                    }
-                                    errorDetails.add('${file.name}: $msg');
+                                    shouldReplace = true;
+                                    setModalState(() {
+                                      isUploading = true;
+                                      statusMessage = 'Reemplazando datos de ${file.name}...';
+                                    });
                                   }
+
+                                  List<int> bytes = file.bytes ?? [];
+                                  if (bytes.isEmpty && file.path != null) {
+                                    bytes = await File(file.path!).readAsBytes();
+                                  }
+
+                                  if (bytes.isEmpty) {
+                                    errorDetails.add('${file.name}: no se pudo leer el archivo');
+                                    continue;
+                                  }
+
+                                  await api.uploadCsv(pId, widget.username, bytes, file.name, replace: shouldReplace, deviceType: selectedDevice);
+                                  successCount++;
+                                } catch (e) {
+                                  String msg = e.toString().replaceFirst('Exception: ', '');
+                                  if (msg.contains('"detail"')) {
+                                    try {
+                                      final match = RegExp(r'"detail"\s*:\s*"([^"]+)"').firstMatch(msg);
+                                      if (match != null) msg = match.group(1)!;
+                                    } catch (_) {}
+                                  }
+                                  errorDetails.add('${file.name}: $msg');
                                 }
+                              }
 
                               if (mounted) {
                                 nav.pop();
@@ -290,29 +436,88 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                               }
                             }
                           },
-                          icon: const Icon(LucideIcons.folderOpen, size: 18),
-                          label: Text('Seleccionar CSVs', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryBlue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: AppColors.cyberBlue.withOpacity(0.04),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.cyberBlue.withOpacity(0.25),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  LucideIcons.fileSpreadsheet,
+                                  color: AppColors.cyberBlue,
+                                  size: 38,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Seleccionar archivos CSV',
+                                  style: GoogleFonts.inter(
+                                    color: AppColors.cyberBlue,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Formatos de sensores permitidos (.csv)',
+                                  style: GoogleFonts.inter(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                       if (errorMessage.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        Text(errorMessage, style: GoogleFonts.inter(color: Colors.red, fontSize: 13)),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(LucideIcons.alertTriangle, color: Colors.red, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  errorMessage,
+                                  style: GoogleFonts.inter(color: Colors.red.shade800, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ]
-                    ]
-                  ],
+                    ],
+                  ),
                 ),
               ),
               actions: [
                 if (!isUploading)
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text('Cancelar', style: GoogleFonts.inter(color: Colors.grey.shade600)),
+                    child: Text(
+                      'Cancelar',
+                      style: GoogleFonts.inter(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
               ],
             );
