@@ -365,7 +365,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                                         title: const Text('Archivo ya existente'),
                                         content: Text('El participante ya tiene datos de $sensorType. ¿Desea reemplazarlos?'),
                                         actions: [
-                                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCELAR')),
+                                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
                                           TextButton(
                                             onPressed: () => Navigator.pop(context, true),
                                             child: const Text('REEMPLAZAR', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
@@ -599,19 +599,138 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
 
   Future<void> _showRenameDialog(String oldId) async {
     final controller = TextEditingController(text: oldId);
+    final formKey = GlobalKey<FormState>();
+
     final newId = await showDialog<String>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Renombrar Participante'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'Nuevo ID'),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.cyberBlue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                LucideIcons.edit,
+                color: AppColors.cyberBlue,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Renombrar Participante',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Modifica el ID de identificación para este participante',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 400,
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Divider(color: AppColors.border, height: 1),
+                const SizedBox(height: 20),
+                Text(
+                  'Nuevo ID del Participante:',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: controller,
+                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'Ej: HN',
+                    hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                    ),
+                  ),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'El ID es requerido' : null,
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCELAR')),
           TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('GUARDAR', style: TextStyle(fontWeight: FontWeight.bold)),
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.inter(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context, controller.text.trim());
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.cyberBlue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+            ),
+            child: Text(
+              'Guardar',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
           ),
         ],
       ),

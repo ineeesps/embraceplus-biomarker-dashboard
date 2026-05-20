@@ -122,12 +122,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.cyberBlue.withOpacity(0.1),
+                      color: kSystemBlue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       LucideIcons.userPlus,
-                      color: AppColors.cyberBlue,
+                      color: kSystemBlue,
                       size: 22,
                     ),
                   ),
@@ -197,7 +197,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                              borderSide: const BorderSide(color: kSystemBlue, width: 1.5),
                             ),
                           ),
                           validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es requerido' : null,
@@ -231,7 +231,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                              borderSide: const BorderSide(color: kSystemBlue, width: 1.5),
                             ),
                           ),
                           validator: (v) => v == null || v.trim().isEmpty ? 'El nombre de usuario es requerido' : null,
@@ -268,7 +268,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                                    borderSide: const BorderSide(color: kSystemBlue, width: 1.5),
                                   ),
                                 ),
                                 validator: (v) => v == null || v.trim().length < 4 ? 'Mínimo 4 caracteres' : null,
@@ -284,7 +284,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   color: Colors.grey.shade50,
                                 ),
                                 child: IconButton(
-                                  icon: const Icon(LucideIcons.dices, color: AppColors.cyberBlue),
+                                  icon: const Icon(LucideIcons.dices, color: kSystemBlue),
                                   onPressed: () {
                                     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#%';
                                     final rand = math.Random();
@@ -330,7 +330,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   ),
                                 ),
                                 value: isChecked,
-                                activeColor: AppColors.cyberBlue,
+                                activeColor: kSystemBlue,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                                 dense: true,
                                 controlAffinity: ListTileControlAffinity.trailing,
@@ -356,7 +356,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: Text(
-                    'CANCELAR',
+                    'Cancelar',
                     style: GoogleFonts.inter(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w500,
@@ -388,14 +388,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.cyberBlue,
+                    backgroundColor: kSystemBlue,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     elevation: 0,
                   ),
                   child: Text(
-                    'CREAR',
+                    'Crear',
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -1073,12 +1073,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.cyberBlue.withOpacity(0.1),
+                      color: kSystemBlue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       LucideIcons.users,
-                      color: AppColors.cyberBlue,
+                      color: kSystemBlue,
                       size: 22,
                     ),
                   ),
@@ -1139,7 +1139,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               ),
                             ),
                             value: isChecked,
-                            activeColor: AppColors.cyberBlue,
+                            activeColor: kSystemBlue,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                             dense: true,
                             controlAffinity: ListTileControlAffinity.trailing,
@@ -1163,7 +1163,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: Text(
-                    'CANCELAR',
+                    'Cancelar',
                     style: GoogleFonts.inter(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w500,
@@ -1195,14 +1195,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.cyberBlue,
+                    backgroundColor: kSystemBlue,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     elevation: 0,
                   ),
                   child: Text(
-                    'GUARDAR',
+                    'Guardar',
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -1237,12 +1237,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.cyberBlue.withOpacity(0.1),
+                  color: kSystemBlue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   LucideIcons.user,
-                  color: AppColors.cyberBlue,
+                  color: kSystemBlue,
                   size: 22,
                 ),
               ),
@@ -1304,7 +1304,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                        borderSide: const BorderSide(color: kSystemBlue, width: 1.5),
                       ),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty ? 'El nombre completo es requerido' : null,
@@ -1331,7 +1331,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                        borderSide: const BorderSide(color: kSystemBlue, width: 1.5),
                       ),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty ? 'El nombre de usuario es requerido' : null,
@@ -1344,7 +1344,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
-                'CANCELAR',
+                'Cancelar',
                 style: GoogleFonts.inter(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
@@ -1374,14 +1374,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.cyberBlue,
+                backgroundColor: kSystemBlue,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 elevation: 0,
               ),
               child: Text(
-                'GUARDAR',
+                'Guardar',
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
