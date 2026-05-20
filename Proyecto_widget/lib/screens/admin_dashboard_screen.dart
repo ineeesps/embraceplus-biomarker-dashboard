@@ -112,10 +112,54 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              title: Text('Alta de Investigador', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.cyberBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      LucideIcons.userPlus,
+                      color: AppColors.cyberBlue,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Alta de Investigador',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Registra una nueva cuenta y asigna participantes',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               content: SizedBox(
-                width: 400,
+                width: 440,
                 child: Form(
                   key: formKey,
                   child: SingleChildScrollView(
@@ -123,77 +167,173 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Nombre Completo:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                        const Divider(color: AppColors.border, height: 1),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Nombre Completo:',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: nameCtrl,
+                          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                           decoration: InputDecoration(
                             hintText: 'Ej: Juan Pérez',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: AppColors.border),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: AppColors.border),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                            ),
                           ),
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
+                          validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es requerido' : null,
                         ),
-                        const SizedBox(height: 16),
-                        Text('Nombre de Usuario:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Nombre de Usuario:',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: userCtrl,
+                          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                           decoration: InputDecoration(
                             hintText: 'Ej: juan_perez',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: AppColors.border),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: AppColors.border),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                            ),
                           ),
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
+                          validator: (v) => v == null || v.trim().isEmpty ? 'El nombre de usuario es requerido' : null,
                         ),
-                        const SizedBox(height: 16),
-                        Text('Contraseña Temporal:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Contraseña Temporal:',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Row(
                           children: [
                             Expanded(
                               child: TextFormField(
                                 controller: passwordCtrl,
+                                style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                                 decoration: InputDecoration(
                                   hintText: 'Mínimo 4 caracteres',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: AppColors.border),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: AppColors.border),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                                  ),
                                 ),
                                 validator: (v) => v == null || v.trim().length < 4 ? 'Mínimo 4 caracteres' : null,
                               ),
                             ),
                             const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(LucideIcons.dices, color: kSystemBlue),
-                              onPressed: () {
-                                const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#%';
-                                final rand = math.Random();
-                                final pwd = List.generate(8, (i) => chars[rand.nextInt(chars.length)]).join();
-                                setModalState(() {
-                                  passwordCtrl.text = pwd;
-                                });
-                              },
+                            Tooltip(
+                              message: 'Generar Contraseña',
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: AppColors.border),
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.grey.shade50,
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(LucideIcons.dices, color: AppColors.cyberBlue),
+                                  onPressed: () {
+                                    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#%';
+                                    final rand = math.Random();
+                                    final pwd = List.generate(8, (i) => chars[rand.nextInt(chars.length)]).join();
+                                    setModalState(() {
+                                      passwordCtrl.text = pwd;
+                                    });
+                                  },
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        Text('Asignación Rápida de Participantes:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Asignación Rápida de Participantes:',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Container(
-                          constraints: const BoxConstraints(maxHeight: 150),
+                          constraints: const BoxConstraints(maxHeight: 180),
                           decoration: BoxDecoration(
                             border: Border.all(color: AppColors.border),
                             borderRadius: BorderRadius.circular(8),
+                            color: Colors.grey.shade50,
                           ),
                           child: ListView(
                             shrinkWrap: true,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
                             children: _availablePatients.map((pId) {
                               final isChecked = assignedPatients.contains(pId);
                               return CheckboxListTile(
-                                title: Text(pId, style: GoogleFonts.jetBrainsMono(fontSize: 13)),
+                                title: Text(
+                                  pId,
+                                  style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                                 value: isChecked,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                activeColor: AppColors.cyberBlue,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                                 dense: true,
+                                controlAffinity: ListTileControlAffinity.trailing,
                                 onChanged: (v) {
                                   setModalState(() {
                                     if (v == true) {
@@ -215,9 +355,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('CANCELAR', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: kTextSecondary)),
+                  child: Text(
+                    'CANCELAR',
+                    style: GoogleFonts.inter(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-                TextButton(
+                const SizedBox(width: 8),
+                ElevatedButton(
                   onPressed: () async {
                     if (!formKey.currentState!.validate()) return;
                     try {
@@ -239,7 +387,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       }
                     }
                   },
-                  child: Text('CREAR', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: kSystemBlue)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.cyberBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'CREAR',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ],
             );
@@ -902,37 +1063,86 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              title: Text(
-                'Asignar Participantes',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.cyberBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      LucideIcons.users,
+                      color: AppColors.cyberBlue,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Asignar Participantes',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Selecciona los participantes asignados a ${investigator['nombre_completo']}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               content: SizedBox(
-                width: 400,
+                width: 440,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Selecciona los participantes asignados a ${investigator['nombre_completo']}:',
-                      style: GoogleFonts.inter(fontSize: 13, color: kTextSecondary),
-                    ),
-                    const SizedBox(height: 12),
+                    const Divider(color: AppColors.border, height: 1),
+                    const SizedBox(height: 20),
                     Container(
                       constraints: const BoxConstraints(maxHeight: 250),
                       decoration: BoxDecoration(
                         border: Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade50,
                       ),
                       child: ListView(
                         shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
                         children: _availablePatients.map((pId) {
                           final isChecked = tempAssigned.contains(pId);
                           return CheckboxListTile(
-                            title: Text(pId, style: GoogleFonts.jetBrainsMono(fontSize: 13)),
+                            title: Text(
+                              pId,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 13,
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                             value: isChecked,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                            activeColor: AppColors.cyberBlue,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                             dense: true,
+                            controlAffinity: ListTileControlAffinity.trailing,
                             onChanged: (v) {
                               setDialogState(() {
                                 if (v == true) {
@@ -952,9 +1162,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('CANCELAR', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: kTextSecondary)),
+                  child: Text(
+                    'CANCELAR',
+                    style: GoogleFonts.inter(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-                TextButton(
+                const SizedBox(width: 8),
+                ElevatedButton(
                   onPressed: () async {
                     try {
                       investigator['participantes_asignados'] = tempAssigned;
@@ -976,7 +1194,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       }
                     }
                   },
-                  child: Text('GUARDAR', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: kSystemBlue)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.cyberBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'GUARDAR',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ],
             );
@@ -996,10 +1227,51 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text(
-            'Editar Investigador',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.cyberBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  LucideIcons.user,
+                  color: AppColors.cyberBlue,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Editar Investigador',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Modifica los datos de la cuenta',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           content: SizedBox(
             width: 400,
@@ -1009,38 +1281,60 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Nombre Completo:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const Divider(color: AppColors.border, height: 1),
+                  const SizedBox(height: 20),
+                  Text('Nombre Completo:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: nameCtrl,
+                    style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Ej: Juan Pérez',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                      ),
                     ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return 'El nombre completo es requerido';
-                      }
-                      return null;
-                    },
+                    validator: (v) => v == null || v.trim().isEmpty ? 'El nombre completo es requerido' : null,
                   ),
-                  const SizedBox(height: 16),
-                  Text('Nombre de Usuario:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const SizedBox(height: 20),
+                  Text('Nombre de Usuario:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: userCtrl,
+                    style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Ej: juan_perez',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.cyberBlue, width: 1.5),
+                      ),
                     ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return 'El nombre de usuario es requerido';
-                      }
-                      return null;
-                    },
+                    validator: (v) => v == null || v.trim().isEmpty ? 'El nombre de usuario es requerido' : null,
                   ),
                 ],
               ),
@@ -1049,9 +1343,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('CANCELAR', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: kTextSecondary)),
+              child: Text(
+                'CANCELAR',
+                style: GoogleFonts.inter(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
             ),
-            TextButton(
+            const SizedBox(width: 8),
+            ElevatedButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 try {
@@ -1071,7 +1373,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   }
                 }
               },
-              child: Text('GUARDAR', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: kSystemBlue)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.cyberBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              child: Text(
+                'GUARDAR',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
             ),
           ],
         );
