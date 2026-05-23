@@ -209,11 +209,11 @@ class _ControlPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Análisis de la Dinámica del Movimiento',
+                    'Movimiento y Actividad Física',
                     style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: _text),
                   ),
                   Text(
-                    'Evaluación de la capacidad funcional, intensidad metabólica y estabilidad motora.',
+                    'Evaluación de los pasos, la intensidad del esfuerzo y la estabilidad del movimiento.',
                     style: GoogleFonts.inter(fontSize: 11, color: _muted),
                   ),
                 ],
@@ -445,34 +445,34 @@ class _KPIsLayer extends StatelessWidget {
           _KPICard(
             title: 'Pasos Totales',
             value: totalSteps == 0 ? '--' : '$totalSteps',
-            subtitle: 'Actividad acumulada',
+            subtitle: 'Pasos registrados',
             icon: LucideIcons.footprints,
             color: _identidad,
-            tooltip: "Suma total de pasos detectados en el tramo seleccionado. Los objetivos clínicos suelen situarse por encima de los 250 pasos/hora durante el periodo de vigilia.",
+            tooltip: "Suma total de pasos detectados. Los objetivos clínicos suelen situarse por encima de los 250 pasos/hora durante el periodo de vigilia.",
           ),
           _KPICard(
-            title: 'Intensidad Media',
+            title: 'Esfuerzo Promedio',
             value: intensityData.isEmpty ? '--' : avgIntensity.toStringAsFixed(1),
-            subtitle: 'Nivel METs est.',
+            subtitle: 'Intensidad metabólica',
             icon: LucideIcons.gauge,
             color: _intMPA,
-            tooltip: "Promedio de la intensidad metabólica estimada. Permite discernir entre periodos de sedentarismo (LPA) y actividad física moderada o vigorosa (MPA/VPA).",
+            tooltip: "Promedio de la intensidad metabólica. Permite discernir entre periodos de sedentarismo e intensidad física ligera, moderada o vigorosa.",
           ),
           _KPICard(
-            title: 'Volumen Cinético',
+            title: 'Volumen de Movimiento',
             value: vecData.isEmpty ? '--' : avgVec.toStringAsFixed(0),
-            subtitle: 'Acticounts (Total)',
+            subtitle: 'Intensidad del movimiento',
             icon: LucideIcons.activity,
             color: _kStability,
-            tooltip: "Magnitud vectorial de la aceleración. Representa la potencia bruta del movimiento realizado, independiente de su clasificación postural.",
+            tooltip: "Magnitud de la aceleración física medida en cuentas de actividad. Representa la potencia del movimiento acumulado.",
           ),
           _KPICard(
-            title: 'Tasa de Uso',
+            title: 'Tiempo de Uso',
             value: '${compliance.toStringAsFixed(1)}%',
-            subtitle: 'Compliance del sensor',
+            subtitle: 'Tiempo con registro de calidad',
             icon: LucideIcons.checkCircle2,
             color: AppColors.cyberBlue,
-            tooltip: "Porcentaje de tiempo en el que el dispositivo ha estado correctamente colocado y registrando datos de calidad suficiente para el análisis clínico.",
+            tooltip: "Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
           ),
         ];
 
@@ -651,12 +651,12 @@ class _ActivitySpectrum extends StatelessWidget {
 
     return _SectionCard(
       icon: LucideIcons.layers,
-      title: 'Espectro de Actividad Metabólica',
-      subtitle: 'Cruce entre la clasificación postural y la intensidad del esfuerzo (METs).',
+      title: 'Espectro de Actividad y Postura',
+      subtitle: 'Comparativa temporal entre el tipo de actividad y la intensidad del esfuerzo.',
       tooltip: 'Mapa de calor que permite identificar rápidamente periodos de sedentarismo prolongado y evaluar si los episodios de deambulación alcanzan los umbrales de intensidad vigorosa o moderada requeridos.',
       child: Column(
         children: [
-          _HeatmapRow(label: 'MOTOR', data: cls, colorFn: _colorCls),
+          _HeatmapRow(label: 'POSTURA', data: cls, colorFn: _colorCls),
           const SizedBox(height: 12),
           _HeatmapRow(label: 'INTENSIDAD', data: intData, colorFn: _colorInt),
           const SizedBox(height: 28),
@@ -684,14 +684,14 @@ class _SpectrumLegendCls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('CLASIFICACIÓN', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _muted, letterSpacing: 0.5)),
+      Text('TIPO DE MOVIMIENTO', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _muted, letterSpacing: 0.5)),
       const SizedBox(height: 12),
       Wrap(spacing: 16, runSpacing: 10, children: [
-        _LegendItem('Quieto',    _clsStill),
-        _LegendItem('Caminata',  _clsWalk),
-        _LegendItem('Carrera',   _clsRun),
-        _LegendItem('Genérico',  _clsGeneric),
-        _LegendItem('Sin datos', _clsGap),
+        _LegendItem('En reposo',    _clsStill),
+        _LegendItem('Caminando',  _clsWalk),
+        _LegendItem('Corriendo',   _clsRun),
+        _LegendItem('Actividad general',  _clsGeneric),
+        _LegendItem('Desconectado', _clsGap),
       ]),
     ]);
   }
@@ -705,10 +705,10 @@ class _SpectrumLegendInt extends StatelessWidget {
       const SizedBox(height: 12),
       Wrap(spacing: 16, runSpacing: 10, children: [
         _LegendItem('Sedentario', _intSed),
-        _LegendItem('LPA',        _intLPA),
-        _LegendItem('MPA',        _intMPA),
-        _LegendItem('VPA',        _intVPA),
-        _LegendItem('Sin datos',  _intGap),
+        _LegendItem('Ligero (LPA)',        _intLPA),
+        _LegendItem('Moderado (MPA)',        _intMPA),
+        _LegendItem('Vigoroso (VPA)',        _intVPA),
+        _LegendItem('Desconectado',  _intGap),
       ]),
     ]);
   }
@@ -726,9 +726,9 @@ class _CargaCinetica extends StatelessWidget {
 
     return _SectionCard(
       icon: LucideIcons.trendingUp,
-      title: 'Volumen Cinético y Estabilidad Motora',
-      subtitle: 'Relación entre la magnitud vectorial (potencia) y la desviación típica (ruido/control).',
-      tooltip: 'Una magnitud vectorial alta con baja desviación indica movimientos rítmicos y controlados (ej. marcha estable). Una desviación típica desproporcionada puede ser indicativa de movimientos erráticos, inestabilidad o temblores.',
+      title: 'Intensidad y Estabilidad del Movimiento',
+      subtitle: 'Comparativa entre la fuerza del movimiento y la regularidad del ritmo.',
+      tooltip: 'Una fuerza de movimiento alta con baja irregularidad indica movimientos rítmicos y controlados (como una marcha estable). Una irregularidad alta puede ser indicativa de movimientos erráticos o inestabilidad.',
       child: Column(
         children: [
           SizedBox(
@@ -739,8 +739,8 @@ class _CargaCinetica extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Wrap(spacing: 28, runSpacing: 12, children: [
-            _LegendItem('Magnitud del Movimiento', _kMagnitude),
-            _LegendItem('Índice de Inestabilidad',  _kStability),
+            _LegendItem('Fuerza del movimiento', _kMagnitude),
+            _LegendItem('Irregularidad / Temblor',  _kStability),
           ]),
         ],
       ),
@@ -799,7 +799,7 @@ class _CargaCinetica extends StatelessWidget {
         touchTooltipData: LineTouchTooltipData(
           getTooltipColor: (_) => _tooltipBg,
           getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
-            final label = spot.bar.color == _kMagnitude ? 'Magnitud' : 'Inestabilidad';
+            final label = spot.bar.color == _kMagnitude ? 'Fuerza' : 'Irregularidad';
             return LineTooltipItem(
               '$label: ${spot.y.toStringAsFixed(0)}',
               GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
@@ -837,8 +837,8 @@ class _EficienciaMarcha extends StatelessWidget {
 
     return _SectionCard(
       icon: LucideIcons.footprints,
-      title: 'Distribución de Actividad Mecánica',
-      subtitle: 'Acumulación horaria de pasos frente al umbral objetivo.',
+      title: 'Pasos por Hora',
+      subtitle: 'Pasos acumulados en cada hora comparados con el objetivo clínico de movilidad.',
       tooltip: 'Cuantificación del volumen de marcha. Las barras que superan la línea punteada indican que el paciente ha cumplido el objetivo mínimo de movilidad para esa franja horaria.',
       child: Column(
         children: [
@@ -922,7 +922,7 @@ class _EficienciaMarcha extends StatelessWidget {
                   )),
           ),
           const SizedBox(height: 24),
-          _LegendItem('Pasos detectados', _identidad),
+          _LegendItem('Pasos registrados', _identidad),
         ],
       ),
     );
@@ -947,9 +947,9 @@ class _AnalisisBiomecanicoState extends State<_AnalisisBiomecanico> {
 
     return _SectionCard(
       icon: LucideIcons.box,
-      title: 'Descomposición Biomecánica Axial',
-      subtitle: 'Acelerometría bruta en los planos transversal, sagital y frontal.',
-      tooltip: 'Representación tridimensional de la aceleración. Exclusivo para análisis detallado de impactos, asimetrías en la marcha o evaluación de cambios posturales bruscos.',
+      title: 'Movimiento en 3 Dimensiones',
+      subtitle: 'Detalle de la aceleración tridimensional en los ejes X, Y y Z.',
+      tooltip: 'Representación tridimensional de la aceleración. Exclusivo para análisis del movimiento detallado, asimetrías de la marcha o cambios posturales.',
       trailing: TextButton.icon(
         onPressed: () => setState(() => _expanded = !_expanded),
         icon: Icon(_expanded ? LucideIcons.eyeOff : LucideIcons.eye, size: 15, color: _identidad),
@@ -963,7 +963,7 @@ class _AnalisisBiomecanicoState extends State<_AnalisisBiomecanico> {
         crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
         firstChild: Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Text('Despliega para análisis tridimensional detallado.', style: GoogleFonts.inter(fontSize: 13, color: _muted)),
+          child: Text('Despliega para ver el movimiento en las 3 dimensiones del espacio.', style: GoogleFonts.inter(fontSize: 13, color: _muted)),
         ),
         secondChild: x.isEmpty
             ? Text('Dispositivo desconectado', style: GoogleFonts.inter(color: _muted, fontSize: 13))
@@ -972,9 +972,9 @@ class _AnalisisBiomecanicoState extends State<_AnalisisBiomecanico> {
                   SizedBox(height: 220, child: LineChart(_buildChart(x, y, z))),
                   const SizedBox(height: 24),
                   Wrap(spacing: 20, runSpacing: 12, children: [
-                    _LegendItem('Plano Transversal (X)', _axisX),
-                    _LegendItem('Plano Sagital (Y)',     _axisY),
-                    _LegendItem('Plano Frontal (Z)',      _axisZ),
+                    _LegendItem('Eje Lateral (Derecha-Izquierda) [X]', _axisX),
+                    _LegendItem('Eje Vertical (Arriba-Abajo) [Y]',     _axisY),
+                    _LegendItem('Eje Frontal (Adelante-Atrás) [Z]',      _axisZ),
                   ]),
                 ],
               ),

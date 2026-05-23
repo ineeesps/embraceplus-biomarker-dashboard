@@ -490,7 +490,7 @@ class _KPIsLayer extends StatelessWidget {
             color: _ratioColor,
           ),
           _KPICard(
-            title: 'Tiempo de Uso del Sensor',
+            title: 'Tiempo de Uso',
             value: '${compliance.toStringAsFixed(1)}%',
             subtitle: 'Tiempo con registro de calidad',
             icon: LucideIcons.checkCircle2,

@@ -153,9 +153,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verificar título académico y KPIs de la pantalla de Movimiento
-      expect(find.textContaining('Análisis de la Dinámica del Movimiento'), findsOneWidget);
+      expect(find.textContaining('Movimiento y Actividad Física'), findsOneWidget);
       expect(find.text('Pasos Totales'), findsOneWidget);
-      expect(find.text('Intensidad Media'), findsOneWidget);
+      expect(find.text('Esfuerzo Promedio'), findsOneWidget);
     });
 
     testWidgets('3. Pantalla de Cardiaco renderiza FC, variabilidad (PRV) y respiración', (WidgetTester tester) async {
