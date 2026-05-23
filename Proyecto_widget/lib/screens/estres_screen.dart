@@ -169,11 +169,11 @@ class _ControlPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Balance y Reactividad Autonómica',
+                    'Análisis de Estrés y Reactividad Fisiológica',
                     style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: _text),
                   ),
                   Text(
-                    'Evaluación de la respuesta simpática (EDA), recuperación parasimpática (HRV) y eficiencia termorreguladora.',
+                    'Evaluación del nivel de alerta (sudoración de la piel), recuperación cardíaca (HRV) y temperatura corporal.',
                     style: GoogleFonts.inter(fontSize: 11, color: _muted),
                   ),
                 ],
@@ -433,36 +433,36 @@ class _KPIsLayer extends StatelessWidget {
         
         final kpis = [
           _KPICard(
-            title: 'Nivel de Estrés (EDA)',
+            title: 'Nivel de Alerta / Sudoración',
             value: validEda.isEmpty ? '--' : '${avgEda.toStringAsFixed(2)} µS',
             subtitle: 'Media de conductancia',
             icon: LucideIcons.zap,
             color: _edaColor,
-            tooltip: "Mide la conductancia eléctrica de la piel en microsiemens (μS). Los aumentos rápidos o picos (SCR) son indicadores directos de la activación del sistema nervioso simpático ante estímulos estresantes, emocionales o de alerta cognitiva.",
+            tooltip: "Mide los cambios en la sudoración de la piel. Picos altos reflejan una reacción del cuerpo ante la tensión, el esfuerzo mental o el estrés emocional.",
           ),
           _KPICard(
-            title: 'Capacidad de Recuperación',
+            title: 'Capacidad de Relajación',
             value: validPrv.isEmpty ? '--' : '${avgPrv.toStringAsFixed(0)} ms',
-            subtitle: 'Valor RMSSD (PRV)',
+            subtitle: 'Valor RMSSD (HRV)',
             icon: LucideIcons.heartHandshake,
             color: _prvColor,
-            tooltip: "Variabilidad de la frecuencia cardíaca calculada mediante la métrica RMSSD (milisegundos). Es el marcador principal del tono vagal; una PRV alta indica una buena capacidad de recuperación y equilibrio del sistema nervioso parasimpático.",
+            tooltip: "Mide la variabilidad del pulso. Valores más altos indican que el corazón se recupera y se adapta mejor después de un esfuerzo o momento tenso.",
           ),
           _KPICard(
-            title: 'Gasto Metabólico',
+            title: 'Esfuerzo Físico',
             value: validMets.isEmpty ? '--' : '${sumMets.toStringAsFixed(1)} METs',
             subtitle: 'Valor acumulado',
             icon: LucideIcons.flame,
             color: _metsColor,
-            tooltip: "Equivalente Metabólico de Tarea. Representa la razón entre la tasa metabólica durante una actividad y la tasa metabólica en reposo (1.0 MET). Es esencial para discernir si la activación fisiológica es debida a esfuerzo físico o estrés psicológico.",
+            tooltip: "Indica la intensidad de la actividad física. Nos ayuda a distinguir si la activación del cuerpo es por ejercicio o por tensión emocional.",
           ),
           _KPICard(
-            title: 'Estabilidad Térmica',
+            title: 'Temperatura de la Piel',
             value: validTemp.isEmpty ? '--' : '${avgTemp.toStringAsFixed(1)} °C',
             subtitle: validTemp.isEmpty ? 'Sin datos' : 'Rango: ${minTemp.toStringAsFixed(1)} - ${maxTemp.toStringAsFixed(1)}',
             icon: LucideIcons.thermometer,
             color: _tempColor,
-            tooltip: "Temperatura monitorizada continuamente en la muñeca (ºC). En contextos de estrés agudo, es común observar descensos leves debido a la vasoconstricción periférica, mientras que una temperatura estable sugiere un estado homeostático.",
+            tooltip: "Registra la temperatura en la muñeca. En momentos de tensión emocional, la temperatura de las extremidades suele bajar ligeramente.",
           ),
         ];
 
@@ -624,13 +624,13 @@ class _ReactividadGraphLayer extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Análisis de Respuesta al Estrés',
+                          'Relación entre Tensión y Relajación (EDA vs HRV)',
                           style: GoogleFonts.outfit(fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold, color: _text),
                         ),
                       ],
                     ),
                     Tooltip(
-                      message: "Permite identificar eventos de activación del sistema nervioso simpático. Una caída de la PRV coincidente con un aumento de la EDA es un biomarcador robusto de estrés psicológico.",
+                      message: "Compara la tensión física de tu cuerpo (EDA) con su capacidad para relajarse (HRV). Si la tensión sube y la relajación baja, suele ser señal de un momento de estrés.",
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(color: _text.withValues(alpha: 0.95), borderRadius: BorderRadius.circular(8)),
                       textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
@@ -643,12 +643,12 @@ class _ReactividadGraphLayer extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Correlación entre picos de conductancia galvánica y variabilidad vagal.', 
+                      Text('Comparativa entre la sudoración de la piel (tensión) y el tiempo de recuperación cardíaca (calma).', 
                         style: GoogleFonts.inter(color: _muted, fontSize: 12)),
                       const SizedBox(height: 12),
                       _GraphLegend(items: [
-                        _LegendItem(label: 'EDA', color: _edaColor),
-                        _LegendItem(label: 'PRV', color: _prvColor, isDashed: true),
+                        _LegendItem(label: 'Nivel de Alerta (EDA)', color: _edaColor),
+                        _LegendItem(label: 'Relajación (HRV)', color: _prvColor, isDashed: true),
                       ]),
                     ],
                   )
@@ -657,13 +657,13 @@ class _ReactividadGraphLayer extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text('Correlación entre picos de conductancia galvánica y variabilidad vagal.', 
+                        child: Text('Comparativa entre la sudoración de la piel (tensión) y el tiempo de recuperación cardíaca (calma).', 
                           style: GoogleFonts.inter(color: _muted, fontSize: 13)),
                       ),
                       const SizedBox(width: 16),
                       _GraphLegend(items: [
-                        _LegendItem(label: 'EDA', color: _edaColor),
-                        _LegendItem(label: 'PRV', color: _prvColor, isDashed: true),
+                        _LegendItem(label: 'Nivel de Alerta (EDA)', color: _edaColor),
+                        _LegendItem(label: 'Relajación (HRV)', color: _prvColor, isDashed: true),
                       ]),
                     ],
                   ),
@@ -849,8 +849,11 @@ class _ReactividadGraphLayer extends StatelessWidget {
             return touchedSpots.map((spot) {
               final isPRV = spot.bar.color == _prvColor;
               final val = isPRV ? spot.y / prvScale : spot.y;
-              final label = isPRV ? 'PRV' : 'EDA';
-              return LineTooltipItem('$label: ${val.toStringAsFixed(1)}', GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11));
+              final label = isPRV ? 'Relajación (HRV)' : 'Nivel de Alerta (EDA)';
+              final unit = isPRV ? ' ms' : ' µS';
+              final dt = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt(), isUtc: true);
+              final timeStr = DateFormat('HH:mm').format(dt);
+              return LineTooltipItem('$timeStr\n$label: ${val.toStringAsFixed(1)}$unit', GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11));
             }).toList();
           },
         ),
@@ -903,7 +906,7 @@ class _ContextoGraphLayer extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Demanda Metabólica y Termorregulación',
+                          'Esfuerzo Físico y Temperatura Corporal',
                           style: GoogleFonts.outfit(
                             fontSize: isMobile ? 16 : 18,
                             fontWeight: FontWeight.bold,
@@ -913,7 +916,7 @@ class _ContextoGraphLayer extends StatelessWidget {
                       ],
                     ),
                     Tooltip(
-                      message: "Utilice esta vista para descartar falsos positivos de estrés. Si los METs son bajos, los cambios en la EDA y temperatura se atribuyen a estados emocionales o cognitivos.",
+                      message: "Sirve para saber si tu tensión es emocional o física. Si la sudoración es muy alta pero el esfuerzo físico (METs) es bajo, es probable que se deba a estrés emocional o alerta mental.",
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(color: _tooltipBg, borderRadius: BorderRadius.circular(8)),
                       textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
@@ -926,12 +929,12 @@ class _ContextoGraphLayer extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Validación de la carga física frente a la respuesta térmica cutánea.', 
+                      Text('Comparativa entre el esfuerzo del cuerpo y los cambios de temperatura de la piel.', 
                         style: GoogleFonts.inter(color: _muted, fontSize: 12)),
                       const SizedBox(height: 12),
                       _GraphLegend(items: [
-                        _LegendItem(label: 'METs', color: _metsColor),
-                        _LegendItem(label: 'Temp', color: _tempColor),
+                        _LegendItem(label: 'Esfuerzo (METs)', color: _metsColor),
+                        _LegendItem(label: 'Temperatura (°C)', color: _tempColor),
                       ]),
                     ],
                   )
@@ -940,13 +943,13 @@ class _ContextoGraphLayer extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text('Validación de la carga física frente a la respuesta térmica cutánea.', 
+                        child: Text('Comparativa entre el esfuerzo del cuerpo y los cambios de temperatura de la piel.', 
                           style: GoogleFonts.inter(color: _muted, fontSize: 13)),
                       ),
                       const SizedBox(width: 16),
                       _GraphLegend(items: [
-                        _LegendItem(label: 'METs', color: _metsColor),
-                        _LegendItem(label: 'Temp', color: _tempColor),
+                        _LegendItem(label: 'Esfuerzo (METs)', color: _metsColor),
+                        _LegendItem(label: 'Temperatura (°C)', color: _tempColor),
                       ]),
                     ],
                   ),
@@ -1085,7 +1088,7 @@ class _ContextoGraphLayer extends StatelessWidget {
               alignment: Alignment.bottomRight,
               padding: const EdgeInsets.only(right: 8, bottom: 4),
               style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: isMobile ? 8 : 10, fontWeight: FontWeight.bold),
-              labelResolver: (_) => 'Posible pérdida de contacto térmico (<30ºC)',
+              labelResolver: (_) => 'Pérdida de contacto con la piel (sensor flojo) (<30°C)',
             ),
           ),
         ],
@@ -1155,8 +1158,8 @@ class _ContextoGraphLayer extends StatelessWidget {
               final isMet = spot.bar.color == _metsColor ||
                   (spot.barIndex == 0 && metsData.any((e) => e.value != null));
               final val    = isMet ? spot.y / metScale : spot.y;
-              final label  = isMet ? 'METs' : 'Temp';
-              final unit   = isMet ? '' : ' °C';
+              final label  = isMet ? 'Esfuerzo (METs)' : 'Temperatura';
+              final unit   = isMet ? ' METs' : ' °C';
               final dt     = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt(), isUtc: true);
               final time   = DateFormat('HH:mm').format(dt);
               return LineTooltipItem(

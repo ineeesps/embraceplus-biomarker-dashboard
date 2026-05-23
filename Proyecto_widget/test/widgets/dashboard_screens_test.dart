@@ -192,10 +192,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verificar título académico y KPIs de estrés
-      expect(find.textContaining('Balance y Reactividad Autonómica'), findsOneWidget);
-      expect(find.text('Nivel de Estrés (EDA)'), findsOneWidget);
-      expect(find.text('Capacidad de Recuperación'), findsOneWidget);
-      expect(find.text('Estabilidad Térmica'), findsOneWidget);
+      expect(find.textContaining('Análisis de Estrés y Reactividad Fisiológica'), findsOneWidget);
+      expect(find.text('Nivel de Alerta / Sudoración'), findsOneWidget);
+      expect(find.text('Capacidad de Relajación'), findsOneWidget);
+      expect(find.text('Temperatura de la Piel'), findsOneWidget);
     });
 
     testWidgets('5. Pantalla de Sueño renderiza hipnograma y posturas', (WidgetTester tester) async {
