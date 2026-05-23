@@ -22,14 +22,19 @@ const _muted     = AppColors.textSecondary;
 const _cardBg    = Color(0xFFF1F5F9);
 
 const _bucketOptions = [
-  '30 seconds', '1 minute', '2 minutes',
-  '5 minutes', '10 minutes', '15 minutes', '1 hour',
+  ('30 seconds', '30 segundos'),
+  ('1 minute', '1 minuto'),
+  ('2 minutes', '2 minutos'),
+  ('5 minutes', '5 minutos'),
+  ('10 minutes', '10 minutos'),
+  ('15 minutes', '15 minutos'),
+  ('1 hour', '1 hora'),
 ];
 
 const _methodOptions = [
   ('linear', 'Lineal'),
-  ('spline', 'Spline Cúbica'),
-  ('ffill', 'Forward Fill (Categórico)'),
+  ('spline', 'Spline Cúbico'),
+  ('ffill', 'Forward Fill'),
 ];
 
 const _categoricalSensors = {
@@ -123,7 +128,7 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
 
     return _BlockCard(
       icon: LucideIcons.trendingUp,
-      title: 'Reconstrucción Computacional de Señal',
+      title: 'Tratamiento y Relleno de Datos (Interpolación)',
       subtitle: 'Estimación de valores en periodos de baja calidad de señal.',
       accentColor: widget.accentColor,
       child: Column(
@@ -171,9 +176,7 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'La pulsera EmbracePlus marca los datos afectados por movimiento brusco o '
-                    'mala señal. Esta herramienta estima los valores perdidos usando el método '
-                    'seleccionado. El Spline real se aplica al exportar desde el servidor.',
+                    'La pulsera omite datos cuando hay mala señal o movimientos bruscos. Usa esta herramienta para rellenar matemáticamente esos vacíos (interpolación) y visualizar cómo quedará tu serie temporal antes de exportarla.',
                     style: GoogleFonts.inter(fontSize: 11, color: _muted, height: 1.4),
                   ),
                 ),
@@ -246,22 +249,22 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
 
     return _BlockCard(
       icon: LucideIcons.activity,
-      title: 'Métricas Estocásticas Avanzadas',
-      subtitle: 'Estadísticos calculados sobre registros con calidad validada.',
+      title: 'Resumen Estadístico Confiable',
+      subtitle: 'Cálculos matemáticos realizados exclusivamente sobre los datos reales (excluyendo el ruido).',
       accentColor: widget.accentColor,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final cards = [
             _MetricCard(label: 'Media', value: mean?.toStringAsFixed(2) ?? '--'),
-            _MetricCard(label: 'σ Desv. Típica', value: stdDev?.toStringAsFixed(2) ?? '--'),
-            _MetricCard(label: 'Valor Mínimo', value: minVal?.toStringAsFixed(2) ?? '--'),
-            _MetricCard(label: 'Valor Máximo', value: maxVal?.toStringAsFixed(2) ?? '--'),
+            _MetricCard(label: 'Desviación Estándar (σ)', value: stdDev?.toStringAsFixed(2) ?? '--'),
+            _MetricCard(label: 'Mínimo', value: minVal?.toStringAsFixed(2) ?? '--'),
+            _MetricCard(label: 'Máximo', value: maxVal?.toStringAsFixed(2) ?? '--'),
             _MetricCard(
-              label: 'Moda',
+              label: 'Moda (Más frecuente)',
               value: modeVal?.toStringAsFixed(0) ?? (valid.isEmpty ? '--' : 'N/A'),
             ),
             _MetricCard(
-              label: 'Carga de Ruido',
+              label: 'Datos Descartados por Ruido (%)',
               value: data.isEmpty ? '--' : '${noisePercent.toStringAsFixed(1)}%',
             ),
           ];
@@ -304,9 +307,12 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
   // ── BLOCK C: Export Config ───────────────────────────────────────────────────
 
   Widget _buildBlockC() {
+    final methodName = _methodOptions.firstWhere((m) => m.$1 == _selectedMethod).$2;
+    final bucketName = _bucketOptions.firstWhere((b) => b.$1 == _selectedBucket).$2;
+
     return _BlockCard(
       icon: LucideIcons.download,
-      title: 'Configuración del DataSet de Salida',
+      title: 'Configuración y Generación del DataSet',
       subtitle: 'Selecciona variables y resolución temporal para la exportación.',
       accentColor: widget.accentColor,
       child: Column(
@@ -344,11 +350,16 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
             label: 'Resolución temporal (bucket)',
             value: _selectedBucket,
             items: _bucketOptions
-                .map((b) => DropdownMenuItem(value: b, child: Text(b)))
+                .map((b) => DropdownMenuItem(value: b.$1, child: Text(b.$2)))
                 .toList(),
             onChanged: (v) { if (v != null) setState(() => _selectedBucket = v); },
           ),
           const SizedBox(height: 20),
+          Text(
+            'El archivo CSV se generará aplicando el método de interpolación "$methodName" a una resolución de $bucketName.',
+            style: GoogleFonts.inter(fontSize: 11, color: _muted, height: 1.4, fontStyle: FontStyle.italic),
+          ),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -368,7 +379,7 @@ class _AnalisisExportacionTabState extends State<AnalisisExportacionTab> {
                     )
                   : const Icon(LucideIcons.download, size: 16),
               label: Text(
-                _isExporting ? 'Procesando…' : 'Procesar y Exportar DataSet (CSV)',
+                _isExporting ? 'Aplicando interpolación y generando CSV...' : 'Procesar y Exportar CSV',
                 style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
               ),
             ),
@@ -708,7 +719,7 @@ class _PreviewChart extends StatelessWidget {
             getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
               return touchedBarSpots.map((barSpot) {
                 final isOriginal = barSpot.barIndex == (interpolatedSpots.isNotEmpty ? 1 : 0);
-                final label = isOriginal ? 'Real' : 'Interpolado';
+                final label = isOriginal ? 'Dato Real' : 'Dato Estimado';
                 return LineTooltipItem(
                   '$label: ${barSpot.y.toStringAsFixed(2)}',
                   GoogleFonts.inter(

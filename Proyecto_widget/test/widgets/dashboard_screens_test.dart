@@ -213,8 +213,8 @@ void main() {
 
       // Verificar título académico y KPIs de sueño
       expect(find.textContaining('Análisis de Arquitectura del Sueño y Ergonomía'), findsOneWidget);
-      expect(find.text('Eficiencia del Sueño'), findsOneWidget);
-      expect(find.text('Tiempo Total (TST)'), findsOneWidget);
+      expect(find.text('Calidad del Descanso'), findsOneWidget);
+      expect(find.text('Horas de Sueño'), findsOneWidget);
     });
 
     testWidgets('6. El filtro de tiempo (horas) no afecta a la pantalla Resumen General', (WidgetTester tester) async {

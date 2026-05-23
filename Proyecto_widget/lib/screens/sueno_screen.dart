@@ -200,7 +200,7 @@ class _ControlPanel extends StatelessWidget {
                     style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: _text),
                   ),
                   Text(
-                    'Evaluación de ciclos de descanso, fragmentación nocturna y carga postural.',
+                    'Evaluación de las fases de descanso, interrupciones nocturnas y posturas al dormir.',
                     style: GoogleFonts.inter(fontSize: 11, color: _muted),
                   ),
                 ],
@@ -219,7 +219,7 @@ class _ControlPanel extends StatelessWidget {
                     Icon(hasGoodHygiene ? LucideIcons.checkCircle2 : LucideIcons.alertTriangle, size: 11, color: hasGoodHygiene ? const Color(0xFF10B981) : _accentAmber),
                     const SizedBox(width: 6),
                     Text(
-                      hasGoodHygiene ? 'Higiene Circadiana Óptima' : 'Fragmentación Detectada',
+                      hasGoodHygiene ? 'Higiene Circadiana Óptima' : 'Sueño Fragmentado',
                       style: GoogleFonts.jetBrainsMono(fontSize: 10, fontWeight: FontWeight.bold, color: hasGoodHygiene ? const Color(0xFF10B981) : _accentAmber),
                     ),
                   ],
@@ -493,36 +493,36 @@ class _KPIsLayer extends StatelessWidget {
         final isSmall = constraints.maxWidth < 800;
         final kpis = [
           _KPICard(
-            title: 'Eficiencia del Sueño',
+            title: 'Calidad del Descanso',
             value: asleepPoints == 0 ? '--' : '${efficiency.toStringAsFixed(1)}%',
-            subtitle: asleepPoints == 0 ? 'Sin sueño detectado' : 'Higiene Circadiana',
+            subtitle: asleepPoints == 0 ? 'Sin sueño detectado' : 'Eficiencia del descanso',
             icon: LucideIcons.activitySquare,
             color: _accentIndigo,
-            tooltip: "Porcentaje de tiempo efectivo de sueño en relación al tiempo total en cama.",
+            tooltip: "Mide qué porcentaje del tiempo que pasaste en la cama estuviste realmente durmiendo.",
           ),
           _KPICard(
-            title: 'Tiempo Total (TST)',
+            title: 'Horas de Sueño',
             value: asleepPoints == 0 ? '--' : '${tstHours}h ${tstRemMins}m',
-            subtitle: asleepPoints == 0 ? 'Ajuste el rango horario' : 'Arquitectura Real',
+            subtitle: asleepPoints == 0 ? 'Ajuste el rango horario' : 'Tiempo real de sueño',
             icon: LucideIcons.clock,
             color: _lightSleep,
-            tooltip: "Suma neta de minutos detectados en fases de sueño (Ligero/Profundo).",
+            tooltip: "Es el tiempo real acumulado que has dormido entre sueño ligero y profundo.",
           ),
           _KPICard(
-            title: 'Índice WASO',
+            title: 'Tiempo Despierto (WASO)',
             value: !sleepOnsetReached ? '--' : '$wasoMinutes min',
-            subtitle: 'Despertares Pos-Onset',
+            subtitle: 'Minutos en vela',
             icon: LucideIcons.bellRing,
             color: _accentAmber,
-            tooltip: "Wake After Sleep Onset. Minutos que el paciente pasó despierto después de haber conciliado el sueño inicialmente.",
+            tooltip: "Muestra el tiempo total que pasaste desvelado a lo largo de la noche tras haberte dormido por primera vez.",
           ),
           _KPICard(
-            title: 'Índice de Rotación',
+            title: 'Cambios de Postura',
             value: posData.isEmpty ? '--' : '${rotationIndex.toStringAsFixed(1)}/h',
-            subtitle: 'Estabilidad Mecánica',
+            subtitle: 'Giros por hora',
             icon: LucideIcons.user,
             color: _accentTeal,
-            tooltip: "Número de cambios de postura significativos normalizados por hora de registro.",
+            tooltip: "Indica el promedio de veces que cambias de posición o te giras en la cama cada hora.",
           ),
         ];
 
@@ -650,10 +650,10 @@ class _HipnogramaLayer extends StatelessWidget {
         children: [
           _LayerHeader(
             title: 'Hipnograma de Fases de Descanso',
-            subtitle: 'Distribución temporal de la profundidad del sueño y microdespertares motores.',
+            subtitle: 'Evolución de la profundidad del sueño y detección de espasmos nocturnos.',
             icon: LucideIcons.activity,
             iconColor: _accentIndigo,
-            tooltip: "El eje vertical invertido representa la inmersión en el sueño. Los ciclos saludables (aprox. 90 min) muestran un descenso progresivo. Las marcas rojas inferiores indican alta variabilidad acelerométrica (espasmos/arousals) sin vigilia consciente.",
+            tooltip: "Muestra cómo varía la profundidad de tu sueño a lo largo de la noche. Las líneas rojas indican pequeños movimientos o espasmos involuntarios mientras duermes.",
           ),
           const Divider(height: 1, color: _border),
           Padding(
@@ -801,8 +801,10 @@ class _HipnogramaLayer extends StatelessWidget {
         touchTooltipData: LineTouchTooltipData(
           getTooltipColor: (_) => const Color(0xFF0F172A),
           getTooltipItems: (pts) => pts.map((s) {
-            String label = s.y <= 1.5 ? 'PROFUNDO' : (s.y <= 2.5 ? 'LIGERO' : 'DESPIERTO');
-            return LineTooltipItem(label, GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11));
+            final dt = DateTime.fromMillisecondsSinceEpoch(s.x.toInt(), isUtc: true);
+            final timeStr = DateFormat('HH:mm').format(dt);
+            final phaseLabel = s.y <= 1.5 ? 'Sueño Profundo' : (s.y <= 2.5 ? 'Sueño Ligero' : 'Despierto');
+            return LineTooltipItem('$timeStr - $phaseLabel', GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11));
           }).toList(),
         ),
       ),
@@ -828,11 +830,11 @@ class _GanttPosturalLayer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _LayerHeader(
-            title: 'Dinámica de Carga Postural',
-            subtitle: 'Mantenimiento de decúbito y transiciones ergonómicas.',
+            title: 'Análisis de Postura al Dormir',
+            subtitle: 'Distribución del tiempo que el paciente pasó en cada posición corporal.',
             icon: LucideIcons.user,
             iconColor: _accentTeal,
-            tooltip: "Permite correlacionar la fragmentación del sueño (picos en el hipnograma) con las posiciones físicas. Un alto índice de rotación puede indicar incomodidad articular o problemas respiratorios posicionales.",
+            tooltip: "Te permite ver en qué posición dormías en cada momento de la noche y relacionarlo con tus movimientos o despertares.",
           ),
           const Divider(height: 1, color: _border),
           Padding(
@@ -980,7 +982,7 @@ class _SleepArchitectureLegend extends StatelessWidget {
             _LegendItem('Vigilia', _accentAmber),
             _LegendItem('Ligero', _lightSleep),
             _LegendItem('Profundo', _deepSleep),
-            _LegendItem('Arousals Motores', _accentRed),
+            _LegendItem('Microdespertares (Espasmos)', _accentRed),
           ],
         ),
       ],
