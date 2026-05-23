@@ -435,7 +435,7 @@ class _KPIsLayer extends StatelessWidget {
           _KPICard(
             title: 'Nivel de Alerta / Sudoración',
             value: validEda.isEmpty ? '--' : '${avgEda.toStringAsFixed(2)} µS',
-            subtitle: 'Media de conductancia',
+            subtitle: 'Sudoración promedio registrada',
             icon: LucideIcons.zap,
             color: _edaColor,
             tooltip: "Mide los cambios en la sudoración de la piel. Picos altos reflejan una reacción del cuerpo ante la tensión, el esfuerzo mental o el estrés emocional.",
@@ -443,7 +443,7 @@ class _KPIsLayer extends StatelessWidget {
           _KPICard(
             title: 'Capacidad de Relajación',
             value: validPrv.isEmpty ? '--' : '${avgPrv.toStringAsFixed(0)} ms',
-            subtitle: 'Valor RMSSD (HRV)',
+            subtitle: 'Recuperación promedio del pulso',
             icon: LucideIcons.heartHandshake,
             color: _prvColor,
             tooltip: "Mide la variabilidad del pulso. Valores más altos indican que el corazón se recupera y se adapta mejor después de un esfuerzo o momento tenso.",
@@ -451,7 +451,7 @@ class _KPIsLayer extends StatelessWidget {
           _KPICard(
             title: 'Esfuerzo Físico',
             value: validMets.isEmpty ? '--' : '${sumMets.toStringAsFixed(1)} METs',
-            subtitle: 'Valor acumulado',
+            subtitle: 'Esfuerzo físico acumulado',
             icon: LucideIcons.flame,
             color: _metsColor,
             tooltip: "Indica la intensidad de la actividad física. Nos ayuda a distinguir si la activación del cuerpo es por ejercicio o por tensión emocional.",
@@ -459,7 +459,7 @@ class _KPIsLayer extends StatelessWidget {
           _KPICard(
             title: 'Temperatura de la Piel',
             value: validTemp.isEmpty ? '--' : '${avgTemp.toStringAsFixed(1)} °C',
-            subtitle: validTemp.isEmpty ? 'Sin datos' : 'Rango: ${minTemp.toStringAsFixed(1)} - ${maxTemp.toStringAsFixed(1)}',
+            subtitle: validTemp.isEmpty ? 'Sin datos' : 'Rango: ${minTemp.toStringAsFixed(1)}°C a ${maxTemp.toStringAsFixed(1)}°C',
             icon: LucideIcons.thermometer,
             color: _tempColor,
             tooltip: "Registra la temperatura en la muñeca. En momentos de tensión emocional, la temperatura de las extremidades suele bajar ligeramente.",
