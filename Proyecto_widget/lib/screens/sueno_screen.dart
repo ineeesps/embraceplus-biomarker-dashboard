@@ -477,17 +477,6 @@ class _KPIsLayer extends StatelessWidget {
     }
     final int wasoMinutes = wasoPoints * minsPorPunto;
 
-    int postureChanges = 0;
-    double? lastPos;
-    for (var d in posData) {
-      if (d.value != null) {
-        if (lastPos != null && d.value != lastPos) postureChanges++;
-        lastPos = d.value;
-      }
-    }
-    final double durationHours = provider.selectedSuenoHours.toDouble();
-    final double rotationIndex = durationHours > 0 ? postureChanges / durationHours : 0.0;
-
     final compliance = provider.compliancePercentage ?? 0.0;
 
     return LayoutBuilder(
