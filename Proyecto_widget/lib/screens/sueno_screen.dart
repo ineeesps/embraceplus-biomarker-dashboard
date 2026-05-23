@@ -488,6 +488,8 @@ class _KPIsLayer extends StatelessWidget {
     final double durationHours = provider.selectedSuenoHours.toDouble();
     final double rotationIndex = durationHours > 0 ? postureChanges / durationHours : 0.0;
 
+    final compliance = provider.compliancePercentage ?? 0.0;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isSmall = constraints.maxWidth < 800;
@@ -517,12 +519,12 @@ class _KPIsLayer extends StatelessWidget {
             tooltip: "Muestra el tiempo total que pasaste desvelado a lo largo de la noche tras haberte dormido por primera vez.",
           ),
           _KPICard(
-            title: 'Cambios de Postura',
-            value: posData.isEmpty ? '--' : '${rotationIndex.toStringAsFixed(1)}/h',
-            subtitle: 'Giros por hora',
-            icon: LucideIcons.user,
-            color: _accentTeal,
-            tooltip: "Indica el promedio de veces que cambias de posición o te giras en la cama cada hora.",
+            title: 'Tiempo de Uso',
+            value: '${compliance.toStringAsFixed(1)}%',
+            subtitle: 'Tiempo con registro de calidad',
+            icon: LucideIcons.checkCircle2,
+            color: AppColors.cyberBlue,
+            tooltip: "Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
           ),
         ];
 

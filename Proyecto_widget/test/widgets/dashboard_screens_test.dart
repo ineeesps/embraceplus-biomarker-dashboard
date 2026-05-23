@@ -156,6 +156,7 @@ void main() {
       expect(find.textContaining('Movimiento y Actividad Física'), findsOneWidget);
       expect(find.text('Pasos Totales'), findsOneWidget);
       expect(find.text('Esfuerzo Promedio'), findsOneWidget);
+      expect(find.text('Tiempo de Uso'), findsOneWidget);
     });
 
     testWidgets('3. Pantalla de Cardiaco renderiza FC, variabilidad (PRV) y respiración', (WidgetTester tester) async {
@@ -176,6 +177,7 @@ void main() {
       expect(find.text('Frecuencia Cardíaca (Pulso)'), findsOneWidget);
       expect(find.text('Frecuencia Respiratoria'), findsOneWidget);
       expect(find.text('Relación Latidos / Respiración'), findsOneWidget);
+      expect(find.text('Tiempo de Uso'), findsOneWidget);
     });
 
     testWidgets('4. Pantalla de Estrés renderiza EDA y Temperatura cutánea', (WidgetTester tester) async {
@@ -196,6 +198,7 @@ void main() {
       expect(find.text('Nivel de Alerta / Sudoración'), findsOneWidget);
       expect(find.text('Capacidad de Relajación'), findsOneWidget);
       expect(find.text('Temperatura de la Piel'), findsOneWidget);
+      expect(find.text('Tiempo de Uso'), findsOneWidget);
     });
 
     testWidgets('5. Pantalla de Sueño renderiza hipnograma y posturas', (WidgetTester tester) async {
@@ -215,6 +218,7 @@ void main() {
       expect(find.textContaining('Análisis de Arquitectura del Sueño y Ergonomía'), findsOneWidget);
       expect(find.text('Calidad del Descanso'), findsOneWidget);
       expect(find.text('Horas de Sueño'), findsOneWidget);
+      expect(find.text('Tiempo de Uso'), findsOneWidget);
     });
 
     testWidgets('6. El filtro de tiempo (horas) no afecta a la pantalla Resumen General', (WidgetTester tester) async {

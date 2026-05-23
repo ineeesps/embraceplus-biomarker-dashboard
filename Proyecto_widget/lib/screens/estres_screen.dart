@@ -407,7 +407,6 @@ class _KPIsLayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final validEda = edaData.where((e) => e.value != null).map((e) => e.value!).toList();
     final validPrv = prvData.where((e) => e.value != null).map((e) => e.value!).toList();
-    final validMets = metsData.where((e) => e.value != null).map((e) => e.value!).toList();
     final validTemp = tempData.where((e) => e.value != null).map((e) => e.value!).toList();
 
     double avgEda = 0;
@@ -416,15 +415,15 @@ class _KPIsLayer extends StatelessWidget {
     double avgPrv = 0;
     if (validPrv.isNotEmpty) avgPrv = validPrv.reduce((a, b) => a + b) / validPrv.length;
 
-    double sumMets = 0;
-    if (validMets.isNotEmpty) sumMets = validMets.reduce((a, b) => a + b);
-
     double avgTemp = 0, minTemp = 0, maxTemp = 0;
     if (validTemp.isNotEmpty) {
       avgTemp = validTemp.reduce((a, b) => a + b) / validTemp.length;
       minTemp = validTemp.reduce(math.min);
       maxTemp = validTemp.reduce(math.max);
     }
+
+    final provider = context.watch<DashboardProvider>();
+    final compliance = provider.compliancePercentage ?? 0.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -449,20 +448,20 @@ class _KPIsLayer extends StatelessWidget {
             tooltip: "Mide la variabilidad del pulso. Valores más altos indican que el corazón se recupera y se adapta mejor después de un esfuerzo o momento tenso.",
           ),
           _KPICard(
-            title: 'Esfuerzo Físico',
-            value: validMets.isEmpty ? '--' : '${sumMets.toStringAsFixed(1)} METs',
-            subtitle: 'Esfuerzo físico acumulado',
-            icon: LucideIcons.flame,
-            color: _metsColor,
-            tooltip: "Indica la intensidad de la actividad física. Nos ayuda a distinguir si la activación del cuerpo es por ejercicio o por tensión emocional.",
-          ),
-          _KPICard(
             title: 'Temperatura de la Piel',
             value: validTemp.isEmpty ? '--' : '${avgTemp.toStringAsFixed(1)} °C',
             subtitle: validTemp.isEmpty ? 'Sin datos' : 'Rango: ${minTemp.toStringAsFixed(1)}°C a ${maxTemp.toStringAsFixed(1)}°C',
             icon: LucideIcons.thermometer,
             color: _tempColor,
             tooltip: "Registra la temperatura en la muñeca. En momentos de tensión emocional, la temperatura de las extremidades suele bajar ligeramente.",
+          ),
+          _KPICard(
+            title: 'Tiempo de Uso',
+            value: '${compliance.toStringAsFixed(1)}%',
+            subtitle: 'Tiempo con registro de calidad',
+            icon: LucideIcons.checkCircle2,
+            color: AppColors.cyberBlue,
+            tooltip: "Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
           ),
         ];
 
