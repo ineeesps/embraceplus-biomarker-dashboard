@@ -62,7 +62,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showUploadNotAvailable() {
-    AppToast.show(context, 'Para subir datos, ve a la pantalla de Participantes', type: ToastType.info);
+    AppToast.show(context, 'Para subir datos, ve a la pantalla de Inicio', type: ToastType.info);
   }
 
   @override

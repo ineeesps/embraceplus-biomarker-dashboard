@@ -126,7 +126,7 @@ class _SidebarLayoutState extends State<SidebarLayout> {
             children: [
               _buildNavItem(
                 icon: LucideIcons.home,
-                title: 'Home',
+                title: 'Inicio',
                 isSelected: widget.participantId == null && widget.selectedIndex == 0,
                 isExpanded: isExpanded,
                 onTap: () {
