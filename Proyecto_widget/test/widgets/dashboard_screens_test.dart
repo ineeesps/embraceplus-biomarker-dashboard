@@ -172,10 +172,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verificar título académico y KPIs cardíacos
-      expect(find.textContaining('Monitorización Cardiopulmonar'), findsOneWidget);
-      expect(find.text('Frecuencia Cardíaca (HR)'), findsOneWidget);
-      expect(find.text('Frecuencia Ventilatoria (RR)'), findsOneWidget);
-      expect(find.text('Índice de Acoplamiento'), findsOneWidget);
+      expect(find.textContaining('Análisis del Pulso y la Respiración'), findsOneWidget);
+      expect(find.text('Frecuencia Cardíaca (Pulso)'), findsOneWidget);
+      expect(find.text('Frecuencia Respiratoria'), findsOneWidget);
+      expect(find.text('Relación Latidos / Respiración'), findsOneWidget);
     });
 
     testWidgets('4. Pantalla de Estrés renderiza EDA y Temperatura cutánea', (WidgetTester tester) async {

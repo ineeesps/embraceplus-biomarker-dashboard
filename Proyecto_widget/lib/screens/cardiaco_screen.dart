@@ -65,6 +65,12 @@ class _CardiacoScreenState extends State<CardiacoScreen>
         final hrData = byType['pulse_rate'] ?? [];
         final rrData = byType['respiratory_rate'] ?? [];
 
+        // Calcular promedios para el ecualizador
+        final validHR = hrData.where((e) => e.value != null).map((e) => e.value!).toList();
+        final validRR = rrData.where((e) => e.value != null).map((e) => e.value!).toList();
+        final avgHR = validHR.isEmpty ? 0.0 : validHR.reduce((a, b) => a + b) / validHR.length;
+        final avgRR = validRR.isEmpty ? 0.0 : validRR.reduce((a, b) => a + b) / validRR.length;
+
         Widget tab0;
         if (provider.isCardiacoLoading) {
           tab0 = const Center(child: CircularProgressIndicator(color: _accent));
@@ -82,7 +88,7 @@ class _CardiacoScreenState extends State<CardiacoScreen>
               const SizedBox(height: 24),
               _CouplingGraphLayer(hrData: hrData, rrData: rrData, startTime: provider.cardiacoStart!, endTime: provider.cardiacoEnd!),
               const SizedBox(height: 24),
-              _ScatterPlotLayer(hrData: hrData, rrData: rrData),
+              _EcualizadorVitalLayer(avgHR: avgHR, avgRR: avgRR),
             ]
           ];
           tab0 = LayoutBuilder(
@@ -189,11 +195,11 @@ class _ControlPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Monitorización Cardiopulmonar',
+                    'Análisis del Pulso y la Respiración',
                     style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: _text),
                   ),
                   Text(
-                    'Análisis continuo del acoplamiento entre la demanda ventilatoria y la respuesta cardíaca.',
+                    'Evaluación del ritmo cardíaco, frecuencia respiratoria y la relación de latidos por respiración.',
                     style: GoogleFonts.inter(fontSize: 11, color: _muted),
                   ),
                 ],
@@ -460,36 +466,36 @@ class _KPIsLayer extends StatelessWidget {
         final isMobile = constraints.maxWidth < 600;
         final kpis = [
           _KPICard(
-            title: 'Frecuencia Cardíaca (HR)',
+            title: 'Frecuencia Cardíaca (Pulso)',
             value: validHR.isEmpty ? '--' : '${avgHR.round()} BPM',
-            subtitle: validHR.isEmpty ? 'Sin datos' : 'Min: ${minHR.round()}  |  Max: ${maxHR.round()}',
-            tooltip: 'Ritmo cardíaco promedio en el tramo. Valores sostenidos por encima de 100 BPM en reposo activan alertas de taquicardia.',
+            subtitle: validHR.isEmpty ? 'Sin datos' : 'Mín: ${minHR.round()} BPM | Máx: ${maxHR.round()} BPM',
+            tooltip: 'Indica el promedio de latidos por minuto (BPM). En reposo, un valor normal oscila entre 60 y 100 BPM.',
             icon: LucideIcons.activity,
             color: _hrColor,
           ),
           _KPICard(
-            title: 'Frecuencia Ventilatoria (RR)',
+            title: 'Frecuencia Respiratoria',
             value: validRR.isEmpty ? '--' : '${avgRR.round()} BrPM',
-            subtitle: 'Media del tramo',
-            tooltip: 'Tasa respiratoria media. Un adulto sano en reposo oscila entre 12 y 20 BrPM. Alteraciones pueden indicar estrés metabólico o respiratorio.',
+            subtitle: 'Ciclos respiratorios promedio',
+            tooltip: 'Muestra cuántas veces respiras por minuto (BrPM). En reposo, un adulto sano suele respirar entre 12 y 20 veces por minuto.',
             icon: LucideIcons.wind,
             color: _rrLine,
           ),
           _KPICard(
-            title: 'Índice de Acoplamiento',
+            title: 'Relación Latidos / Respiración',
             value: ratioCount == 0 ? '--' : avgRatio.toStringAsFixed(1),
-            subtitle: 'Latidos por respiración',
-            tooltip: 'Proporción de latidos por cada ciclo respiratorio. Una desviación drástica de la media normal (aprox. 4.0) indica un desacoplamiento fisiológico.',
+            subtitle: 'Latidos por cada ciclo respiratorio',
+            tooltip: 'Indica cuántas veces late el corazón por cada respiración. El valor normal suele estar en torno a 4 latidos por ciclo respiratorio.',
             icon: LucideIcons.infinity,
             color: _ratioColor,
           ),
           _KPICard(
-            title: 'Tasa de Uso',
+            title: 'Tiempo de Uso del Sensor',
             value: '${compliance.toStringAsFixed(1)}%',
-            subtitle: 'Compliance del sensor',
+            subtitle: 'Tiempo con registro de calidad',
             icon: LucideIcons.checkCircle2,
             color: AppColors.cyberBlue,
-            tooltip: "Porcentaje de tiempo en el que el dispositivo ha estado correctamente colocado y registrando datos de calidad suficiente para el análisis clínico.",
+            tooltip: "Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
           ),
         ];
 
@@ -637,11 +643,11 @@ class _CouplingGraphLayer extends StatelessWidget {
                       children: [
                         Icon(LucideIcons.activity, size: 20, color: _text),
                         const SizedBox(width: 12),
-                        Text('Dinámica de Acoplamiento Temporal', style: GoogleFonts.outfit(fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold, color: _text)),
+                        Text('Relación Temporal entre Pulso y Respiración', style: GoogleFonts.outfit(fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold, color: _text)),
                       ],
                     ),
                     Tooltip(
-                      message: "Evaluación de la sincronía entre el pulso y la respiración. Una base rítmica estable indica un buen estado autonómico.",
+                      message: "Compara el ritmo del corazón con la respiración. Un acoplamiento estable refleja un estado de calma y buen funcionamiento del cuerpo.",
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(color: _tooltipBg, borderRadius: BorderRadius.circular(8)),
                       textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
@@ -650,7 +656,7 @@ class _CouplingGraphLayer extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('Superposición de la variabilidad del pulso sobre la base de frecuencia respiratoria.', style: GoogleFonts.inter(color: _muted, fontSize: 13)),
+                Text('Comparativa visual del pulso y los ciclos de respiración a lo largo del tiempo.', style: GoogleFonts.inter(color: _muted, fontSize: 13)),
               ],
             ),
           ),
@@ -688,7 +694,7 @@ class _CouplingGraphLayer extends StatelessWidget {
             alignment: Alignment.topRight,
             padding: const EdgeInsets.only(right: 8, bottom: 4),
             style: GoogleFonts.inter(color: _hrColor, fontSize: 10, fontWeight: FontWeight.bold),
-            labelResolver: (_) => 'TAQUICARDIA (>100)',
+            labelResolver: (_) => 'Zona de Taquicardia (>100 BPM)',
           ),
         ),
       ],
@@ -807,8 +813,8 @@ class _CouplingGraphLayer extends StatelessWidget {
           )
         ),
         leftTitles: AxisTitles(
-          axisNameWidget: Text('HR', style: GoogleFonts.inter(fontSize: 10, color: _hrColor, fontWeight: FontWeight.bold)),
-          axisNameSize: 20,
+          axisNameWidget: Text('Pulso (BPM)', style: GoogleFonts.inter(fontSize: 10, color: _hrColor, fontWeight: FontWeight.bold)),
+          axisNameSize: 24,
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: isMobile ? 25 : 35,
@@ -819,8 +825,8 @@ class _CouplingGraphLayer extends StatelessWidget {
           )
         ),
         rightTitles: AxisTitles(
-          axisNameWidget: Text('RR', style: GoogleFonts.inter(fontSize: 10, color: _rrLine, fontWeight: FontWeight.bold)),
-          axisNameSize: 20,
+          axisNameWidget: Text('Respiración (BrPM)', style: GoogleFonts.inter(fontSize: 10, color: _rrLine, fontWeight: FontWeight.bold)),
+          axisNameSize: 24,
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: isMobile ? 25 : 35,
@@ -840,9 +846,12 @@ class _CouplingGraphLayer extends StatelessWidget {
             return touchedSpots.map((spot) {
               final isRR = spot.bar.color == _rrLine;
               final val = isRR ? spot.y / rrScale : spot.y;
-              final label = isRR ? 'RR' : 'HR';
+              final label = isRR ? 'Respiración (RR)' : 'Frecuencia Cardíaca (HR)';
+              final unit = isRR ? ' BrPM' : ' BPM';
+              final dt = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt(), isUtc: true);
+              final timeStr = DateFormat('HH:mm').format(dt);
               return LineTooltipItem(
-                '$label: ${val.toStringAsFixed(1)}',
+                '$timeStr\n$label: ${val.toStringAsFixed(1)}$unit',
                 GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
               );
             }).toList();
@@ -853,85 +862,101 @@ class _CouplingGraphLayer extends StatelessWidget {
   }
 }
 
-class _ScatterPlotLayer extends StatelessWidget {
-  final List<Biomarker> hrData;
-  final List<Biomarker> rrData;
+class _EcualizadorVitalLayer extends StatelessWidget {
+  final double avgHR;
+  final double avgRR;
 
-  const _ScatterPlotLayer({required this.hrData, required this.rrData});
+  const _EcualizadorVitalLayer({
+    required this.avgHR,
+    required this.avgRR,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    final rrMap = {for (var e in rrData) if (e.value != null) e.time.millisecondsSinceEpoch: e.value!};
-    List<ScatterSpot> spots = [];
-    
-    for (var hr in hrData) {
-      if (hr.value != null) {
-        final rrVal = rrMap[hr.time.millisecondsSinceEpoch];
-        if (rrVal != null && rrVal > 0) {
-          spots.add(ScatterSpot(
-            rrVal, 
-            hr.value!, 
-            dotPainter: FlDotCirclePainter(
-              color: _ratioColor.withValues(alpha: 0.5),
-              radius: 5,
-              strokeWidth: 0,
-            ),
-          ));
-        }
-      }
-    }
+    const double maxHR = 160.0;
+    const double maxRR = 40.0;
+
+    final double fillHR = (avgHR / maxHR).clamp(0.0, 1.0);
+    final double fillRR = (avgRR / maxRR).clamp(0.0, 1.0);
 
     return Container(
+      height: 410,
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(isMobile ? 12 : 20),
         border: Border.all(color: _border),
-        boxShadow: [BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.04), blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: EdgeInsets.all(isMobile ? 16 : 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 8,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(LucideIcons.scatterChart, size: 20, color: _ratioColor),
-                        const SizedBox(width: 12),
-                        Text('Matriz de Dispersión Cardiorrespiratoria', style: GoogleFonts.outfit(fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold, color: _text)),
-                      ],
+                    Text(
+                      'Balance Cardiorrespiratorio',
+                      style: GoogleFonts.outfit(
+                        fontSize: isMobile ? 16 : 18,
+                        fontWeight: FontWeight.bold,
+                        color: _text,
+                      ),
                     ),
-                    Tooltip(
-                      message: "Análisis bivariado. Una dispersión lineal ascendente sugiere un sistema cardiorrespiratorio sano y reactivo. Nubes de puntos erráticas señalan falta de sincronización autonómica.",
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: _tooltipBg, borderRadius: BorderRadius.circular(8)),
-                      textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
-                      child: Icon(LucideIcons.info, size: 14, color: _muted.withValues(alpha: 0.5)),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Comparativa de la carga de trabajo entre el corazón y los pulmones.',
+                      style: GoogleFonts.inter(
+                        fontSize: isMobile ? 11 : 13,
+                        color: _muted,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text('Correlación entre tasa respiratoria (X) y frecuencia cardíaca (Y).', style: GoogleFonts.inter(color: _muted, fontSize: 13)),
-              ],
-            ),
+              ),
+              Tooltip(
+                message: 'Las barras muestran el esfuerzo promedio. En un estado saludable, el pulso y la respiración suben y bajan de forma simétrica. Un desnivel fuerte indica un sobreesfuerzo en uno de los sistemas.',
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _tooltipBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+                child: Icon(LucideIcons.info, size: 14, color: _muted.withValues(alpha: 0.5)),
+              ),
+            ],
           ),
-          const Divider(height: 1, color: _border),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: SizedBox(
-              height: 300,
-              child: spots.isEmpty
-                  ? Center(child: Text('Datos insuficientes para el análisis de dispersión', style: GoogleFonts.inter(color: _muted)))
-                  : ScatterChart(_buildScatterData(context, spots)),
+          const SizedBox(height: 24),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildBar(
+                  label: 'Pulso',
+                  value: avgHR,
+                  unit: 'BPM',
+                  fillPercentage: fillHR,
+                  color: _hrColor,
+                ),
+                _buildBar(
+                  label: 'Respiración',
+                  value: avgRR,
+                  unit: 'BrPM',
+                  fillPercentage: fillRR,
+                  color: _rrLine,
+                ),
+              ],
             ),
           ),
         ],
@@ -939,64 +964,71 @@ class _ScatterPlotLayer extends StatelessWidget {
     );
   }
 
-  ScatterChartData _buildScatterData(BuildContext context, List<ScatterSpot> spots) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
-    final minRR = spots.map((s) => s.x).reduce(math.min);
-    final maxRR = spots.map((s) => s.x).reduce(math.max);
-    final minHR = spots.map((s) => s.y).reduce(math.min);
-    final maxHR = spots.map((s) => s.y).reduce(math.max);
-    final xPad = ((maxRR - minRR) < 1 ? 1.0 : (maxRR - minRR)) * 0.15;
-    final yPad = ((maxHR - minHR) < 1 ? 1.0 : (maxHR - minHR)) * 0.15;
-
-    return ScatterChartData(
-      scatterSpots: spots,
-      minX: (minRR - xPad).clamp(0.0, double.infinity),
-      maxX: maxRR + xPad,
-      minY: (minHR - yPad).clamp(0.0, double.infinity),
-      maxY: maxHR + yPad,
-      gridData: FlGridData(
-        show: true,
-        getDrawingHorizontalLine: (v) => FlLine(color: _border.withValues(alpha: 0.4), strokeWidth: 1),
-        getDrawingVerticalLine: (v) => FlLine(color: _border.withValues(alpha: 0.4), strokeWidth: 1),
-      ),
-      titlesData: FlTitlesData(
-        show: true,
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        bottomTitles: AxisTitles(
-          axisNameWidget: Text('Respiración (BrPM)', style: GoogleFonts.inter(fontSize: 10, color: _rrLine, fontWeight: FontWeight.bold)),
-          axisNameSize: 20,
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: 5,
-            reservedSize: 24,
-            getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _muted, fontSize: 10)),
+  Widget _buildBar({
+    required String label,
+    required double value,
+    required String unit,
+    required double fillPercentage,
+    required Color color,
+  }) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Text(
+          value.toStringAsFixed(1),
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: _text,
           ),
         ),
-        leftTitles: AxisTitles(
-          axisNameWidget: Text('Pulso', style: GoogleFonts.inter(fontSize: 10, color: _hrColor, fontWeight: FontWeight.bold)),
-          axisNameSize: 20,
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: 20,
-            reservedSize: isMobile ? 25 : 35,
-            getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.jetBrainsMono(color: _muted, fontSize: 9)),
+        Text(
+          unit,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: _muted,
+            fontWeight: FontWeight.w500,
           ),
         ),
-      ),
-      borderData: FlBorderData(show: true, border: Border.all(color: _border)),
-      scatterTouchData: ScatterTouchData(
-        enabled: true,
-        touchTooltipData: ScatterTouchTooltipData(
-          getTooltipColor: (_) => _tooltipBg,
-          getTooltipItems: (touchedSpot) => ScatterTooltipItem(
-            'HR: ${touchedSpot.y.toInt()}\nRR: ${touchedSpot.x.toInt()}',
-            textStyle: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
-            bottomMargin: 8,
+        const SizedBox(height: 12),
+        Expanded(
+          child: Container(
+            width: 60,
+            decoration: BoxDecoration(
+              color: _bg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _border),
+            ),
+            alignment: Alignment.bottomCenter,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: fillPercentage),
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeOutQuart,
+              builder: (context, val, child) {
+                return FractionallySizedBox(
+                  heightFactor: val,
+                  widthFactor: 1.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _text,
+          ),
+        ),
+      ],
     );
   }
 }
