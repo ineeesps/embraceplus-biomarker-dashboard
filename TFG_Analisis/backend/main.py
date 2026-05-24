@@ -89,7 +89,7 @@ def seed_database():
         """)
         
         alberto_parts = ["HN", "PRUEBA 1", "PRUEBA 2"]
-        ines_parts = [f"user{i}" for i in range(1, 21)]
+        ines_parts = [f"user{i}" for i in range(1, 21)] + ["DEMO"]
 
         default_users = [
             ("admin", bcrypt.hashpw(b"admin123", bcrypt.gensalt()).decode('utf-8'), "admin", "Administrador del Sistema", []),
