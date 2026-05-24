@@ -489,7 +489,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: asleepPoints == 0 ? 'Sin sueño detectado' : 'Eficiencia del descanso',
             icon: LucideIcons.activitySquare,
             color: _accentIndigo,
-            tooltip: "Mide qué porcentaje del tiempo que pasaste en la cama estuviste realmente durmiendo.",
+            tooltip: "Eficiencia del descanso. Se calcula como el tiempo real dormido frente al tiempo total en cama. Valores óptimos superan el 85%; valores inferiores a 75% indican fragmentación.",
           ),
           _KPICard(
             title: 'Horas de Sueño',
@@ -497,7 +497,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: asleepPoints == 0 ? 'Ajuste el rango horario' : 'Tiempo real de sueño',
             icon: LucideIcons.clock,
             color: _lightSleep,
-            tooltip: "Es el tiempo real acumulado que has dormido entre sueño ligero y profundo.",
+            tooltip: "Tiempo total de sueño (TST), suma del sueño ligero y profundo. El objetivo saludable recomendado para un adulto se sitúa entre 7 y 9 horas diarias.",
           ),
           _KPICard(
             title: 'Tiempo Despierto (WASO)',
@@ -505,7 +505,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Minutos en vela',
             icon: LucideIcons.bellRing,
             color: _accentAmber,
-            tooltip: "Muestra el tiempo total que pasaste desvelado a lo largo de la noche tras haberte dormido por primera vez.",
+            tooltip: "Minutos despierto tras conciliar el sueño por primera vez (WASO). Valores superiores a 30 minutos sugieren un sueño fragmentado o con múltiples desvelos.",
           ),
           _KPICard(
             title: 'Tiempo de Uso',

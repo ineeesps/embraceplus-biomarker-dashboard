@@ -437,7 +437,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Sudoración promedio registrada',
             icon: LucideIcons.zap,
             color: _edaColor,
-            tooltip: "Mide los cambios en la sudoración de la piel. Picos altos reflejan una reacción del cuerpo ante la tensión, el esfuerzo mental o el estrés emocional.",
+            tooltip: "Actividad electrodérmica (EDA). El rango basal en reposo suele ser de 1 a 5 µS. Valores o picos por encima de 5 µS reflejan una activación del sistema nervioso simpático ante la tensión, esfuerzo mental o estrés emocional.",
           ),
           _KPICard(
             title: 'Capacidad de Relajación',
@@ -445,7 +445,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Recuperación promedio del pulso',
             icon: LucideIcons.heartHandshake,
             color: _prvColor,
-            tooltip: "Mide la variabilidad del pulso. Valores más altos indican que el corazón se recupera y se adapta mejor después de un esfuerzo o momento tenso.",
+            tooltip: "Variabilidad del pulso (PRV). Valores altos (>50 ms) indican un estado de relajación y buena capacidad de recuperación. Valores bajos (<30 ms) se asocian a fatiga, tensión o estado de alerta.",
           ),
           _KPICard(
             title: 'Temperatura de la Piel',
@@ -453,7 +453,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: validTemp.isEmpty ? 'Sin datos' : 'Rango: ${minTemp.toStringAsFixed(1)}°C a ${maxTemp.toStringAsFixed(1)}°C',
             icon: LucideIcons.thermometer,
             color: _tempColor,
-            tooltip: "Registra la temperatura en la muñeca. En momentos de tensión emocional, la temperatura de las extremidades suele bajar ligeramente.",
+            tooltip: "Temperatura en la muñeca (habitualmente entre 31°C y 35°C). Una bajada repentina y temporal suele reflejar vasoconstricción periférica por activación ante el estrés emocional.",
           ),
           _KPICard(
             title: 'Tiempo de Uso',

@@ -448,7 +448,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Pasos registrados',
             icon: LucideIcons.footprints,
             color: _identidad,
-            tooltip: "Suma total de pasos detectados. Los objetivos clínicos suelen situarse por encima de los 250 pasos/hora durante el periodo de vigilia.",
+            tooltip: "Suma total de pasos detectados. Los objetivos saludables recomiendan más de 250 pasos por hora activa. Un pico de ejercicio vigoroso puede superar los 100 pasos/minuto.",
           ),
           _KPICard(
             title: 'Esfuerzo Promedio',
@@ -456,7 +456,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Intensidad metabólica',
             icon: LucideIcons.gauge,
             color: _intMPA,
-            tooltip: "Promedio de la intensidad metabólica. Permite discernir entre periodos de sedentarismo e intensidad física ligera, moderada o vigorosa.",
+            tooltip: "Intensidad de esfuerzo (METs). Valores de 1.0 a 1.5 representan sedentarismo; de 1.5 a 3.0 indican actividad ligera (caminar despacio) y valores mayores a 3.0 indican actividad moderada o vigorosa.",
           ),
           _KPICard(
             title: 'Volumen de Movimiento',
@@ -464,7 +464,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Intensidad del movimiento',
             icon: LucideIcons.activity,
             color: _kStability,
-            tooltip: "Magnitud de la aceleración física medida en cuentas de actividad. Representa la potencia del movimiento acumulado.",
+            tooltip: "Media de acticounts (potencia de movimiento). Periodos de reposo registran valores bajos (<50 counts). Actividades muy dinámicas generan picos que superan los 800 o 1000 counts.",
           ),
           _KPICard(
             title: 'Tiempo de Uso',
