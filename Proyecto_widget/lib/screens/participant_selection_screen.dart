@@ -358,10 +358,11 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
 
                                   bool shouldReplace = false;
                                   final exists = await api.checkSensorDataExists(pId, sensorType, widget.username);
+                                  if (!context.mounted) continue;
                                   if (exists) {
                                     setModalState(() => isUploading = false);
                                     final confirm = await showDialog<bool>(
-                                      context: nav.context,
+                                      context: context,
                                       barrierDismissible: false,
                                       builder: (context) => AlertDialog(
                                         title: const Text('Archivo ya existente'),

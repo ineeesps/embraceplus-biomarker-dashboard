@@ -46,12 +46,30 @@ def crear_paciente_demo():
     for m in range(total_minutes):
         t = start_time + datetime.timedelta(minutes=m)
 
+        # Simular desconexiones físicas del dispositivo (tasa de uso imperfecta)
+        # Períodos: 03:00 - 03:30 (minutos 180 a 210) y 19:30 - 20:15 (minutos 1170 a 1215)
+        es_desconexion = (180 <= m < 210) or (1170 <= m < 1215)
+
+        if es_desconexion:
+            # En desconexión, wearing_detection es 0.0 y todos los sensores son NULL
+            records.append((t, 'DEMO', 'wearing_detection', 0.0, 'device_not_recording', 'ines'))
+            sensores_todos = [
+                'step_count', 'activity_intensity', 'met', 'accelerometer_std',
+                'acticounts_total', 'acticounts_x', 'acticounts_y', 'acticounts_z',
+                'pulse_rate', 'respiratory_rate', 'eda', 'prv', 'temperature',
+                'actigraphy_vector', 'activity_counts', 'sleep_detection',
+                'activity_class', 'body_position'
+            ]
+            for s in sensores_todos:
+                records.append((t, 'DEMO', s, None, 'device_not_recording', 'ines'))
+            continue
+
         # Determinar si el minuto cae en algún hueco de señal (para pruebas de interpolación)
         # Gaps: 12:00 - 12:15 (minutos 720 a 735) y 18:00 - 18:10 (minutos 1080 a 1090)
         es_hueco = (720 <= m < 735) or (1080 <= m < 1090)
 
         # ----------------------------------------------------
-        # COMPLIANCE (wearing_detection) - Siempre activo
+        # COMPLIANCE (wearing_detection) - Siempre activo si no hay desconexión
         # ----------------------------------------------------
         records.append((t, 'DEMO', 'wearing_detection', 1.0, 'good', 'ines'))
 

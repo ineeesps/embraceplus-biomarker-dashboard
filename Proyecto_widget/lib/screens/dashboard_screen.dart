@@ -260,7 +260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text(
                       '${pct.toStringAsFixed(2)}%',
                       style: GoogleFonts.inter(
-                        fontSize: isMobile ? 40 : 56,
+                        fontSize: isMobile ? 30 : 44,
                         fontWeight: FontWeight.bold,
                         color: color,
                       ),
