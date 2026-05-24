@@ -495,7 +495,7 @@ class BiomarkerCard extends StatelessWidget {
                     height: 100,
                     child: Center(
                       child: Text(
-                        'Sin valores representables (gaps de calidad)',
+                        'Sin valores para mostrar debido a baja calidad de señal',
                         style: GoogleFonts.inter(color: nudeColor),
                       ),
                     ),
@@ -743,7 +743,7 @@ class BiomarkerCard extends StatelessWidget {
             reservedSize: 30,
             getTitlesWidget: (v, meta) {
               if (v < minX || v > maxX) return const SizedBox();
-              final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true);
+              final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt());
               final format = (maxX - minX) > 86400000 ? 'dd/MM HH:mm' : 'HH:mm';
               return SideTitleWidget(
                 axisSide: meta.axisSide,

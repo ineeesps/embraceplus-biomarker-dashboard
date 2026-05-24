@@ -448,7 +448,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Pasos registrados',
             icon: LucideIcons.footprints,
             color: _identidad,
-            tooltip: "Suma total de pasos detectados. Los objetivos saludables recomiendan más de 250 pasos por hora activa. Un pico de ejercicio vigoroso puede superar los 100 pasos/minuto.",
+            tooltip: "[Sensor: \"step_count\"]. Suma total de pasos detectados. Los objetivos saludables recomiendan más de 250 pasos por hora activa. Un pico de ejercicio vigoroso puede superar los 100 pasos/minuto.",
           ),
           _KPICard(
             title: 'Esfuerzo Promedio',
@@ -456,7 +456,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Intensidad metabólica',
             icon: LucideIcons.gauge,
             color: _intMPA,
-            tooltip: "Intensidad de esfuerzo (METs). Valores de 1.0 a 1.5 representan sedentarismo; de 1.5 a 3.0 indican actividad ligera (caminar despacio) y valores mayores a 3.0 indican actividad moderada o vigorosa.",
+            tooltip: "[Sensor: \"met\"]. Intensidad de esfuerzo (METs). Valores de 1.0 a 1.5 representan sedentarismo; de 1.5 a 3.0 indican actividad ligera (caminar despacio) y valores mayores a 3.0 indican actividad moderada o vigorosa.",
           ),
           _KPICard(
             title: 'Volumen de Movimiento',
@@ -464,7 +464,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Intensidad del movimiento',
             icon: LucideIcons.activity,
             color: _kStability,
-            tooltip: "Media de acticounts (potencia de movimiento). Periodos de reposo registran valores bajos (<50 counts). Actividades muy dinámicas generan picos que superan los 800 o 1000 counts.",
+            tooltip: "[Sensores: \"actigraphy_vector\" / \"activity_counts\"]. Media de acticounts (potencia de movimiento). Periodos de reposo registran valores bajos (<50 counts). Actividades muy dinámicas generan picos que superan los 800 o 1000 counts.",
           ),
           _KPICard(
             title: 'Tiempo de Uso',
@@ -472,7 +472,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Tiempo con registro de calidad',
             icon: LucideIcons.checkCircle2,
             color: AppColors.cyberBlue,
-            tooltip: "Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
+            tooltip: "[Sensor: \"wearing_detection\"]. Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
           ),
         ];
 
@@ -653,7 +653,7 @@ class _ActivitySpectrum extends StatelessWidget {
       icon: LucideIcons.layers,
       title: 'Espectro de Actividad y Postura',
       subtitle: 'Comparativa temporal entre el tipo de actividad y la intensidad del esfuerzo.',
-      tooltip: 'Mapa de calor que permite identificar rápidamente periodos de sedentarismo prolongado y evaluar si los episodios de deambulación alcanzan los umbrales de intensidad vigorosa o moderada requeridos.',
+      tooltip: '[Sensores: "activity_class" (tipo de movimiento) y "activity_intensity" (intensidad)]. Mapa de calor que permite identificar rápidamente periodos de sedentarismo prolongado y evaluar si los episodios de deambulación alcanzan los umbrales de intensidad vigorosa o moderada requeridos.',
       child: Column(
         children: [
           _HeatmapRow(label: 'POSTURA', data: cls, colorFn: _colorCls),
@@ -728,7 +728,7 @@ class _CargaCinetica extends StatelessWidget {
       icon: LucideIcons.trendingUp,
       title: 'Intensidad y Estabilidad del Movimiento',
       subtitle: 'Comparativa entre la fuerza del movimiento y la regularidad del ritmo.',
-      tooltip: 'Una fuerza de movimiento alta con baja irregularidad indica movimientos rítmicos y controlados (como una marcha estable). Una irregularidad alta puede ser indicativa de movimientos erráticos o inestabilidad.',
+      tooltip: '[Sensores: "actigraphy_vector" / "activity_counts" (fuerza) y "accelerometer_std" (irregularidad)]. Compara la fuerza del movimiento y la irregularidad o temblor. Permite evaluar la regularidad de la marcha.',
       child: Column(
         children: [
           SizedBox(
@@ -739,8 +739,8 @@ class _CargaCinetica extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Wrap(spacing: 28, runSpacing: 12, children: [
-            _LegendItem('Fuerza del movimiento', _kMagnitude),
-            _LegendItem('Irregularidad / Temblor',  _kStability),
+            _LegendItem('Fuerza', _kMagnitude),
+            _LegendItem('Irregularidad',  _kStability),
           ]),
         ],
       ),
@@ -830,8 +830,8 @@ class _EficienciaMarcha extends StatelessWidget {
     final allKeys = stepsPerEpochHour.keys.toList()..sort();
     final sortedKeys = allKeys.where((k) => (epochHourDataCount[k] ?? 0) >= 2).toList();
     final stepSpansDays = sortedKeys.length > 1 &&
-        DateTime.fromMillisecondsSinceEpoch(sortedKeys.first * 3600000, isUtc: true).day !=
-        DateTime.fromMillisecondsSinceEpoch(sortedKeys.last * 3600000, isUtc: true).day;
+        DateTime.fromMillisecondsSinceEpoch(sortedKeys.first * 3600000).day !=
+        DateTime.fromMillisecondsSinceEpoch(sortedKeys.last * 3600000).day;
     final int labelStep = math.max(1, (sortedKeys.length / 6).ceil());
     const double target = 250.0;
 
@@ -839,7 +839,7 @@ class _EficienciaMarcha extends StatelessWidget {
       icon: LucideIcons.footprints,
       title: 'Pasos por Hora',
       subtitle: 'Pasos acumulados en cada hora comparados con el objetivo clínico de movilidad.',
-      tooltip: 'Cuantificación del volumen de marcha. Las barras que superan la línea punteada indican que el paciente ha cumplido el objetivo mínimo de movilidad para esa franja horaria.',
+      tooltip: '[Sensor: "step_count"]. Cuantificación del volumen de marcha. Las barras que superan la línea punteada indican que el paciente ha cumplido el objetivo mínimo de movilidad para esa franja horaria.',
       child: Column(
         children: [
           SizedBox(
@@ -852,7 +852,7 @@ class _EficienciaMarcha extends StatelessWidget {
                         getTooltipColor: (_) => _tooltipBg,
                         getTooltipItem: (group, _, rod, __) {
                           final epochHour = sortedKeys[group.x.toInt()];
-                          final dt = DateTime.fromMillisecondsSinceEpoch(epochHour * 3600000, isUtc: true);
+                          final dt = DateTime.fromMillisecondsSinceEpoch(epochHour * 3600000);
                           final label = stepSpansDays ? DateFormat('dd/MM HH:mm').format(dt) : DateFormat('HH:mm').format(dt);
                           return BarTooltipItem(
                             '$label: ${rod.toY.toInt()} pasos',
@@ -893,26 +893,8 @@ class _EficienciaMarcha extends StatelessWidget {
                         ),
                       ],
                     ),
-                    titlesData: FlTitlesData(
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: stepSpansDays ? 40 : 28,
-                          interval: labelStep.toDouble(),
-                          getTitlesWidget: (v, _) {
-                            final idx = v.toInt();
-                            if (idx < 0 || idx >= sortedKeys.length) return const SizedBox();
-                            final dt = DateTime.fromMillisecondsSinceEpoch(sortedKeys[idx] * 3600000, isUtc: true);
-                            final label = stepSpansDays
-                                ? '${DateFormat('dd/MM').format(dt)}\n${DateFormat('HH:mm').format(dt)}'
-                                : DateFormat('HH:mm').format(dt);
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(label, textAlign: TextAlign.center, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: _muted, fontWeight: FontWeight.bold)),
-                            );
-                          },
-                        ),
-                      ),
+                    titlesData: const FlTitlesData(
+                      bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       leftTitles:  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       topTitles:   const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -949,7 +931,7 @@ class _AnalisisBiomecanicoState extends State<_AnalisisBiomecanico> {
       icon: LucideIcons.box,
       title: 'Movimiento en 3 Dimensiones',
       subtitle: 'Detalle de la aceleración tridimensional en los ejes X, Y y Z.',
-      tooltip: 'Representación tridimensional de la aceleración. Exclusivo para análisis del movimiento detallado, asimetrías de la marcha o cambios posturales.',
+      tooltip: '[Sensores: "acticounts_x", "acticounts_y", "acticounts_z"]. Representación tridimensional de la aceleración. Exclusivo para análisis del movimiento detallado, asimetrías de la marcha o cambios posturales.',
       trailing: TextButton.icon(
         onPressed: () => setState(() => _expanded = !_expanded),
         icon: Icon(_expanded ? LucideIcons.eyeOff : LucideIcons.eye, size: 15, color: _identidad),
@@ -976,6 +958,38 @@ class _AnalisisBiomecanicoState extends State<_AnalisisBiomecanico> {
                     _LegendItem('Eje Vertical (Arriba-Abajo) [Y]',     _axisY),
                     _LegendItem('Eje Frontal (Adelante-Atrás) [Z]',      _axisZ),
                   ]),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _identidad.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _identidad.withValues(alpha: 0.15)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(LucideIcons.info, size: 16, color: _identidad),
+                            const SizedBox(width: 8),
+                            Text(
+                              '¿Cómo interpretar este gráfico?',
+                              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: _identidad),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'El acelerómetro mide la fuerza de aceleración en las tres dimensiones físicas:\n'
+                          '• Eje X (Lateral): Movimiento hacia los lados. Refleja braceos laterales.\n'
+                          '• Eje Y (Vertical): Movimiento vertical. Muy alto durante el impacto de la pisada al caminar o correr.\n'
+                          '• Eje Z (Frontal): Movimiento adelante/atrás. Refleja el balanceo del brazo al avanzar en el espacio.',
+                          style: GoogleFonts.inter(fontSize: 11, color: _muted, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
       ),
@@ -988,6 +1002,22 @@ class _AnalisisBiomecanicoState extends State<_AnalisisBiomecanico> {
     final span = x.last.time.millisecondsSinceEpoch - t0;
     if (span <= 0) return LineChartData();
 
+    final allValues = [
+      ...x.where((e) => e.value != null).map((e) => e.value!),
+      ...y.where((e) => e.value != null).map((e) => e.value!),
+      ...z.where((e) => e.value != null).map((e) => e.value!),
+    ];
+    double minY = 0;
+    double maxY = 100;
+    if (allValues.isNotEmpty) {
+      final absoluteMin = allValues.reduce(math.min);
+      final absoluteMax = allValues.reduce(math.max);
+      final range = absoluteMax - absoluteMin;
+      minY = absoluteMin - (range > 0 ? range * 0.15 : 10);
+      maxY = absoluteMax + (range > 0 ? range * 0.15 : 10);
+      if (minY < 0) minY = 0;
+    }
+
     LineChartBarData bar(List<Biomarker> data, Color color) => LineChartBarData(
       spots: data.where((m) => m.value != null).map((m) => FlSpot((m.time.millisecondsSinceEpoch - t0) / span * 100, m.value!)).toList(),
       isCurved: true,
@@ -997,6 +1027,8 @@ class _AnalisisBiomecanicoState extends State<_AnalisisBiomecanico> {
     );
 
     return LineChartData(
+      minY: minY,
+      maxY: maxY,
       lineBarsData: [bar(x, _axisX), bar(y, _axisY), bar(z, _axisZ)],
       titlesData: const FlTitlesData(show: false),
       gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (_) => FlLine(color: _border.withValues(alpha: 0.4), strokeWidth: 1)),

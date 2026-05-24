@@ -469,7 +469,7 @@ class _KPIsLayer extends StatelessWidget {
             title: 'Frecuencia Cardíaca (Pulso)',
             value: validHR.isEmpty ? '--' : '${avgHR.round()} BPM',
             subtitle: validHR.isEmpty ? 'Sin datos' : 'Mín: ${minHR.round()} BPM | Máx: ${maxHR.round()} BPM',
-            tooltip: 'Latidos por minuto (BPM). En reposo, el rango normal es de 60 a 100 BPM. Valores de esfuerzo o picos de taquicardia clínica superan los 100 BPM (zona roja en la gráfica).',
+            tooltip: '[Sensor: "pulse_rate"]. Latidos por minuto (BPM). En reposo, el rango normal es de 60 a 100 BPM. Valores de esfuerzo o picos de taquicardia clínica superan los 100 BPM (zona roja en la gráfica).',
             icon: LucideIcons.activity,
             color: _hrColor,
           ),
@@ -477,7 +477,7 @@ class _KPIsLayer extends StatelessWidget {
             title: 'Frecuencia Respiratoria',
             value: validRR.isEmpty ? '--' : '${avgRR.round()} BrPM',
             subtitle: 'Ciclos respiratorios promedio',
-            tooltip: 'Ciclos respiratorios por minuto (BrPM). En reposo, un adulto sano suele respirar entre 12 y 20 veces. Durante un ejercicio vigoroso, la tasa puede superar las 30 BrPM.',
+            tooltip: '[Sensor: "respiratory_rate"]. Ciclos respiratorios por minuto (BrPM). En reposo, un adulto sano suele respirar entre 12 y 20 veces. Durante un ejercicio vigoroso, la tasa puede superar las 30 BrPM.',
             icon: LucideIcons.wind,
             color: _rrLine,
           ),
@@ -485,7 +485,7 @@ class _KPIsLayer extends StatelessWidget {
             title: 'Relación Latidos / Respiración',
             value: ratioCount == 0 ? '--' : avgRatio.toStringAsFixed(1),
             subtitle: 'Latidos por cada ciclo respiratorio',
-            tooltip: 'Cociente entre pulso y respiración. El acoplamiento normal suele estar entre 4.0 y 5.0. Valores elevados indican desacoplamiento (arritmias o esfuerzo asimétrico).',
+            tooltip: '[Calculado de: "pulse_rate" / "respiratory_rate"]. Cociente entre pulso y respiración. El acoplamiento normal suele estar entre 4.0 y 5.0. Valores elevados indican desacoplamiento (arritmias o esfuerzo asimétrico).',
             icon: LucideIcons.infinity,
             color: _ratioColor,
           ),
@@ -495,7 +495,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Tiempo con registro de calidad',
             icon: LucideIcons.checkCircle2,
             color: AppColors.cyberBlue,
-            tooltip: "Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
+            tooltip: "[Sensor: \"wearing_detection\"]. Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
           ),
         ];
 
@@ -647,7 +647,7 @@ class _CouplingGraphLayer extends StatelessWidget {
                       ],
                     ),
                     Tooltip(
-                      message: "Compara el ritmo del corazón con la respiración. Un acoplamiento estable refleja un estado de calma y buen funcionamiento del cuerpo.",
+                      message: '[Sensores: "pulse_rate" y "respiratory_rate"]. Compara el ritmo del corazón con la respiración. Un acoplamiento estable refleja un estado de calma y buen funcionamiento del cuerpo.',
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(color: _tooltipBg, borderRadius: BorderRadius.circular(8)),
                       textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
@@ -752,13 +752,13 @@ class _CouplingGraphLayer extends StatelessWidget {
     double xInterval = (maxX - minX) / 5;
     if (xInterval <= 0) xInterval = 3600000;
     final bool axisSpansDays = !DateUtils.isSameDay(
-        DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true),
-        DateTime.fromMillisecondsSinceEpoch(maxX.toInt(), isUtc: true));
+        DateTime.fromMillisecondsSinceEpoch(minX.toInt()),
+        DateTime.fromMillisecondsSinceEpoch(maxX.toInt()));
 
     final List<VerticalLine> dayLines = [];
     if (axisSpansDays) {
-      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true);
-      DateTime midnight = DateTime.utc(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
+      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt());
+      DateTime midnight = DateTime(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
       while (midnight.millisecondsSinceEpoch.toDouble() <= maxX) {
         final dayLabel = DateFormat('dd MMM').format(midnight);
         dayLines.add(VerticalLine(
@@ -804,7 +804,7 @@ class _CouplingGraphLayer extends StatelessWidget {
             reservedSize: 28,
             getTitlesWidget: (v, meta) {
               if (v < minX + (xInterval * 0.5) || v > maxX - (xInterval * 0.25)) return const SizedBox();
-              final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true);
+              final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt());
               return SideTitleWidget(
                 axisSide: meta.axisSide,
                 child: Text(DateFormat('HH:mm').format(dt), style: GoogleFonts.inter(color: _muted, fontSize: isMobile ? 8 : 10))
@@ -848,7 +848,7 @@ class _CouplingGraphLayer extends StatelessWidget {
               final val = isRR ? spot.y / rrScale : spot.y;
               final label = isRR ? 'Respiración (RR)' : 'Frecuencia Cardíaca (HR)';
               final unit = isRR ? ' BrPM' : ' BPM';
-              final dt = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt(), isUtc: true);
+              final dt = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt());
               final timeStr = DateFormat('HH:mm').format(dt);
               return LineTooltipItem(
                 '$timeStr\n$label: ${val.toStringAsFixed(1)}$unit',
@@ -906,13 +906,29 @@ class _EcualizadorVitalLayer extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Balance Cardiorrespiratorio',
-                      style: GoogleFonts.outfit(
-                        fontSize: isMobile ? 16 : 18,
-                        fontWeight: FontWeight.bold,
-                        color: _text,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Balance Cardiorrespiratorio',
+                          style: GoogleFonts.outfit(
+                            fontSize: isMobile ? 16 : 18,
+                            fontWeight: FontWeight.bold,
+                            color: _text,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Tooltip(
+                          message: '[Sensores: "pulse_rate" y "respiratory_rate"]. Las barras muestran el esfuerzo promedio. En un estado saludable, el pulso y la respiración suben y bajan de forma simétrica. Un desnivel fuerte indica un sobreesfuerzo o desacoplamiento de uno de los de sistemas.',
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _tooltipBg,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+                          child: Icon(LucideIcons.info, size: 14, color: _muted.withValues(alpha: 0.5)),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -924,16 +940,6 @@ class _EcualizadorVitalLayer extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-              Tooltip(
-                message: 'Las barras muestran el esfuerzo promedio. En un estado saludable, el pulso y la respiración suben y bajan de forma simétrica. Un desnivel fuerte indica un sobreesfuerzo en uno de los sistemas.',
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _tooltipBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
-                child: Icon(LucideIcons.info, size: 14, color: _muted.withValues(alpha: 0.5)),
               ),
             ],
           ),

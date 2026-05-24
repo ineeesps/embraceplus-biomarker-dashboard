@@ -437,7 +437,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Sudoración promedio registrada',
             icon: LucideIcons.zap,
             color: _edaColor,
-            tooltip: "Actividad electrodérmica (EDA). El rango basal en reposo suele ser de 1 a 5 µS. Valores o picos por encima de 5 µS reflejan una activación del sistema nervioso simpático ante la tensión, esfuerzo mental o estrés emocional.",
+            tooltip: "[Sensor: \"eda\"]. Actividad electrodérmica (EDA). El rango basal en reposo suele ser de 1 a 5 µS. Valores o picos por encima de 5 µS reflejan una activación del sistema nervioso simpático ante la tensión, esfuerzo mental o estrés emocional.",
           ),
           _KPICard(
             title: 'Capacidad de Relajación',
@@ -445,7 +445,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Recuperación promedio del pulso',
             icon: LucideIcons.heartHandshake,
             color: _prvColor,
-            tooltip: "Variabilidad del pulso (PRV). Valores altos (>50 ms) indican un estado de relajación y buena capacidad de recuperación. Valores bajos (<30 ms) se asocian a fatiga, tensión o estado de alerta.",
+            tooltip: "[Sensor: \"prv\"]. Variabilidad del pulso (PRV). Valores altos (>50 ms) indican un estado de relajación y buena capacidad de recuperación. Valores bajos (<30 ms) se asocian a fatiga, tensión o estado de alerta.",
           ),
           _KPICard(
             title: 'Temperatura de la Piel',
@@ -453,7 +453,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: validTemp.isEmpty ? 'Sin datos' : 'Rango: ${minTemp.toStringAsFixed(1)}°C a ${maxTemp.toStringAsFixed(1)}°C',
             icon: LucideIcons.thermometer,
             color: _tempColor,
-            tooltip: "Temperatura en la muñeca (habitualmente entre 31°C y 35°C). Una bajada repentina y temporal suele reflejar vasoconstricción periférica por activación ante el estrés emocional.",
+            tooltip: "[Sensor: \"temperature\"]. Temperatura en la muñeca (habitualmente entre 31°C y 35°C). Una bajada repentina y temporal suele reflejar vasoconstricción periférica por activación ante el estrés emocional.",
           ),
           _KPICard(
             title: 'Tiempo de Uso',
@@ -461,7 +461,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Tiempo con registro de calidad',
             icon: LucideIcons.checkCircle2,
             color: AppColors.cyberBlue,
-            tooltip: "Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
+            tooltip: "[Sensor: \"wearing_detection\"]. Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
           ),
         ];
 
@@ -629,7 +629,7 @@ class _ReactividadGraphLayer extends StatelessWidget {
                       ],
                     ),
                     Tooltip(
-                      message: "Compara la tensión física de tu cuerpo (EDA) con su capacidad para relajarse (HRV). Si la tensión sube y la relajación baja, suele ser señal de un momento de estrés.",
+                      message: '[Sensores: "eda" y "prv"]. Compara la tensión física de tu cuerpo (EDA) con su capacidad para relajarse (HRV). Si la tensión sube y la relajación baja, suele ser señal de un momento de estrés.',
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(color: _text.withValues(alpha: 0.95), borderRadius: BorderRadius.circular(8)),
                       textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
@@ -740,14 +740,14 @@ class _ReactividadGraphLayer extends StatelessWidget {
     double minX = fallbackMinX, maxX = fallbackMaxX;
     double maxVal = 5;
 
-    final allT = [...edaData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble()), ...prvData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble())];
+    final allT = [...edaData.map((e) => e.time.millisecondsSinceEpoch.toDouble()), ...prvData.map((e) => e.time.millisecondsSinceEpoch.toDouble())];
     if (allT.isNotEmpty) {
       minX = allT.reduce(math.min);
       maxX = allT.reduce(math.max);
     }
     final bool axisSpansDays = !DateUtils.isSameDay(
-        DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true),
-        DateTime.fromMillisecondsSinceEpoch(maxX.toInt(), isUtc: true));
+        DateTime.fromMillisecondsSinceEpoch(minX.toInt()),
+        DateTime.fromMillisecondsSinceEpoch(maxX.toInt()));
 
     final allV = [
       ...edaData.where((e) => e.value != null).map((e) => e.value!),
@@ -764,8 +764,8 @@ class _ReactividadGraphLayer extends StatelessWidget {
 
     final List<VerticalLine> dayLines = [];
     if (axisSpansDays) {
-      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true);
-      DateTime midnight = DateTime.utc(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
+      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt());
+      DateTime midnight = DateTime(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
       while (midnight.millisecondsSinceEpoch.toDouble() <= maxX) {
         final dayLabel = DateFormat('dd MMM').format(midnight);
         dayLines.add(VerticalLine(
@@ -808,7 +808,7 @@ class _ReactividadGraphLayer extends StatelessWidget {
             reservedSize: 28,
             getTitlesWidget: (v, meta) {
               if (v < minX + (xInterval * 0.5) || v > maxX - (xInterval * 0.25)) return const SizedBox();
-              final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true);
+              final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt());
               return SideTitleWidget(
                 axisSide: meta.axisSide,
                 space: 8,
@@ -850,7 +850,7 @@ class _ReactividadGraphLayer extends StatelessWidget {
               final val = isPRV ? spot.y / prvScale : spot.y;
               final label = isPRV ? 'Relajación (HRV)' : 'Nivel de Alerta (EDA)';
               final unit = isPRV ? ' ms' : ' µS';
-              final dt = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt(), isUtc: true);
+              final dt = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt());
               final timeStr = DateFormat('HH:mm').format(dt);
               return LineTooltipItem('$timeStr\n$label: ${val.toStringAsFixed(1)}$unit', GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11));
             }).toList();
@@ -915,7 +915,7 @@ class _ContextoGraphLayer extends StatelessWidget {
                       ],
                     ),
                     Tooltip(
-                      message: "Sirve para saber si tu tensión es emocional o física. Si la sudoración es muy alta pero el esfuerzo físico (METs) es bajo, es probable que se deba a estrés emocional o alerta mental.",
+                      message: '[Sensores: "temperature" y "met"]. Sirve para saber si tu tensión es emocional o física. Si la sudoración es muy alta pero el esfuerzo físico (METs) es bajo, es probable que se deba a estrés emocional o alerta mental.',
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(color: _tooltipBg, borderRadius: BorderRadius.circular(8)),
                       textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 11),
@@ -1023,14 +1023,14 @@ class _ContextoGraphLayer extends StatelessWidget {
     double minX = fallbackMinX, maxX = fallbackMaxX;
     double minVal = 25, maxVal = 40;
 
-    final allT = [...metsData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble()), ...tempData.map((e) => e.time.toUtc().millisecondsSinceEpoch.toDouble())];
+    final allT = [...metsData.map((e) => e.time.millisecondsSinceEpoch.toDouble()), ...tempData.map((e) => e.time.millisecondsSinceEpoch.toDouble())];
     if (allT.isNotEmpty) {
       minX = allT.reduce(math.min);
       maxX = allT.reduce(math.max);
     }
     final bool axisSpansDays = !DateUtils.isSameDay(
-        DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true),
-        DateTime.fromMillisecondsSinceEpoch(maxX.toInt(), isUtc: true));
+        DateTime.fromMillisecondsSinceEpoch(minX.toInt()),
+        DateTime.fromMillisecondsSinceEpoch(maxX.toInt()));
 
     final allV = [
       ...metsData.where((e) => e.value != null).map((e) => e.value! * metScale),
@@ -1049,8 +1049,8 @@ class _ContextoGraphLayer extends StatelessWidget {
 
     final List<VerticalLine> dayLines = [];
     if (axisSpansDays) {
-      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true);
-      DateTime midnight = DateTime.utc(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
+      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt());
+      DateTime midnight = DateTime(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
       while (midnight.millisecondsSinceEpoch.toDouble() <= maxX) {
         final dayLabel = DateFormat('dd MMM').format(midnight);
         dayLines.add(VerticalLine(
@@ -1115,7 +1115,7 @@ class _ContextoGraphLayer extends StatelessWidget {
             reservedSize: 28,
             getTitlesWidget: (v, meta) {
               if (v < minX + (xInterval * 0.5) || v > maxX - (xInterval * 0.25)) return const SizedBox();
-              final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true);
+              final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt());
               return SideTitleWidget(
                 axisSide: meta.axisSide,
                 space: 8,
@@ -1159,7 +1159,7 @@ class _ContextoGraphLayer extends StatelessWidget {
               final val    = isMet ? spot.y / metScale : spot.y;
               final label  = isMet ? 'Esfuerzo (METs)' : 'Temperatura';
               final unit   = isMet ? ' METs' : ' °C';
-              final dt     = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt(), isUtc: true);
+              final dt     = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt());
               final time   = DateFormat('HH:mm').format(dt);
               return LineTooltipItem(
                 '$label: ${val.toStringAsFixed(1)}$unit',

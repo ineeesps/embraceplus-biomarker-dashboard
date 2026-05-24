@@ -219,7 +219,7 @@ class _ControlPanel extends StatelessWidget {
                     Icon(hasGoodHygiene ? LucideIcons.checkCircle2 : LucideIcons.alertTriangle, size: 11, color: hasGoodHygiene ? const Color(0xFF10B981) : _accentAmber),
                     const SizedBox(width: 6),
                     Text(
-                      hasGoodHygiene ? 'Higiene Circadiana Óptima' : 'Sueño Fragmentado',
+                      hasGoodHygiene ? 'Buen Descanso' : 'Sueño Interrumpido',
                       style: GoogleFonts.jetBrainsMono(fontSize: 10, fontWeight: FontWeight.bold, color: hasGoodHygiene ? const Color(0xFF10B981) : _accentAmber),
                     ),
                   ],
@@ -489,7 +489,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: asleepPoints == 0 ? 'Sin sueño detectado' : 'Eficiencia del descanso',
             icon: LucideIcons.activitySquare,
             color: _accentIndigo,
-            tooltip: "Eficiencia del descanso. Se calcula como el tiempo real dormido frente al tiempo total en cama. Valores óptimos superan el 85%; valores inferiores a 75% indican fragmentación.",
+            tooltip: "[Sensor: \"sleep_detection\"]. Eficiencia del descanso. Se calcula como el tiempo real dormido frente al tiempo total en cama. Valores óptimos superan el 85%; valores inferiores a 75% indican fragmentación.",
           ),
           _KPICard(
             title: 'Horas de Sueño',
@@ -497,7 +497,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: asleepPoints == 0 ? 'Ajuste el rango horario' : 'Tiempo real de sueño',
             icon: LucideIcons.clock,
             color: _lightSleep,
-            tooltip: "Tiempo total de sueño (TST), suma del sueño ligero y profundo. El objetivo saludable recomendado para un adulto se sitúa entre 7 y 9 horas diarias.",
+            tooltip: "[Sensor: \"sleep_detection\"]. Tiempo total de sueño (TST), suma del sueño ligero y profundo. El objetivo saludable recomendado para un adulto se sitúa entre 7 y 9 horas diarias.",
           ),
           _KPICard(
             title: 'Tiempo Despierto (WASO)',
@@ -505,7 +505,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Minutos en vela',
             icon: LucideIcons.bellRing,
             color: _accentAmber,
-            tooltip: "Minutos despierto tras conciliar el sueño por primera vez (WASO). Valores superiores a 30 minutos sugieren un sueño fragmentado o con múltiples desvelos.",
+            tooltip: "[Sensor: \"sleep_detection\"]. Minutos despierto tras conciliar el sueño por primera vez (WASO). Valores superiores a 30 minutos sugieren un sueño fragmentado o con múltiples desvelos.",
           ),
           _KPICard(
             title: 'Tiempo de Uso',
@@ -513,7 +513,7 @@ class _KPIsLayer extends StatelessWidget {
             subtitle: 'Tiempo con registro de calidad',
             icon: LucideIcons.checkCircle2,
             color: AppColors.cyberBlue,
-            tooltip: "Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
+            tooltip: "[Sensor: \"wearing_detection\"]. Porcentaje de tiempo en el que la pulsera ha estado colocada correctamente registrando datos limpios y analizables.",
           ),
         ];
 
@@ -644,7 +644,7 @@ class _HipnogramaLayer extends StatelessWidget {
             subtitle: 'Evolución de la profundidad del sueño y detección de espasmos nocturnos.',
             icon: LucideIcons.activity,
             iconColor: _accentIndigo,
-            tooltip: "Muestra cómo varía la profundidad de tu sueño a lo largo de la noche. Las líneas rojas indican pequeños movimientos o espasmos involuntarios mientras duermes.",
+            tooltip: '[Sensores: "sleep_detection" y "actigraphy_vector" / "activity_counts"]. Muestra cómo varía la profundidad de tu sueño a lo largo de la noche. Las líneas rojas indican pequeños movimientos o espasmos involuntarios mientras duermes.',
           ),
           const Divider(height: 1, color: _border),
           Padding(
@@ -704,7 +704,7 @@ class _HipnogramaLayer extends StatelessWidget {
       if (act.value != null && act.value! > 0) {
         final t = act.time.toUtc().millisecondsSinceEpoch.toDouble();
         final correspondingSleep = sleepData.where((s) => (s.time.toUtc().millisecondsSinceEpoch.toDouble() - t).abs() < 60000).firstOrNull;
-        if (correspondingSleep != null && correspondingSleep.value != null && correspondingSleep.value! > 0) {
+        if (correspondingSleep != null && correspondingSleep.value != null) {
           redMarkers.add(VerticalLine(x: t, color: _accentRed.withValues(alpha: 0.6), strokeWidth: 2));
         }
       }
@@ -718,13 +718,13 @@ class _HipnogramaLayer extends StatelessWidget {
     double xInterval = (maxX - minX) / 5;
     if (xInterval <= 0) xInterval = 3600000;
     final bool axisSpansDays = spots.isNotEmpty && !DateUtils.isSameDay(
-        DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true),
-        DateTime.fromMillisecondsSinceEpoch(maxX.toInt(), isUtc: true));
+        DateTime.fromMillisecondsSinceEpoch(minX.toInt()),
+        DateTime.fromMillisecondsSinceEpoch(maxX.toInt()));
 
     final List<VerticalLine> dayLines = [];
     if (axisSpansDays) {
-      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt(), isUtc: true);
-      DateTime midnight = DateTime.utc(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
+      final startDt = DateTime.fromMillisecondsSinceEpoch(minX.toInt());
+      DateTime midnight = DateTime(startDt.year, startDt.month, startDt.day).add(const Duration(days: 1));
       while (midnight.millisecondsSinceEpoch.toDouble() <= maxX) {
         final dayLabel = DateFormat('dd MMM').format(midnight);
         dayLines.add(VerticalLine(
@@ -769,7 +769,7 @@ class _HipnogramaLayer extends StatelessWidget {
             showTitles: true, interval: xInterval, reservedSize: 28,
             getTitlesWidget: (v, meta) {
               if (v < minX + (xInterval * 0.5) || v > maxX - (xInterval * 0.25)) return const SizedBox();
-              final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true);
+              final dt = DateTime.fromMillisecondsSinceEpoch(v.toInt());
               return Text(DateFormat('HH:mm').format(dt), style: GoogleFonts.jetBrainsMono(color: _muted, fontSize: 9));
             },
           ),
@@ -792,7 +792,7 @@ class _HipnogramaLayer extends StatelessWidget {
         touchTooltipData: LineTouchTooltipData(
           getTooltipColor: (_) => const Color(0xFF0F172A),
           getTooltipItems: (pts) => pts.map((s) {
-            final dt = DateTime.fromMillisecondsSinceEpoch(s.x.toInt(), isUtc: true);
+            final dt = DateTime.fromMillisecondsSinceEpoch(s.x.toInt());
             final timeStr = DateFormat('HH:mm').format(dt);
             final phaseLabel = s.y <= 1.5 ? 'Sueño Profundo' : (s.y <= 2.5 ? 'Sueño Ligero' : 'Despierto');
             return LineTooltipItem('$timeStr - $phaseLabel', GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11));
@@ -825,7 +825,7 @@ class _GanttPosturalLayer extends StatelessWidget {
             subtitle: 'Distribución del tiempo que el paciente pasó en cada posición corporal.',
             icon: LucideIcons.user,
             iconColor: _accentTeal,
-            tooltip: "Te permite ver en qué posición dormías en cada momento de la noche y relacionarlo con tus movimientos o despertares.",
+            tooltip: '[Sensor: "body_position"]. Te permite ver en qué posición dormías en cada momento de la noche y relacionarlo con tus movimientos o despertares.',
           ),
           const Divider(height: 1, color: _border),
           Padding(
