@@ -23,16 +23,23 @@ const Color _accentTeal   = Color(0xFF14B8A6);
 const Color _accentRed    = Color(0xFFEF4444);
 const Color _tooltipBg    = Color(0xFF0F172A);
 
-const Color _deepSleep    = Color(0xFF312E81);
-const Color _lightSleep   = Color(0xFF818CF8);
+// ── Sleep stage colours ──────────────────────────────────────────────────
+const Color _deepSleep  = Color(0xFF312E81); // value == 2 → deep / restorative
+const Color _lightSleep = Color(0xFF818CF8); // value == 1 → light sleep
 
-const Color _posSupine    = Color(0xFF4F46E5);
-const Color _posLateral   = Color(0xFFC7D2FE);
-const Color _posProne     = Color(0xFF14B8A6);
-const Color _posSitting   = Color(0xFF64748B);
-const Color _posStanding  = Color(0xFFEA580C);
-const Color _posMisc      = Color(0xFFE2E8F0);
+// ── Body position colours (Gantt chart) ──────────────────────────────
+const Color _posSupine   = Color(0xFF4F46E5); // code 5 — supine (most common during sleep)
+const Color _posLateral  = Color(0xFFC7D2FE); // codes 2/3 — left/right lateral
+const Color _posProne    = Color(0xFF14B8A6); // code 4 — prone
+const Color _posSitting  = Color(0xFF64748B); // code 0 — seated / reclined
+const Color _posStanding = Color(0xFFEA580C); // code 1 — standing
+const Color _posMisc     = Color(0xFFE2E8F0); // code 6 — transition / miscellaneous
 
+/// Sleep clinical module.
+///
+/// Renders the hypnogram (sleep stage timeline), total sleep time (TST),
+/// WASO, postural Gantt chart, and spasm/movement-event markers for the
+/// selected nocturnal window. Uses two tabs: Dashboard and Export/Analysis.
 class SuenoScreen extends StatefulWidget {
   final String participantId;
   final String username;

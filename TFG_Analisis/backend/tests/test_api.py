@@ -25,11 +25,14 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
             cur.execute("UPDATE usuarios SET participantes_asignados = %s WHERE username = 'ines';", (ines_parts,))
             for p in alberto_parts:
                 cur.execute("UPDATE biomarcadores SET investigador = 'alberto' WHERE participant_id = %s;", (p,))
+            for p in ines_parts:
+                cur.execute("UPDATE biomarcadores SET investigador = 'ines' WHERE participant_id = %s;", (p,))
+            cur.execute("UPDATE biomarcadores SET investigador = NULL WHERE investigador = 'ines' AND NOT (participant_id = ANY(%s));", (ines_parts,))
             conn.commit()
             cur.close()
             conn.close()
-        except Exception:
-            pass
+        except Exception as e:
+            print("setUp error:", e)
 
     def test_login_success(self):
         """Verifica que el inicio de sesión del investigador alberto retorne sus pacientes asignados"""

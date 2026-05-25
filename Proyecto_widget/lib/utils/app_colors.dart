@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// Centralised colour palette for the EmbracePlus clinical dashboard.
+///
+/// Colours are grouped by semantic role so that the UI stays visually consistent
+/// across all four clinical modules (Movement, Cardiac, Stress, Sleep).
+/// Never use raw hex literals in UI code — always reference this class.
 abstract class AppColors {
   static const Color bgScreen = Color(0xFFF8FAFC);
   static const Color bgCard   = Colors.white;
@@ -16,6 +21,7 @@ abstract class AppColors {
   static const Color sidebarBorder = Color(0xFF334155);
   static const Color sidebarHover  = Color(0xFF334155);
 
+  // ── Clinical accent palette ───────────────────────────────────────────────
   static const Color clinicalHeart  = Color(0xFFE11D48);
   static const Color clinicalBreath = Color(0xFF06B6D4);
   static const Color clinicalMove   = Color(0xFFF97316);
@@ -23,6 +29,8 @@ abstract class AppColors {
   static const Color clinicalViolet = Color(0xFF8B5CF6);
   static const Color clinicalSlate  = Color(0xFF64748B);
 
+
+  // ── Per-sensor colours (used by all chart layers) ────────────────────────
   static const Color sensorHeart  = clinicalHeart;
   static const Color sensorPRV    = Color(0xFFF43F5E);
   static const Color sensorBreath = clinicalBreath;
@@ -31,6 +39,8 @@ abstract class AppColors {
   static const Color sensorTemp   = Color(0xFFFBBF24);
   static const Color sensorSleep  = clinicalViolet;
 
+
+  // ── Signal quality status colours ─────────────────────────────────────
   static const Color statusGood     = Color(0xFF10B981);
   static const Color statusWarning  = Color(0xFFF59E0B);
   static const Color statusCritical = Color(0xFFEF4444);

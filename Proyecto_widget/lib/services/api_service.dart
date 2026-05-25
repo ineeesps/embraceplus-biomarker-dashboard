@@ -3,6 +3,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/biomarker.dart';
 
+/// HTTP client for the EmbracePlus FastAPI backend.
+///
+/// All public methods map 1-to-1 to a backend endpoint and handle
+/// status-code parsing, JSON decoding, and timeout promotion to typed exceptions.
 class ApiService {
   final String baseUrl;
 
@@ -51,6 +55,11 @@ class ApiService {
     }
   }
 
+  /// Fetches time-bucketed biomarker series for [participantId].
+  ///
+  /// [bucketSize] must be one of the values allowed by the backend
+  /// (e.g. '30 seconds', '1 minute', ..., '1 hour').
+  /// Returns a flat list; callers filter by sensor type as needed.
   Future<List<Biomarker>> getMetrics(
     String participantId,
     String username, {
@@ -99,6 +108,10 @@ class ApiService {
     }
   }
 
+  /// Uploads a CSV file for [participantId] using a multipart POST request.
+  ///
+  /// If [replace] is true, existing records for the detected sensor type are
+  /// deleted before insertion. The backend auto-detects the sensor from the filename.
   Future<Map<String, dynamic>> uploadCsv(String participantId, String username, List<int> bytes, String fileName, {bool replace = false, String deviceType = "embrace_plus"}) async {
     final encodedId = Uri.encodeComponent(participantId);
     final request = http.MultipartRequest(
@@ -180,6 +193,10 @@ class ApiService {
     }
   }
 
+  /// Exports all sensor data for [participantId] as a pivoted, interpolated CSV.
+  ///
+  /// Columns = sensors, rows = time buckets. Continuous signals are interpolated
+  /// using [method] ('linear' | 'spline' | 'ffill'); categorical signals use ffill.
   Future<List<int>> exportParticipantCsv(
     String participantId,
     String username, {

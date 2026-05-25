@@ -17,12 +17,17 @@ const Color _text    = AppColors.textPrimary;
 const Color _muted   = AppColors.textSecondary;
 const Color _border  = AppColors.border;
 
-const Color _edaColor  = Color(0xFF10B981);
-const Color _prvColor  = Color(0xFF8B5CF6);
-const Color _metsColor = Color(0xFF64748B);
-const Color _tempColor = Color(0xFFF59E0B);
+// ── Sensor → colour mapping for this module ─────────────────────────────────
+const Color _edaColor  = Color(0xFF10B981); // EDA — electrodermal activity
+const Color _prvColor  = Color(0xFF8B5CF6); // PRV — pulse rate variability
+const Color _metsColor = Color(0xFF64748B); // METs — metabolic equivalents
+const Color _tempColor = Color(0xFFF59E0B); // Skin temperature
 const Color _tooltipBg = Color(0xFF0F172A);
 
+/// Stress clinical module.
+///
+/// Displays EDA reactivity, PRV coherence, METs expenditure, and skin temperature
+/// for the selected time window. Uses two tabs: Dashboard and Export/Analysis.
 class EstresScreen extends StatefulWidget {
   final String participantId;
   final String username;

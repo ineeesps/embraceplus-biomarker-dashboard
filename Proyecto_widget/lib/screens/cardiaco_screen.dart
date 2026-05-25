@@ -24,6 +24,11 @@ const Color _rrLine     = Color(0xFF0891B2);
 const Color _ratioColor = AppColors.clinicalViolet; 
 const Color _tooltipBg  = Color(0xFF0F172A); 
 
+/// Cardiac clinical module.
+///
+/// Provides a coupled HR/RR visualisation (shared Y-axis with scaled RR),
+/// a cardiorespiratory coupling graph, and the vital equaliser layer.
+/// Uses two tabs: Dashboard and Export/Analysis.
 class CardiacoScreen extends StatefulWidget {
   final String participantId;
   final String username;

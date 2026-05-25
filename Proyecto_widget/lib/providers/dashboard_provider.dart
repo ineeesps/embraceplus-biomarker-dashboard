@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/biomarker.dart';
 import '../services/api_service.dart';
 
+// ── Sensor filter lists ───────────────────────────────────────────────────────
+// Each list defines which sensor_type values belong to each clinical module.
+// These must stay in sync with the sensor_type values written by the ETL pipeline.
 const List<String> kMovimientoSensores = [
   'activity_class',
   'activity_intensity',
@@ -41,6 +44,13 @@ const List<String> kSuenoExportSensores = [
 
 const List<int> kHourOptions = [1, 3, 6, 12, 24];
 
+// ── DashboardProvider ────────────────────────────────────────────────────────
+
+/// Central state manager for the clinical dashboard.
+///
+/// Orchestrates all API calls, maintains per-module time windows, and exposes
+/// computed KPI getters consumed by the four clinical screens.
+/// Uses [ChangeNotifier] so that UI subtrees rebuild only when relevant state changes.
 class DashboardProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
 
@@ -99,6 +109,10 @@ class DashboardProvider with ChangeNotifier {
   List<Biomarker> get suenoMetrics      => _suenoMetrics;
   bool get isSuenoLoading               => _isSuenoLoading;
 
+  /// Maps a time-window size (in hours) to the appropriate TimescaleDB bucket interval.
+  ///
+  /// Smaller windows get finer resolution to preserve signal detail;
+  /// larger windows coarsen to keep payload sizes manageable.
   static String _bucketForHours(int hours) {
     if (hours <= 1)  return '30 seconds';
     if (hours <= 3)  return '1 minute';
@@ -162,6 +176,10 @@ class DashboardProvider with ChangeNotifier {
     _suenoStart = startSue.isBefore(_dataRangeStart!) ? _dataRangeStart! : startSue;
   }
 
+  // ── Data loading ─────────────────────────────────────────────────────────
+
+  /// Entry point: loads participant metadata, global KPIs, and all module metrics
+  /// in parallel. Resets the time window based on the participant's actual data range.
   Future<void> fetchMetrics(String participantId, String username) async {
     _isLoading = true;
     _error = null;
@@ -185,7 +203,7 @@ class DashboardProvider with ChangeNotifier {
         fetchSuenoMetrics(participantId, username),
       ]);
 
-      // _metrics consolidado: unión de todos los módulos para backward compat
+      // Consolidated list kept for backward compatibility with BiomarkerCard in dashboard_screen.
       _metrics = [
         ..._movimientoMetrics,
         ..._cardiacoMetrics,
@@ -366,6 +384,8 @@ class DashboardProvider with ChangeNotifier {
     await fetchSuenoMetrics(participantId, username);
   }
 
+  /// Snaps an arbitrary duration to the nearest supported hour option in [kHourOptions].
+  /// Used when the user sets a custom date range via the date picker.
   static int _durationToNearestHours(Duration d) {
     final h = d.inHours;
     if (h <= 1)  return 1;
@@ -375,6 +395,9 @@ class DashboardProvider with ChangeNotifier {
     return 24;
   }
 
+  // ── Computed getters ──────────────────────────────────────────────────────
+
+  /// Groups the consolidated metrics list by sensor type for legacy chart widgets.
   Map<String, List<Biomarker>> get metricsBySensor {
     final Map<String, List<Biomarker>> map = {};
     for (var m in _metrics) {

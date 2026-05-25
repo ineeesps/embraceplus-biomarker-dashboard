@@ -18,17 +18,19 @@ const Color _muted   = AppColors.textSecondary;
 const Color _identidad = AppColors.clinicalMove;
 const Color _pizarra   = AppColors.clinicalSlate;
 
+// ── Activity class colours (activity_class values 0–3) ─────────────────────
 const Color _clsGap     = AppColors.statusGap;
-const Color _clsStill   = Color(0xFFCBD5E1); 
-const Color _clsWalk    = Color(0xFF64748B); 
-const Color _clsRun     = Color(0xFF1E293B); 
-const Color _clsGeneric = Color(0xFF94A3B8);
+const Color _clsStill   = Color(0xFFCBD5E1); // 0 — sedentary / still
+const Color _clsWalk    = Color(0xFF64748B); // 1 — walking
+const Color _clsRun     = Color(0xFF1E293B); // 2 — running
+const Color _clsGeneric = Color(0xFF94A3B8); // 3 — generic activity
 
+// ── Activity intensity colours (activity_intensity values 0–3) ────────────
 const Color _intGap = AppColors.statusGap;
-const Color _intSed = Color(0xFFF8FAFC); 
-const Color _intLPA = Color(0xFFFEF3C7); 
-const Color _intMPA = Color(0xFFFB923C); 
-const Color _intVPA = AppColors.clinicalMove;
+const Color _intSed = Color(0xFFF8FAFC); // 0 — sedentary
+const Color _intLPA = Color(0xFFFEF3C7); // 1 — light physical activity
+const Color _intMPA = Color(0xFFFB923C); // 2 — moderate physical activity
+const Color _intVPA = AppColors.clinicalMove; // 3 — vigorous physical activity
 
 const Color _kMagnitude = AppColors.clinicalMove;
 const Color _kStability = AppColors.clinicalTeal;
@@ -41,6 +43,12 @@ const Color _axisZ = Color(0xFFCBD5E1);
 
 const Color _tooltipBg = Color(0xFF0F172A);
 
+/// Movement clinical module.
+///
+/// Visualises actigraphy (step count, acticounts, accelerometer), activity
+/// classification (STILL/WALK/RUN/GENERIC), intensity (SED/LPA/MPA/VPA),
+/// and the 3-axis biomechanical signal for the selected time window.
+/// Uses two tabs: Dashboard and Export/Analysis.
 class MovimientoScreen extends StatefulWidget {
   final String participantId;
   final String username;
