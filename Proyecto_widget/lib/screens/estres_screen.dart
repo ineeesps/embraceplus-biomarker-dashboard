@@ -78,7 +78,7 @@ class _EstresScreenState extends State<EstresScreen>
                   child: Text('Sin datos fisiológicos en el tramo seleccionado', style: GoogleFonts.inter(color: _muted)),
                 ),
               )
-            else ...[
+            else if (provider.estresStart != null && provider.estresEnd != null) ...[
               _KPIsLayer(edaData: edaData, prvData: prvData, metsData: metsData, tempData: tempData),
               const SizedBox(height: 24),
               _ReactividadGraphLayer(edaData: edaData, prvData: prvData, startTime: provider.estresStart!, endTime: provider.estresEnd!),

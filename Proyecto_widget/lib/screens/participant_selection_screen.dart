@@ -137,7 +137,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.cyberBlue.withOpacity(0.1),
+                      color: AppColors.cyberBlue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
@@ -195,7 +195,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         key: const Key('device_type_dropdown'),
-                        value: selectedDevice,
+                        initialValue: selectedDevice,
                         items: const [
                           DropdownMenuItem(
                             value: 'embrace_plus',
@@ -444,10 +444,10 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: AppColors.cyberBlue.withOpacity(0.04),
+                              color: AppColors.cyberBlue.withValues(alpha: 0.04),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: AppColors.cyberBlue.withOpacity(0.25),
+                                color: AppColors.cyberBlue.withValues(alpha: 0.25),
                                 width: 1.5,
                               ),
                             ),
@@ -618,7 +618,7 @@ class _ParticipantSelectionScreenState extends State<ParticipantSelectionScreen>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.cyberBlue.withOpacity(0.1),
+                color: AppColors.cyberBlue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(

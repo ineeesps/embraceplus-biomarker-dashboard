@@ -68,7 +68,7 @@ class ApiService {
       final encodedId = Uri.encodeComponent(participantId);
       final url = '$baseUrl/participante/$encodedId/metricas?${params.join('&')}';
       final response = await http.get(Uri.parse(url))
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

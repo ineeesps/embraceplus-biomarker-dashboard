@@ -832,7 +832,6 @@ class _EficienciaMarcha extends StatelessWidget {
     final stepSpansDays = sortedKeys.length > 1 &&
         DateTime.fromMillisecondsSinceEpoch(sortedKeys.first * 3600000).day !=
         DateTime.fromMillisecondsSinceEpoch(sortedKeys.last * 3600000).day;
-    final int labelStep = math.max(1, (sortedKeys.length / 6).ceil());
     const double target = 250.0;
 
     return _SectionCard(
@@ -895,9 +894,9 @@ class _EficienciaMarcha extends StatelessWidget {
                     ),
                     titlesData: const FlTitlesData(
                       bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      leftTitles:  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles:   const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      leftTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles:    AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles:  AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
                     gridData:   const FlGridData(show: false),
                     borderData: FlBorderData(show: false),
