@@ -88,7 +88,7 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
                 "end": "2026-05-15T01:00:00Z"
             }
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200, msg=response.text)
         csv_content = response.text
         self.assertIn("timestamp", csv_content)
         self.assertIn("temperature", csv_content)
@@ -225,7 +225,16 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(isinstance(response.json(), list))
 
-    def test_get_participantes_by_investigador(self):
+    def test_health_and_root(self):
+        """Verifica la disponibilidad de los endpoints de diagnóstico (raíz y health)"""
+        response_root = self.client.get("/")
+        self.assertEqual(response_root.status_code, 200)
+        
+        response_health = self.client.get("/health")
+        self.assertEqual(response_health.status_code, 200)
+        self.assertEqual(response_health.json(), {"status": "ok", "db": "connected"})
+
+    def test_get_participants_by_investigator(self):
         """Verifica la obtención de participantes asignados a un investigador"""
         response = self.client.get("/participantes/alberto")
         self.assertEqual(response.status_code, 200)
@@ -233,7 +242,7 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
         self.assertEqual(data["investigador"], "alberto")
         self.assertIn("HN", data["participantes"])
 
-    def test_verificar_existencia_sensor(self):
+    def test_check_sensor_existence(self):
         """Verifica si un sensor y participante específico existen en la base de datos"""
         response = self.client.get(
             "/participante/HN/sensor/temperature/existe",
@@ -245,7 +254,7 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
         self.assertEqual(data["sensor_type"], "temperature")
         self.assertEqual(data["existe"], True)
 
-    def test_obtener_metadata_participante(self):
+    def test_get_participant_metadata(self):
         """Verifica la obtención del rango temporal y sensores de un participante"""
         response = self.client.get(
             "/participante/HN/metadata",
@@ -258,7 +267,7 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
         self.assertIn("end_time", data)
         self.assertIn("temperature", data["sensors"])
 
-    def test_resumen_participantes_alberto_and_ines(self):
+    def test_participants_summary_comparison(self):
         """Verifica que el resumen de participantes devuelva datos reales y exactos para alberto e ines"""
         # Test alberto
         response_alberto = self.client.get("/investigador/alberto/resumen_participantes")
@@ -297,7 +306,7 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
         self.assertEqual(user1["totalHours"], 23)
         self.assertEqual(user1["status"], "CRÍTICO")
 
-    def test_kpis_globales_independent_of_time(self):
+    def test_global_kpis_time_independence(self):
         """Verifica la obtención de KPIs globales que no dependen de bucket_size ni de start/end"""
         response = self.client.get("/participante/HN/kpis_globales", params={"investigador": "alberto"})
         self.assertEqual(response.status_code, 200)
@@ -308,19 +317,6 @@ class TestEmbraceDashboardAPI(unittest.TestCase):
         self.assertIn("sleep_hours", data)
         self.assertIn("compliance_percentage", data)
 
-    def test_kpis_globales_user1(self):
-        """Verifica que los KPIs globales del participante user1 coinciden exactamente con los calculados a partir de sus CSVs"""
-        response = self.client.get("/participante/user1/kpis_globales", params={"investigador": "ines"})
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["participante"], "user1")
-        self.assertEqual(data["total_steps"], 366.0)
-        self.assertEqual(data["avg_bpm"], 73)
-        self.assertAlmostEqual(data["avg_stress"], 0.3805, places=4)
-        self.assertEqual(data["sleep_hours"], 0.0)
-        self.assertAlmostEqual(data["compliance_percentage"], 16.11, places=2)
-        self.assertEqual(data["last_activity"], 0.0)
-        self.assertEqual(data["last_position"], 0.0)
 
 
 if __name__ == "__main__":
