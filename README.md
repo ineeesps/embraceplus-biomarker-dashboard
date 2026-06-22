@@ -1,6 +1,6 @@
 # OpenWear: Sistema de Gestión y Análisis de Biomarcadores en Dispositivos Wearables
 
-Este repositorio contiene el código de **OpenWear**, una plataforma de código abierto diseñada para la ingesta, almacenamiento, procesamiento y visualización de registros temporales procedentes de dispositivos wearables, desarrollada en el marco de un Trabajo de Fin de Grado (TFG). El código fuente de la plataforma se encuentra alojado en GitHub en el siguiente enlace: [https://github.com/ineeesps/TFG-embraceplus-biomarker-dashboard](https://github.com/ineeesps/TFG-embraceplus-biomarker-dashboard).
+Este repositorio contiene el código de **OpenWear**, una plataforma de código abierto diseñada para la ingesta, almacenamiento, procesamiento y visualización de registros temporales procedentes de dispositivos wearables, desarrollada en el marco de un Trabajo de Fin de Grado (TFG). El código fuente de la plataforma se encuentra alojado en GitHub en el siguiente enlace: [https://github.com/ineeesps/embraceplus-biomarker-dashboard](https://github.com/ineeesps/embraceplus-biomarker-dashboard).
 
 La plataforma permite mitigar el cuello de botella de las inserciones continuas de alta frecuencia y eliminar la dependencia de infraestructuras propietarias, facilitando la monitorización local y el análisis clínico de biomarcadores.
 
